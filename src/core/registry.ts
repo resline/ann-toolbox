@@ -1,5 +1,6 @@
 import { Volume2, Timer, Sparkles, ListTodo } from 'lucide-react';
 import type { ToolCategory, ToolCategoryId, ToolModule } from './types';
+import { SpeakingClockModule } from '../modules/speaking-clock/SpeakingClockModule';
 
 export const TOOL_CATEGORIES: ToolCategory[] = [
   {
@@ -35,6 +36,7 @@ export const DEFAULT_TOOLS: ToolModule[] = [
     category: 'time',
     status: 'available',
     badge: 'Aktywny',
+    component: SpeakingClockModule,
   },
   {
     id: 'visual-timer',
