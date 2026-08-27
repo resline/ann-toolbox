@@ -17,7 +17,10 @@ import {
   type EngineCallbacks,
   DEFAULT_SPEAKING_CLOCK_SETTINGS,
 } from '../types';
-import { formatPolishTime } from './polishTimeFormatter';
+import {
+  formatPolishTime,
+  formatDepartureAnnouncement,
+} from './polishTimeFormatter';
 import { playChime } from './chimeSynthesizer';
 import { speakText, stopSpeaking } from './speechService';
 import { WakeLockService } from './wakeLockService';
@@ -116,6 +119,10 @@ export class BackgroundTimerEngine {
   private totalPausedDuration = 0;
   private nextAnnouncementTime: Date | null = null;
 
+  private departureTargetTimestamp: number | null = null;
+  private departureInitialSeconds: number | null = null;
+  private triggeredMilestones = new Set<number>();
+
   private worker: Worker | null = null;
   private fallbackIntervalId: ReturnType<typeof setInterval> | null = null;
   private wakeLockService: WakeLockService;
@@ -150,6 +157,173 @@ export class BackgroundTimerEngine {
   }
 
   /**
+   * Returns current departure target time string (e.g. "08:30") or null.
+   */
+  getDepartureTargetTime(): string | null {
+    return this.settings.departure?.targetTime ?? null;
+  }
+
+  /**
+   * Sets departure target time and optional label, recalculating target timestamp.
+   */
+  setDepartureTarget(targetTime: string, label?: string): void {
+    this.settings.departure = {
+      ...this.settings.departure,
+      targetTime,
+      ...(label !== undefined ? { label } : {}),
+    };
+
+    const now = new Date();
+    this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(targetTime, now);
+    if (this.state === 'running' && this.startTime) {
+      const remaining = Math.max(0, Math.floor((this.departureTargetTimestamp - now.getTime()) / 1000));
+      this.departureInitialSeconds = Math.max(1, remaining);
+      this.triggeredMilestones.clear();
+      const milestones = this.getDepartureMilestones();
+      for (const m of milestones) {
+        if (m * 60 > remaining) {
+          this.triggeredMilestones.add(m);
+        }
+      }
+    }
+    this.updateMediaSessionMetadata();
+  }
+
+  /**
+   * Adjusts duration/interval/departure target by delta minutes (+/-).
+   */
+  addMinutes(deltaMinutes: number): void {
+    const now = Date.now();
+    if (this.settings.mode === 'departure') {
+      if (this.departureTargetTimestamp === null) {
+        this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(
+          this.settings.departure.targetTime,
+          new Date(now)
+        );
+      }
+      this.departureTargetTimestamp += deltaMinutes * 60 * 1000;
+      const targetDate = new Date(this.departureTargetTimestamp);
+      const h = String(targetDate.getHours()).padStart(2, '0');
+      const m = String(targetDate.getMinutes()).padStart(2, '0');
+      this.settings.departure.targetTime = `${h}:${m}`;
+
+      if (this.departureInitialSeconds !== null) {
+        this.departureInitialSeconds = Math.max(1, this.departureInitialSeconds + deltaMinutes * 60);
+      }
+
+      const secondsRemaining = Math.max(
+        0,
+        Math.floor((this.departureTargetTimestamp - now) / 1000)
+      );
+
+      // Re-enable milestones that are back in the future
+      for (const milestone of Array.from(this.triggeredMilestones)) {
+        if (secondsRemaining > milestone * 60) {
+          this.triggeredMilestones.delete(milestone);
+        }
+      }
+      // Mark passed milestones as triggered
+      const milestones = this.getDepartureMilestones();
+      for (const milestone of milestones) {
+        if (milestone * 60 > secondsRemaining) {
+          this.triggeredMilestones.add(milestone);
+        }
+      }
+
+      this.updateMediaSessionMetadata();
+      if (this.state === 'running') {
+        this.handleTick(now);
+      }
+    } else if (this.settings.mode === 'focus') {
+      this.settings.focusDurationMinutes = Math.max(
+        1,
+        this.settings.focusDurationMinutes + deltaMinutes
+      );
+      if (this.state === 'running') {
+        this.handleTick(now);
+      }
+    } else {
+      // Continuous mode
+      this.settings.intervalMinutes = Math.max(
+        1,
+        this.settings.intervalMinutes + deltaMinutes
+      );
+      if (this.state === 'running') {
+        this.nextAnnouncementTime = calculateNextAnnouncementTime(
+          new Date(now),
+          this.settings.intervalMinutes,
+          this.settings.clockSync,
+          this.lastAnnouncementTime ? new Date(this.lastAnnouncementTime) : new Date(now)
+        );
+        this.handleTick(now);
+      }
+    }
+  }
+
+  /**
+   * Calculates departure target timestamp from targetTime string and reference date.
+   */
+  private calculateDepartureTargetTimestamp(targetTime: string, now: Date): number {
+    const [hStr, mStr] = (targetTime || '08:30').split(':');
+    const h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+
+    const targetDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      h,
+      m,
+      0,
+      0
+    );
+
+    // If target timestamp for today is more than 1 minute in the past, roll over to tomorrow
+    if (targetDate.getTime() < now.getTime() - 60 * 1000) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+
+    return targetDate.getTime();
+  }
+
+  /**
+   * Returns sorted descending list of departure milestones in minutes.
+   */
+  private getDepartureMilestones(): number[] {
+    if (
+      !this.settings.departure.smartDensity &&
+      this.settings.departure.customMilestonesMinutes &&
+      this.settings.departure.customMilestonesMinutes.length > 0
+    ) {
+      const set = new Set(this.settings.departure.customMilestonesMinutes);
+      set.add(0);
+      return Array.from(set).sort((a, b) => b - a);
+    }
+    return [120, 90, 60, 45, 30, 20, 15, 10, 5, 4, 3, 2, 1, 0];
+  }
+
+  /**
+   * Calculates next milestone date for departure countdown.
+   */
+  private calculateNextDepartureMilestoneTime(
+    timestamp: number,
+    secondsRemaining: number
+  ): Date | null {
+    if (secondsRemaining <= 0) {
+      return null;
+    }
+    const milestones = this.getDepartureMilestones();
+    for (const m of milestones) {
+      const milestoneSec = m * 60;
+      if (milestoneSec < secondsRemaining && !this.triggeredMilestones.has(m)) {
+        const diffSec = secondsRemaining - milestoneSec;
+        return new Date(timestamp + diffSec * 1000);
+      }
+    }
+    return new Date(timestamp + secondsRemaining * 1000);
+  }
+
+  /**
    * Starts the speaking clock engine.
    */
   async start(): Promise<void> {
@@ -169,12 +343,35 @@ export class BackgroundTimerEngine {
     this.pauseStartTime = null;
     this.totalPausedDuration = 0;
 
-    this.nextAnnouncementTime = calculateNextAnnouncementTime(
-      new Date(now),
-      this.settings.intervalMinutes,
-      this.settings.clockSync,
-      new Date(now)
-    );
+    if (this.settings.mode === 'departure') {
+      this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(
+        this.settings.departure.targetTime,
+        new Date(now)
+      );
+      const initialSecondsRemaining = Math.max(
+        0,
+        Math.floor((this.departureTargetTimestamp - now) / 1000)
+      );
+      this.departureInitialSeconds = Math.max(1, initialSecondsRemaining);
+      this.triggeredMilestones.clear();
+      const milestones = this.getDepartureMilestones();
+      for (const m of milestones) {
+        if (m * 60 > initialSecondsRemaining) {
+          this.triggeredMilestones.add(m);
+        }
+      }
+      this.nextAnnouncementTime = this.calculateNextDepartureMilestoneTime(
+        now,
+        initialSecondsRemaining
+      );
+    } else {
+      this.nextAnnouncementTime = calculateNextAnnouncementTime(
+        new Date(now),
+        this.settings.intervalMinutes,
+        this.settings.clockSync,
+        new Date(now)
+      );
+    }
 
     this.setState('running');
     this.startTimerLoop();
@@ -259,6 +456,9 @@ export class BackgroundTimerEngine {
     this.pauseStartTime = null;
     this.totalPausedDuration = 0;
     this.nextAnnouncementTime = null;
+    this.departureTargetTimestamp = null;
+    this.departureInitialSeconds = null;
+    this.triggeredMilestones.clear();
   }
 
   /**
@@ -274,25 +474,74 @@ export class BackgroundTimerEngine {
    */
   updateSettings(settings: Partial<SpeakingClockSettings>): void {
     const prevWakeLock = this.settings.wakeLockEnabled;
+    const prevMode = this.settings.mode;
+    const prevTarget = this.settings.departure?.targetTime;
+
     this.settings = {
       ...this.settings,
       ...settings,
+      departure: {
+        ...this.settings.departure,
+        ...(settings.departure || {}),
+      },
+      timeTimer: {
+        ...this.settings.timeTimer,
+        ...(settings.timeTimer || {}),
+      },
     };
+
+    if (
+      this.settings.mode === 'departure' &&
+      (prevMode !== 'departure' || prevTarget !== this.settings.departure.targetTime)
+    ) {
+      const now = new Date();
+      this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(
+        this.settings.departure.targetTime,
+        now
+      );
+      if (this.state === 'running' && this.startTime) {
+        const remaining = Math.max(
+          0,
+          Math.floor((this.departureTargetTimestamp - now.getTime()) / 1000)
+        );
+        this.departureInitialSeconds = Math.max(1, remaining);
+        this.triggeredMilestones.clear();
+        const milestones = this.getDepartureMilestones();
+        for (const m of milestones) {
+          if (m * 60 > remaining) {
+            this.triggeredMilestones.add(m);
+          }
+        }
+      }
+    }
 
     if (this.state === 'running') {
       const now = Date.now();
-      this.nextAnnouncementTime = calculateNextAnnouncementTime(
-        new Date(now),
-        this.settings.intervalMinutes,
-        this.settings.clockSync,
-        this.lastAnnouncementTime ? new Date(this.lastAnnouncementTime) : new Date(now)
-      );
+      if (this.settings.mode === 'departure') {
+        const secondsRemaining = Math.max(
+          0,
+          Math.floor(((this.departureTargetTimestamp ?? now) - now) / 1000)
+        );
+        this.nextAnnouncementTime = this.calculateNextDepartureMilestoneTime(
+          now,
+          secondsRemaining
+        );
+      } else {
+        this.nextAnnouncementTime = calculateNextAnnouncementTime(
+          new Date(now),
+          this.settings.intervalMinutes,
+          this.settings.clockSync,
+          this.lastAnnouncementTime ? new Date(this.lastAnnouncementTime) : new Date(now)
+        );
+      }
 
       if (this.settings.wakeLockEnabled && !prevWakeLock) {
         this.wakeLockService.request().catch(() => {});
       } else if (!this.settings.wakeLockEnabled && prevWakeLock) {
         this.wakeLockService.release().catch(() => {});
       }
+
+      this.updateMediaSessionMetadata();
     }
   }
 
@@ -398,10 +647,83 @@ export class BackgroundTimerEngine {
     let focusRemainingSeconds: number | undefined;
     let progressPercent: number | undefined;
     let isFocusEnd = false;
+    let secondsRemaining: number | undefined;
+    let totalSeconds: number | undefined;
 
-    if (this.settings.mode === 'focus') {
+    if (this.settings.mode === 'departure') {
+      if (this.departureTargetTimestamp === null) {
+        this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(
+          this.settings.departure.targetTime,
+          now
+        );
+      }
+
+      secondsRemaining = Math.max(
+        0,
+        Math.floor((this.departureTargetTimestamp - timestamp) / 1000)
+      );
+      totalSeconds = this.departureInitialSeconds ?? Math.max(1, secondsRemaining);
+      const elapsedInDeparture = Math.max(0, totalSeconds - secondsRemaining);
+      progressPercent = Math.min(100, Math.max(0, (elapsedInDeparture / totalSeconds) * 100));
+
+      const targetDate = new Date(this.departureTargetTimestamp);
+      const milestones = this.getDepartureMilestones();
+
+      if (this.state === 'running' && !this.isAnnouncing) {
+        for (const m of milestones) {
+          const milestoneSec = m * 60;
+          if (secondsRemaining <= milestoneSec && !this.triggeredMilestones.has(m)) {
+            this.triggeredMilestones.add(m);
+
+            if (secondsRemaining <= 0 || m === 0) {
+              const text = formatDepartureAnnouncement(
+                0,
+                this.settings.departure.label,
+                targetDate,
+                true
+              );
+              const payload: AnnouncementPayload = {
+                text,
+                timestamp: now,
+                elapsedMinutes,
+                isFocusEnd: false,
+                reason: 'session_end',
+              };
+              this.callbacks.onAnnounce?.(payload);
+              this.executeAudioSequence(text).then(() => {
+                this.stop();
+              });
+            } else {
+              const text = formatDepartureAnnouncement(
+                secondsRemaining,
+                this.settings.departure.label,
+                targetDate,
+                false
+              );
+              const payload: AnnouncementPayload = {
+                text,
+                timestamp: now,
+                elapsedMinutes,
+                isFocusEnd: false,
+                reason: 'interval',
+              };
+              this.callbacks.onAnnounce?.(payload);
+              this.executeAudioSequence(text);
+            }
+            break;
+          }
+        }
+      }
+
+      this.nextAnnouncementTime = this.calculateNextDepartureMilestoneTime(
+        timestamp,
+        secondsRemaining
+      );
+    } else if (this.settings.mode === 'focus') {
       const focusTotalSec = this.settings.focusDurationMinutes * 60;
       focusRemainingSeconds = Math.max(0, focusTotalSec - elapsedSeconds);
+      totalSeconds = focusTotalSec;
+      secondsRemaining = focusRemainingSeconds;
       progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / focusTotalSec) * 100));
 
       if (elapsedSeconds >= focusTotalSec) {
@@ -409,26 +731,28 @@ export class BackgroundTimerEngine {
       }
     }
 
-    // Check announcement conditions if running
-    if (this.state === 'running' && !this.isAnnouncing) {
-      if (isFocusEnd) {
-        this.triggerFocusEndAnnouncement(now, elapsedMinutes);
-      } else if (
-        this.nextAnnouncementTime &&
-        timestamp >= this.nextAnnouncementTime.getTime()
-      ) {
-        const targetMs = this.nextAnnouncementTime.getTime();
-        // Prevent duplicate trigger for the same interval
-        if (this.lastAnnouncedTargetTime !== targetMs) {
-          this.lastAnnouncedTargetTime = targetMs;
-          this.triggerIntervalAnnouncement(now, elapsedMinutes);
-          this.lastAnnouncementTime = timestamp;
-          this.nextAnnouncementTime = calculateNextAnnouncementTime(
-            now,
-            this.settings.intervalMinutes,
-            this.settings.clockSync,
-            new Date(timestamp)
-          );
+    if (this.settings.mode !== 'departure') {
+      // Check announcement conditions if running
+      if (this.state === 'running' && !this.isAnnouncing) {
+        if (isFocusEnd) {
+          this.triggerFocusEndAnnouncement(now, elapsedMinutes);
+        } else if (
+          this.nextAnnouncementTime &&
+          timestamp >= this.nextAnnouncementTime.getTime()
+        ) {
+          const targetMs = this.nextAnnouncementTime.getTime();
+          // Prevent duplicate trigger for the same interval
+          if (this.lastAnnouncedTargetTime !== targetMs) {
+            this.lastAnnouncedTargetTime = targetMs;
+            this.triggerIntervalAnnouncement(now, elapsedMinutes);
+            this.lastAnnouncementTime = timestamp;
+            this.nextAnnouncementTime = calculateNextAnnouncementTime(
+              now,
+              this.settings.intervalMinutes,
+              this.settings.clockSync,
+              new Date(timestamp)
+            );
+          }
         }
       }
     }
@@ -449,6 +773,20 @@ export class BackgroundTimerEngine {
       nextAnnouncementTime: this.nextAnnouncementTime,
       focusRemainingSeconds,
       progressPercent,
+      secondsRemaining:
+        this.settings.mode === 'departure'
+          ? secondsRemaining
+          : this.settings.mode === 'focus'
+          ? focusRemainingSeconds
+          : undefined,
+      totalSeconds:
+        this.settings.mode === 'departure'
+          ? totalSeconds
+          : this.settings.mode === 'focus'
+          ? this.settings.focusDurationMinutes * 60
+          : undefined,
+      targetTime: this.settings.departure?.targetTime,
+      departureLabel: this.settings.departure?.label,
     };
 
     this.callbacks.onTick?.(payload);
@@ -537,23 +875,7 @@ export class BackgroundTimerEngine {
     }
 
     try {
-      const metadataObj = {
-        title: 'Głos Czasu - Narzędziownik Ani',
-        artist: 'Narzędziownik Ani',
-        album:
-          this.settings.mode === 'focus'
-            ? 'Tryb Skupienia (Pomodoro)'
-            : 'Zegar Mówiący',
-      };
-
-      const MediaMetadataClass =
-        (typeof window !== 'undefined' && (window as any).MediaMetadata) ||
-        (typeof globalThis !== 'undefined' && (globalThis as any).MediaMetadata);
-
-      navigator.mediaSession.metadata = MediaMetadataClass
-        ? new MediaMetadataClass(metadataObj)
-        : (metadataObj as any);
-
+      this.updateMediaSessionMetadata();
       navigator.mediaSession.playbackState = 'playing';
 
       navigator.mediaSession.setActionHandler('play', () => {
@@ -575,6 +897,57 @@ export class BackgroundTimerEngine {
       });
     } catch {
       // Ignore media session errors
+    }
+  }
+
+  /**
+   * Updates MediaSession metadata based on active mode.
+   */
+  private updateMediaSessionMetadata(): void {
+    if (
+      typeof navigator === 'undefined' ||
+      !('mediaSession' in navigator) ||
+      !navigator.mediaSession
+    ) {
+      return;
+    }
+
+    try {
+      let title = 'Głos Czasu - Narzędziownik Ani';
+      let album = 'Zegar Mówiący';
+
+      if (this.settings.mode === 'departure') {
+        const label = this.settings.departure.label || 'Wyjście';
+        const now = Date.now();
+        const secondsRemaining = this.departureTargetTimestamp
+          ? Math.max(0, Math.floor((this.departureTargetTimestamp - now) / 1000))
+          : 0;
+        const minutesRemaining = Math.ceil(secondsRemaining / 60);
+
+        title =
+          secondsRemaining <= 0
+            ? `Czas na: ${label}`
+            : `Za ${minutesRemaining} min: ${label}`;
+        album = 'Kotwica Czasu (Wyjście)';
+      } else if (this.settings.mode === 'focus') {
+        album = 'Tryb Skupienia (Pomodoro)';
+      }
+
+      const metadataObj = {
+        title,
+        artist: 'Narzędziownik Ani',
+        album,
+      };
+
+      const MediaMetadataClass =
+        (typeof window !== 'undefined' && (window as any).MediaMetadata) ||
+        (typeof globalThis !== 'undefined' && (globalThis as any).MediaMetadata);
+
+      navigator.mediaSession.metadata = MediaMetadataClass
+        ? new MediaMetadataClass(metadataObj)
+        : (metadataObj as any);
+    } catch {
+      // Ignore errors
     }
   }
 

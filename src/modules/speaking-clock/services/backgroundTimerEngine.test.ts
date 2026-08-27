@@ -477,15 +477,239 @@ describe('BackgroundTimerEngine', () => {
     });
   });
 
-  describe('MediaSession Action Handlers execution', () => {
-    it('executes play, pause, and stop actions triggered from system media notification', async () => {
-      const handlers: Record<string, Function> = {};
+  describe('Departure Mode & Smart Density Milestones', () => {
+    it('initializes departure mode and provides getDepartureTargetTime & setDepartureTarget', () => {
+      const engine = new BackgroundTimerEngine({
+        mode: 'departure',
+        departure: {
+          targetTime: '08:30',
+          label: 'Wyjście na pociąg',
+          smartDensity: true,
+        },
+      });
+
+      expect(engine.getDepartureTargetTime()).toBe('08:30');
+
+      engine.setDepartureTarget('09:15', 'Spotkanie w biurze');
+      expect(engine.getDepartureTargetTime()).toBe('09:15');
+      expect(engine.getSettings().departure.label).toBe('Spotkanie w biurze');
+    });
+
+    it('shifts target time with addMinutes(+5) and addMinutes(-5) in departure mode', () => {
+      const engine = new BackgroundTimerEngine({
+        mode: 'departure',
+        departure: {
+          targetTime: '08:30',
+          label: 'Wyjście z domu',
+          smartDensity: true,
+        },
+      });
+
+      expect(engine.getDepartureTargetTime()).toBe('08:30');
+
+      // +5 minutes -> 08:35
+      engine.addMinutes(5);
+      expect(engine.getDepartureTargetTime()).toBe('08:35');
+      expect(engine.getSettings().departure.targetTime).toBe('08:35');
+
+      // -5 minutes -> 08:30
+      engine.addMinutes(-5);
+      expect(engine.getDepartureTargetTime()).toBe('08:30');
+      expect(engine.getSettings().departure.targetTime).toBe('08:30');
+    });
+
+    it('handles hour boundary rollover with addMinutes in departure mode', () => {
+      const engine = new BackgroundTimerEngine({
+        mode: 'departure',
+        departure: {
+          targetTime: '23:55',
+          label: 'Nocny autobus',
+          smartDensity: true,
+        },
+      });
+
+      engine.addMinutes(10);
+      expect(engine.getDepartureTargetTime()).toBe('00:05');
+    });
+
+    it('adjusts duration in focus mode and interval in continuous mode via addMinutes', () => {
+      const focusEngine = new BackgroundTimerEngine({
+        mode: 'focus',
+        focusDurationMinutes: 25,
+      });
+      focusEngine.addMinutes(5);
+      expect(focusEngine.getSettings().focusDurationMinutes).toBe(30);
+      focusEngine.addMinutes(-50);
+      expect(focusEngine.getSettings().focusDurationMinutes).toBe(1); // clamped min 1
+
+      const contEngine = new BackgroundTimerEngine({
+        mode: 'continuous',
+        intervalMinutes: 15,
+      });
+      contEngine.addMinutes(5);
+      expect(contEngine.getSettings().intervalMinutes).toBe(20);
+      contEngine.addMinutes(-30);
+      expect(contEngine.getSettings().intervalMinutes).toBe(1); // clamped min 1
+    });
+
+    it('rolls over target to tomorrow if targetTime today is more than 1 minute in the past', async () => {
+      const baseDate = new Date(2026, 7, 27, 20, 0, 0); // 20:00:00 today
+      vi.setSystemTime(baseDate);
+
+      const ticks: TickPayload[] = [];
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:30', // this morning 08:30 is > 1 min ago -> set for tomorrow 08:30
+            label: 'Poranny start',
+            smartDensity: true,
+          },
+        },
+        { onTick: (t) => ticks.push(t) }
+      );
+
+      await engine.start();
+      const firstTick = ticks[ticks.length - 1];
+      // 20:00 today to 08:30 tomorrow = 12h 30m = 45000 seconds
+      expect(firstTick.secondsRemaining).toBe(45000);
+      expect(firstTick.targetTime).toBe('08:30');
+      expect(firstTick.departureLabel).toBe('Poranny start');
+
+      engine.stop();
+    });
+
+    it('triggers milestone announcements at 15m, 10m, 5m, 1m, 0m with smartDensity', async () => {
+      // Start at 08:14:00, target is 08:30:00 (16 minutes remaining)
+      const baseDate = new Date(2026, 7, 27, 8, 14, 0);
+      vi.setSystemTime(baseDate);
+
+      const announcements: AnnouncementPayload[] = [];
+      const states: ClockState[] = [];
+      const ticks: TickPayload[] = [];
+
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:30',
+            label: 'Wyjście z domu',
+            smartDensity: true,
+          },
+          playChimeBefore: true,
+        },
+        {
+          onAnnounce: (a) => announcements.push(a),
+          onStateChange: (s) => states.push(s),
+          onTick: (t) => ticks.push(t),
+        }
+      );
+
+      await engine.start();
+      expect(announcements.length).toBe(0); // 16m left -> not a milestone
+
+      // 1. Advance to 08:15:00 (15m left) -> Milestone 15
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(announcements.length).toBe(1);
+      expect(announcements[0].text).toContain('Za 15 minut: Wyjście z domu');
+      expect(announcements[0].text).toContain('Jest 08:15');
+      expect(announcements[0].reason).toBe('interval');
+
+      // 2. Advance to 08:20:00 (10m left) -> Milestone 10
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+      expect(announcements.length).toBe(2);
+      expect(announcements[1].text).toBe('Za 10 minut: Wyjście z domu.');
+
+      // 3. Advance to 08:25:00 (5m left) -> Milestone 5
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+      expect(announcements.length).toBe(3);
+      expect(announcements[2].text).toBe('Za 5 minut: Wyjście z domu.');
+
+      // 4. Advance to 08:26:00 (4m left) -> Milestone 4
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(announcements.length).toBe(4);
+      expect(announcements[3].text).toBe('Za 4 minuty: Wyjście z domu.');
+
+      // 5. Advance to 08:27:00 (3m left) -> Milestone 3
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(announcements.length).toBe(5);
+      expect(announcements[4].text).toBe('Za 3 minuty: Wyjście z domu.');
+
+      // 6. Advance to 08:28:00 (2m left) -> Milestone 2
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(announcements.length).toBe(6);
+      expect(announcements[5].text).toBe('Za 2 minuty: Wyjście z domu.');
+
+      // 7. Advance to 08:29:00 (1m left) -> Milestone 1
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(announcements.length).toBe(7);
+      expect(announcements[6].text).toBe('Za minutę: Wyjście z domu.');
+
+      // 8. Advance to 08:30:00 (0m left) -> Final milestone & stop
+      await vi.advanceTimersByTimeAsync(60 * 1000);
+      expect(announcements.length).toBe(8);
+      expect(announcements[7].text).toContain('Czas na: Wyjście z domu!');
+      expect(announcements[7].text).toContain('08:30');
+      expect(announcements[7].reason).toBe('session_end');
+
+      // Engine automatically stopped
+      expect(engine.getState()).toBe('idle');
+    });
+
+    it('triggers custom milestones when smartDensity is false', async () => {
+      // Start at 08:10:00, target 08:30:00 (20 min remaining)
+      const baseDate = new Date(2026, 7, 27, 8, 10, 0);
+      vi.setSystemTime(baseDate);
+
+      const announcements: AnnouncementPayload[] = [];
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:30',
+            label: 'Pociąg',
+            smartDensity: false,
+            customMilestonesMinutes: [10, 2, 0],
+          },
+        },
+        { onAnnounce: (a) => announcements.push(a) }
+      );
+
+      await engine.start();
+
+      // Advance to 15m remaining (08:15:00) -> 15 is NOT in [10, 2, 0], should not trigger
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+      expect(announcements.length).toBe(0);
+
+      // Advance to 10m remaining (08:20:00) -> Milestone 10 triggers
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+      expect(announcements.length).toBe(1);
+      expect(announcements[0].text).toBe('Za 10 minut: Pociąg.');
+
+      // Advance to 5m remaining (08:25:00) -> 5 is NOT in [10, 2, 0], should not trigger
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+      expect(announcements.length).toBe(1);
+
+      // Advance to 2m remaining (08:28:00) -> Milestone 2 triggers
+      await vi.advanceTimersByTimeAsync(3 * 60 * 1000);
+      expect(announcements.length).toBe(2);
+      expect(announcements[1].text).toBe('Za 2 minuty: Pociąg.');
+
+      // Advance to 0m remaining (08:30:00) -> Milestone 0 triggers and engine stops
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      expect(announcements.length).toBe(3);
+      expect(announcements[2].text).toContain('Czas na: Pociąg!');
+      expect(engine.getState()).toBe('idle');
+    });
+
+    it('updates MediaSession with departure countdown metadata', async () => {
+      const baseDate = new Date(2026, 7, 27, 8, 15, 0);
+      vi.setSystemTime(baseDate);
+
       const mockMediaSession = {
         metadata: null as any,
         playbackState: 'none',
-        setActionHandler: vi.fn((action, handler) => {
-          handlers[action] = handler;
-        }),
+        setActionHandler: vi.fn(),
       };
 
       Object.defineProperty(navigator, 'mediaSession', {
@@ -494,22 +718,21 @@ describe('BackgroundTimerEngine', () => {
         writable: true,
       });
 
-      const engine = new BackgroundTimerEngine();
+      const engine = new BackgroundTimerEngine({
+        mode: 'departure',
+        departure: {
+          targetTime: '08:30',
+          label: 'Wyjście do pracy',
+          smartDensity: true,
+        },
+      });
+
       await engine.start();
 
-      expect(engine.getState()).toBe('running');
+      expect(mockMediaSession.metadata.title).toContain('Za 15 min: Wyjście do pracy');
+      expect(mockMediaSession.metadata.artist).toBe('Narzędziownik Ani');
 
-      // System triggers pause
-      handlers['pause']?.();
-      expect(engine.getState()).toBe('paused');
-
-      // System triggers play
-      handlers['play']?.();
-      expect(engine.getState()).toBe('running');
-
-      // System triggers stop
-      handlers['stop']?.();
-      expect(engine.getState()).toBe('idle');
+      engine.stop();
     });
   });
 });

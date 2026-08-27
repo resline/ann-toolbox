@@ -108,6 +108,10 @@ export interface TickPayload {
   nextAnnouncementTime: Date | null;
   focusRemainingSeconds?: number;
   progressPercent?: number;
+  secondsRemaining?: number;
+  totalSeconds?: number;
+  targetTime?: string;
+  departureLabel?: string;
 }
 
 export interface AnnouncementPayload {
