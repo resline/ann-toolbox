@@ -1,0 +1,618 @@
+/**
+ * Background Timer Engine (Silnik Działania w Tle)
+ *
+ * Core coordinator for Speaking Clock (Głos Czasu):
+ * - Coordinates background intervals via dedicated Web Worker and fallback timers.
+ * - Handles wall-clock aligned intervals (:00, :15, :30...) and elapsed session timing.
+ * - Manages Focus (Pomodoro) and Continuous modes.
+ * - Executes sound sequences: harmonic chime -> Polish time synthesis -> voice playback.
+ * - Integrates with Screen Wake Lock API, Silent Audio keep-alive loop, and MediaSession API.
+ */
+
+import {
+  type SpeakingClockSettings,
+  type ClockState,
+  type TickPayload,
+  type AnnouncementPayload,
+  type EngineCallbacks,
+  DEFAULT_SPEAKING_CLOCK_SETTINGS,
+} from '../types';
+import { formatPolishTime } from './polishTimeFormatter';
+import { playChime } from './chimeSynthesizer';
+import { speakText, stopSpeaking } from './speechService';
+import { WakeLockService } from './wakeLockService';
+import { SilentAudioLoop } from './silentAudioLoop';
+import { createTimerWorker } from './timerWorker';
+
+/**
+ * Calculates the next target timestamp for announcements.
+ *
+ * @param currentTime Current date/time
+ * @param intervalMinutes Interval in minutes (e.g. 5, 10, 15, 30, 60)
+ * @param clockSync When true, aligns target to clock minutes divisible by interval. When false, relative to baseTime.
+ * @param baseTime Base start or last announcement date used when clockSync is false.
+ */
+export function calculateNextAnnouncementTime(
+  currentTime: Date,
+  intervalMinutes: number,
+  clockSync: boolean,
+  baseTime?: Date
+): Date {
+  const interval = Math.max(1, intervalMinutes || 15);
+
+  if (!clockSync) {
+    const origin = baseTime || currentTime;
+    return new Date(origin.getTime() + interval * 60 * 1000);
+  }
+
+  // Wall-clock alignment
+  const curMs = currentTime.getTime();
+
+  if (interval <= 60) {
+    const curM = currentTime.getMinutes();
+
+    const bucket = Math.floor(curM / interval);
+    let nextMinute = (bucket + 1) * interval;
+
+    let target = new Date(
+      currentTime.getFullYear(),
+      currentTime.getMonth(),
+      currentTime.getDate(),
+      currentTime.getHours(),
+      nextMinute,
+      0,
+      0
+    );
+
+    // If target timestamp is not strictly in the future, advance to next interval
+    if (target.getTime() <= curMs) {
+      nextMinute += interval;
+      target = new Date(
+        currentTime.getFullYear(),
+        currentTime.getMonth(),
+        currentTime.getDate(),
+        currentTime.getHours(),
+        nextMinute,
+        0,
+        0
+      );
+    }
+
+    return target;
+  }
+
+  // Intervals larger than 60 minutes (aligned from 00:00 start of day)
+  const dayStart = new Date(
+    currentTime.getFullYear(),
+    currentTime.getMonth(),
+    currentTime.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
+  const totalMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+  const bucket = Math.floor(totalMinutes / interval);
+  let nextTotalMin = (bucket + 1) * interval;
+
+  let target = new Date(dayStart.getTime() + nextTotalMin * 60 * 1000);
+  if (target.getTime() <= curMs) {
+    nextTotalMin += interval;
+    target = new Date(dayStart.getTime() + nextTotalMin * 60 * 1000);
+  }
+
+  return target;
+}
+
+export class BackgroundTimerEngine {
+  private settings: SpeakingClockSettings;
+  private callbacks: EngineCallbacks;
+  private state: ClockState = 'idle';
+
+  private startTime: number | null = null;
+  private lastAnnouncementTime: number | null = null;
+  private lastAnnouncedTargetTime: number | null = null;
+  private pauseStartTime: number | null = null;
+  private totalPausedDuration = 0;
+  private nextAnnouncementTime: Date | null = null;
+
+  private worker: Worker | null = null;
+  private fallbackIntervalId: ReturnType<typeof setInterval> | null = null;
+  private wakeLockService: WakeLockService;
+  private silentAudioLoop: SilentAudioLoop;
+  private isAnnouncing = false;
+
+  constructor(
+    settings?: Partial<SpeakingClockSettings>,
+    callbacks?: EngineCallbacks
+  ) {
+    this.settings = {
+      ...DEFAULT_SPEAKING_CLOCK_SETTINGS,
+      ...settings,
+    };
+    this.callbacks = callbacks || {};
+    this.wakeLockService = new WakeLockService();
+    this.silentAudioLoop = new SilentAudioLoop();
+  }
+
+  /**
+   * Returns current clock state.
+   */
+  getState(): ClockState {
+    return this.state;
+  }
+
+  /**
+   * Returns copy of current engine settings.
+   */
+  getSettings(): SpeakingClockSettings {
+    return { ...this.settings };
+  }
+
+  /**
+   * Starts the speaking clock engine.
+   */
+  async start(): Promise<void> {
+    if (this.state === 'running') {
+      return;
+    }
+
+    if (this.state === 'paused') {
+      await this.resume();
+      return;
+    }
+
+    const now = Date.now();
+    this.startTime = now;
+    this.lastAnnouncementTime = now;
+    this.lastAnnouncedTargetTime = null;
+    this.pauseStartTime = null;
+    this.totalPausedDuration = 0;
+
+    this.nextAnnouncementTime = calculateNextAnnouncementTime(
+      new Date(now),
+      this.settings.intervalMinutes,
+      this.settings.clockSync,
+      new Date(now)
+    );
+
+    this.setState('running');
+    this.startTimerLoop();
+
+    // Background keep-alive & screen wake lock
+    await this.silentAudioLoop.start();
+    if (this.settings.wakeLockEnabled) {
+      await this.wakeLockService.request();
+    }
+
+    this.setupMediaSession();
+    this.handleTick(now);
+  }
+
+  /**
+   * Pauses the engine.
+   */
+  pause(): void {
+    if (this.state !== 'running') {
+      return;
+    }
+
+    this.pauseStartTime = Date.now();
+    this.setState('paused');
+    this.updateMediaSessionState('paused');
+  }
+
+  /**
+   * Resumes the paused engine.
+   */
+  async resume(): Promise<void> {
+    if (this.state !== 'paused') {
+      return;
+    }
+
+    const now = Date.now();
+    let pausedDuration = 0;
+    if (this.pauseStartTime !== null) {
+      pausedDuration = now - this.pauseStartTime;
+      this.totalPausedDuration += pausedDuration;
+      this.pauseStartTime = null;
+    }
+
+    // Shift relative target by the duration the engine was paused
+    if (!this.settings.clockSync && this.nextAnnouncementTime) {
+      this.nextAnnouncementTime = new Date(
+        this.nextAnnouncementTime.getTime() + pausedDuration
+      );
+    }
+
+    this.setState('running');
+
+    await this.silentAudioLoop.start();
+    if (this.settings.wakeLockEnabled) {
+      await this.wakeLockService.request();
+    }
+
+    this.updateMediaSessionState('playing');
+    this.handleTick(now);
+  }
+
+  /**
+   * Stops the engine and resets session state.
+   */
+  stop(): void {
+    if (this.state === 'idle') {
+      return;
+    }
+
+    this.setState('idle');
+    this.stopTimerLoop();
+
+    this.wakeLockService.release().catch(() => {});
+    this.silentAudioLoop.stop();
+    stopSpeaking();
+
+    this.updateMediaSessionState('none');
+
+    this.startTime = null;
+    this.lastAnnouncementTime = null;
+    this.lastAnnouncedTargetTime = null;
+    this.pauseStartTime = null;
+    this.totalPausedDuration = 0;
+    this.nextAnnouncementTime = null;
+  }
+
+  /**
+   * Permanently stops and cleans up engine resources.
+   */
+  destroy(): void {
+    this.stop();
+    this.clearMediaSession();
+  }
+
+  /**
+   * Updates partial settings dynamically.
+   */
+  updateSettings(settings: Partial<SpeakingClockSettings>): void {
+    const prevWakeLock = this.settings.wakeLockEnabled;
+    this.settings = {
+      ...this.settings,
+      ...settings,
+    };
+
+    if (this.state === 'running') {
+      const now = Date.now();
+      this.nextAnnouncementTime = calculateNextAnnouncementTime(
+        new Date(now),
+        this.settings.intervalMinutes,
+        this.settings.clockSync,
+        this.lastAnnouncementTime ? new Date(this.lastAnnouncementTime) : new Date(now)
+      );
+
+      if (this.settings.wakeLockEnabled && !prevWakeLock) {
+        this.wakeLockService.request().catch(() => {});
+      } else if (!this.settings.wakeLockEnabled && prevWakeLock) {
+        this.wakeLockService.release().catch(() => {});
+      }
+    }
+  }
+
+  /**
+   * Manually triggers an immediate voice time announcement.
+   */
+  async triggerImmediateAnnouncement(): Promise<void> {
+    const now = new Date();
+    const elapsedMs = this.startTime
+      ? Date.now() - this.startTime - this.totalPausedDuration
+      : 0;
+    const elapsedMinutes = Math.floor(Math.max(0, elapsedMs) / 60000);
+
+    const text = formatPolishTime(now, this.settings.formatStyle, {
+      elapsedMinutes,
+      isSessionEnd: false,
+    });
+
+    const payload: AnnouncementPayload = {
+      text,
+      timestamp: now,
+      elapsedMinutes,
+      isFocusEnd: false,
+      reason: 'manual',
+    };
+
+    this.callbacks.onAnnounce?.(payload);
+    await this.executeAudioSequence(text);
+  }
+
+  /**
+   * Internal state transition handler.
+   */
+  private setState(nextState: ClockState): void {
+    if (this.state === nextState) return;
+    this.state = nextState;
+    this.callbacks.onStateChange?.(nextState);
+  }
+
+  /**
+   * Starts timer loop with Web Worker and fallback interval.
+   */
+  private startTimerLoop(): void {
+    this.stopTimerLoop();
+
+    // 1. Dedicated Web Worker
+    try {
+      this.worker = createTimerWorker();
+      if (this.worker) {
+        this.worker.onmessage = (e: MessageEvent) => {
+          if (e.data?.type === 'TICK') {
+            this.handleTick(e.data.timestamp || Date.now());
+          }
+        };
+        this.worker.postMessage({ type: 'START', intervalMs: 250 });
+      }
+    } catch {
+      this.worker = null;
+    }
+
+    // 2. Main thread interval (ensures compatibility with fake timers and fallback environments)
+    this.fallbackIntervalId = setInterval(() => {
+      this.handleTick(Date.now());
+    }, 250);
+  }
+
+  /**
+   * Stops timer worker and interval.
+   */
+  private stopTimerLoop(): void {
+    if (this.worker) {
+      try {
+        this.worker.postMessage({ type: 'STOP' });
+        this.worker.terminate();
+      } catch {
+        // Ignore worker termination errors
+      }
+      this.worker = null;
+    }
+
+    if (this.fallbackIntervalId !== null) {
+      clearInterval(this.fallbackIntervalId);
+      this.fallbackIntervalId = null;
+    }
+  }
+
+  /**
+   * Core tick calculation and announcement triggering logic.
+   */
+  private handleTick(timestamp: number): void {
+    const now = new Date(timestamp);
+
+    const elapsedMs =
+      this.state === 'running'
+        ? timestamp - (this.startTime ?? timestamp) - this.totalPausedDuration
+        : this.pauseStartTime
+        ? this.pauseStartTime - (this.startTime ?? timestamp) - this.totalPausedDuration
+        : 0;
+
+    const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+
+    let focusRemainingSeconds: number | undefined;
+    let progressPercent: number | undefined;
+    let isFocusEnd = false;
+
+    if (this.settings.mode === 'focus') {
+      const focusTotalSec = this.settings.focusDurationMinutes * 60;
+      focusRemainingSeconds = Math.max(0, focusTotalSec - elapsedSeconds);
+      progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / focusTotalSec) * 100));
+
+      if (elapsedSeconds >= focusTotalSec) {
+        isFocusEnd = true;
+      }
+    }
+
+    // Check announcement conditions if running
+    if (this.state === 'running' && !this.isAnnouncing) {
+      if (isFocusEnd) {
+        this.triggerFocusEndAnnouncement(now, elapsedMinutes);
+      } else if (
+        this.nextAnnouncementTime &&
+        timestamp >= this.nextAnnouncementTime.getTime()
+      ) {
+        const targetMs = this.nextAnnouncementTime.getTime();
+        // Prevent duplicate trigger for the same interval
+        if (this.lastAnnouncedTargetTime !== targetMs) {
+          this.lastAnnouncedTargetTime = targetMs;
+          this.triggerIntervalAnnouncement(now, elapsedMinutes);
+          this.lastAnnouncementTime = timestamp;
+          this.nextAnnouncementTime = calculateNextAnnouncementTime(
+            now,
+            this.settings.intervalMinutes,
+            this.settings.clockSync,
+            new Date(timestamp)
+          );
+        }
+      }
+    }
+
+    let remainingSecondsToNextAnnouncement = 0;
+    if (this.nextAnnouncementTime) {
+      remainingSecondsToNextAnnouncement = Math.max(
+        0,
+        Math.ceil((this.nextAnnouncementTime.getTime() - timestamp) / 1000)
+      );
+    }
+
+    const payload: TickPayload = {
+      state: this.state,
+      currentTime: now,
+      elapsedSeconds,
+      remainingSecondsToNextAnnouncement,
+      nextAnnouncementTime: this.nextAnnouncementTime,
+      focusRemainingSeconds,
+      progressPercent,
+    };
+
+    this.callbacks.onTick?.(payload);
+  }
+
+  /**
+   * Triggers scheduled interval announcement.
+   */
+  private triggerIntervalAnnouncement(now: Date, elapsedMinutes: number): void {
+    const text = formatPolishTime(now, this.settings.formatStyle, {
+      elapsedMinutes,
+      isSessionEnd: false,
+    });
+
+    const payload: AnnouncementPayload = {
+      text,
+      timestamp: now,
+      elapsedMinutes,
+      isFocusEnd: false,
+      reason: 'interval',
+    };
+
+    this.callbacks.onAnnounce?.(payload);
+    this.executeAudioSequence(text);
+  }
+
+  /**
+   * Triggers focus session completion announcement and stops engine.
+   */
+  private triggerFocusEndAnnouncement(now: Date, elapsedMinutes: number): void {
+    const text = formatPolishTime(now, 'elapsed', {
+      elapsedMinutes,
+      isSessionEnd: true,
+    });
+
+    const payload: AnnouncementPayload = {
+      text,
+      timestamp: now,
+      elapsedMinutes,
+      isFocusEnd: true,
+      reason: 'session_end',
+    };
+
+    this.callbacks.onAnnounce?.(payload);
+    this.executeAudioSequence(text).then(() => {
+      this.stop();
+    });
+  }
+
+  /**
+   * Executes the audio sequence: gentle chime (if enabled) followed by voice synthesis.
+   */
+  private async executeAudioSequence(text: string): Promise<void> {
+    this.isAnnouncing = true;
+    try {
+      if (this.settings.playChimeBefore) {
+        await playChime({
+          volume: this.settings.chimeVolume,
+          tone: this.settings.chimeTone,
+        });
+      }
+
+      await speakText(text, {
+        voiceURI: this.settings.voiceURI,
+        rate: this.settings.speechRate,
+        pitch: this.settings.speechPitch,
+        volume: this.settings.speechVolume,
+      });
+    } catch (err) {
+      this.callbacks.onError?.(err as Error);
+    } finally {
+      this.isAnnouncing = false;
+    }
+  }
+
+  /**
+   * Sets up MediaSession metadata and controls.
+   */
+  private setupMediaSession(): void {
+    if (
+      typeof navigator === 'undefined' ||
+      !('mediaSession' in navigator) ||
+      !navigator.mediaSession
+    ) {
+      return;
+    }
+
+    try {
+      const metadataObj = {
+        title: 'Głos Czasu - Narzędziownik Ani',
+        artist: 'Narzędziownik Ani',
+        album:
+          this.settings.mode === 'focus'
+            ? 'Tryb Skupienia (Pomodoro)'
+            : 'Zegar Mówiący',
+      };
+
+      const MediaMetadataClass =
+        (typeof window !== 'undefined' && (window as any).MediaMetadata) ||
+        (typeof globalThis !== 'undefined' && (globalThis as any).MediaMetadata);
+
+      navigator.mediaSession.metadata = MediaMetadataClass
+        ? new MediaMetadataClass(metadataObj)
+        : (metadataObj as any);
+
+      navigator.mediaSession.playbackState = 'playing';
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (this.state === 'paused') {
+          this.resume();
+        } else if (this.state === 'idle') {
+          this.start();
+        }
+      });
+
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (this.state === 'running') {
+          this.pause();
+        }
+      });
+
+      navigator.mediaSession.setActionHandler('stop', () => {
+        this.stop();
+      });
+    } catch {
+      // Ignore media session errors
+    }
+  }
+
+  /**
+   * Updates MediaSession playbackState.
+   */
+  private updateMediaSessionState(state: 'none' | 'paused' | 'playing'): void {
+    if (
+      typeof navigator !== 'undefined' &&
+      'mediaSession' in navigator &&
+      navigator.mediaSession
+    ) {
+      try {
+        navigator.mediaSession.playbackState = state;
+      } catch {
+        // Ignore errors
+      }
+    }
+  }
+
+  /**
+   * Cleans up MediaSession metadata and action handlers.
+   */
+  private clearMediaSession(): void {
+    if (
+      typeof navigator !== 'undefined' &&
+      'mediaSession' in navigator &&
+      navigator.mediaSession
+    ) {
+      try {
+        navigator.mediaSession.playbackState = 'none';
+        navigator.mediaSession.metadata = null;
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+        navigator.mediaSession.setActionHandler('stop', null);
+      } catch {
+        // Ignore errors
+      }
+    }
+  }
+}
