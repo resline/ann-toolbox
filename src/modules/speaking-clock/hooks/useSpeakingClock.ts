@@ -2,16 +2,18 @@
  * useSpeakingClock Hook
  *
  * Connects BackgroundTimerEngine to React UI state, persists user settings in localStorage,
- * tracks voice synthesis list, and exposes simple actions (start/pause/resume/stop/test).
+ * tracks voice synthesis list, and exposes simple actions (start/pause/resume/stop/test/adjust).
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   type SpeakingClockSettings,
   type ClockState,
   type ClockMode,
   type TickPayload,
   type AnnouncementPayload,
+  type DepartureSettings,
+  type TimeTimerSettings,
   DEFAULT_SPEAKING_CLOCK_SETTINGS,
 } from '../types';
 import { BackgroundTimerEngine } from '../services/backgroundTimerEngine';
@@ -34,6 +36,14 @@ function loadStoredSettings(): SpeakingClockSettings {
       return {
         ...DEFAULT_SPEAKING_CLOCK_SETTINGS,
         ...parsed,
+        departure: {
+          ...DEFAULT_SPEAKING_CLOCK_SETTINGS.departure,
+          ...(parsed.departure || {}),
+        },
+        timeTimer: {
+          ...DEFAULT_SPEAKING_CLOCK_SETTINGS.timeTimer,
+          ...(parsed.timeTimer || {}),
+        },
       };
     }
   } catch {
@@ -54,6 +64,20 @@ function persistSettings(settings: SpeakingClockSettings): void {
   }
 }
 
+/**
+ * Calculates remaining seconds between now and target HH:MM time.
+ */
+function calcDepartureRemainingSeconds(targetTimeStr: string, now: Date): number {
+  const [hStr, mStr] = (targetTimeStr || '08:30').split(':');
+  const h = parseInt(hStr, 10) || 0;
+  const m = parseInt(mStr, 10) || 0;
+  const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+  if (target.getTime() < now.getTime() - 60 * 1000) {
+    target.setDate(target.getDate() + 1);
+  }
+  return Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+}
+
 export interface UseSpeakingClockReturn {
   clockState: ClockState;
   currentTime: Date;
@@ -67,15 +91,22 @@ export interface UseSpeakingClockReturn {
   availableVoices: SpeechSynthesisVoice[];
   isLoadingVoices: boolean;
   isTestingVoice: boolean;
+  totalSpanSeconds: number;
+  secondsRemaining: number;
+  departureLabel: string;
+  targetTime: string;
   start: () => Promise<void>;
   pause: () => void;
   resume: () => Promise<void>;
   stop: () => void;
   updateSettings: (partial: Partial<SpeakingClockSettings>) => void;
+  setDepartureSettings: (settings: Partial<DepartureSettings>) => void;
+  setTimeTimerSettings: (settings: Partial<TimeTimerSettings>) => void;
   testVoiceNow: () => Promise<void>;
   testChimeNow: (tone?: SpeakingClockSettings['chimeTone'], volume?: number) => Promise<void>;
   setIntervalMinutes: (minutes: number) => void;
   setMode: (mode: ClockMode) => void;
+  addMinutes: (deltaMinutes: number) => void;
 }
 
 export function useSpeakingClock(): UseSpeakingClockReturn {
@@ -91,6 +122,8 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState<boolean>(true);
   const [isTestingVoice, setIsTestingVoice] = useState<boolean>(false);
+  const [runningSecondsRemaining, setRunningSecondsRemaining] = useState<number | null>(null);
+  const [runningTotalSpanSeconds, setRunningTotalSpanSeconds] = useState<number | null>(null);
 
   const engineRef = useRef<BackgroundTimerEngine | null>(null);
   const settingsRef = useRef<SpeakingClockSettings>(settings);
@@ -106,7 +139,16 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
         setNextAnnouncementTime(payload.nextAnnouncementTime);
         setFocusRemainingSeconds(payload.focusRemainingSeconds);
 
+        if (payload.secondsRemaining !== undefined) {
+          setRunningSecondsRemaining(payload.secondsRemaining);
+        }
+        if (payload.totalSeconds !== undefined) {
+          setRunningTotalSpanSeconds(payload.totalSeconds);
+        }
+
         if (settingsRef.current.mode === 'focus') {
+          setProgress(payload.progressPercent ?? 0);
+        } else if (settingsRef.current.mode === 'departure') {
           setProgress(payload.progressPercent ?? 0);
         } else {
           // In continuous interval mode, calculate progress through current interval
@@ -125,6 +167,8 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
           setProgress(0);
           setFocusRemainingSeconds(undefined);
           setElapsedSeconds(0);
+          setRunningSecondsRemaining(null);
+          setRunningTotalSpanSeconds(null);
         }
       },
       onAnnounce: (payload: AnnouncementPayload) => {
@@ -187,12 +231,37 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
 
   const updateSettings = useCallback((partial: Partial<SpeakingClockSettings>) => {
     setSettings((prev) => {
-      const next = { ...prev, ...partial };
+      const next = {
+        ...prev,
+        ...partial,
+        departure: {
+          ...prev.departure,
+          ...(partial.departure || {}),
+        },
+        timeTimer: {
+          ...prev.timeTimer,
+          ...(partial.timeTimer || {}),
+        },
+      };
       persistSettings(next);
       engineRef.current?.updateSettings(next);
       return next;
     });
   }, []);
+
+  const setDepartureSettings = useCallback(
+    (partial: Partial<DepartureSettings>) => {
+      updateSettings({ departure: { ...settingsRef.current.departure, ...partial } });
+    },
+    [updateSettings]
+  );
+
+  const setTimeTimerSettings = useCallback(
+    (partial: Partial<TimeTimerSettings>) => {
+      updateSettings({ timeTimer: { ...settingsRef.current.timeTimer, ...partial } });
+    },
+    [updateSettings]
+  );
 
   const setIntervalMinutes = useCallback(
     (minutes: number) => {
@@ -206,6 +275,54 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
       updateSettings({ mode });
     },
     [updateSettings]
+  );
+
+  const addMinutes = useCallback(
+    (deltaMinutes: number) => {
+      if (engineRef.current && (clockState === 'running' || clockState === 'paused')) {
+        engineRef.current.addMinutes(deltaMinutes);
+        const updated = engineRef.current.getSettings();
+        setSettings(updated);
+        persistSettings(updated);
+      } else {
+        // Idle mode adjustments
+        setSettings((prev) => {
+          let next = { ...prev };
+          if (prev.mode === 'departure') {
+            const [hStr, mStr] = (prev.departure?.targetTime || '08:30').split(':');
+            let totalMins =
+              (parseInt(hStr, 10) || 0) * 60 + (parseInt(mStr, 10) || 0) + deltaMinutes;
+            totalMins = ((totalMins % 1440) + 1440) % 1440;
+            const h = String(Math.floor(totalMins / 60)).padStart(2, '0');
+            const m = String(totalMins % 60).padStart(2, '0');
+            next = {
+              ...next,
+              departure: {
+                ...next.departure,
+                targetTime: `${h}:${m}`,
+              },
+            };
+          } else if (prev.mode === 'focus') {
+            next = {
+              ...next,
+              focusDurationMinutes: Math.max(
+                1,
+                (prev.focusDurationMinutes || 25) + deltaMinutes
+              ),
+            };
+          } else {
+            next = {
+              ...next,
+              intervalMinutes: Math.max(1, (prev.intervalMinutes || 5) + deltaMinutes),
+            };
+          }
+          persistSettings(next);
+          engineRef.current?.updateSettings(next);
+          return next;
+        });
+      }
+    },
+    [clockState]
   );
 
   const testVoiceNow = useCallback(async () => {
@@ -227,6 +344,61 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
     []
   );
 
+  // Calculate dynamic totalSpanSeconds & secondsRemaining for TimeTimerDisc
+  const departureLabel = settings.departure?.label || 'Wyjście z domu';
+  const targetTime = settings.departure?.targetTime || '08:30';
+
+  const { totalSpanSeconds, secondsRemaining } = useMemo(() => {
+    if (settings.mode === 'departure') {
+      if (clockState === 'running' || clockState === 'paused') {
+        const remaining = runningSecondsRemaining ?? 0;
+        const total = runningTotalSpanSeconds ?? Math.max(1, remaining);
+        return {
+          totalSpanSeconds: total,
+          secondsRemaining: remaining,
+        };
+      }
+      const idleRemaining = calcDepartureRemainingSeconds(targetTime, currentTime);
+      return {
+        totalSpanSeconds: Math.max(60, idleRemaining),
+        secondsRemaining: idleRemaining,
+      };
+    }
+
+    if (settings.mode === 'focus') {
+      const total = (settings.focusDurationMinutes || 25) * 60;
+      if (clockState === 'running' || clockState === 'paused') {
+        return {
+          totalSpanSeconds: total,
+          secondsRemaining: focusRemainingSeconds ?? total,
+        };
+      }
+      return {
+        totalSpanSeconds: total,
+        secondsRemaining: total,
+      };
+    }
+
+    // Continuous mode
+    const total = 3600; // 60 min disc
+    const remaining = clockState === 'running' ? secondsUntilNext : settings.intervalMinutes * 60;
+    return {
+      totalSpanSeconds: total,
+      secondsRemaining: remaining,
+    };
+  }, [
+    settings.mode,
+    settings.focusDurationMinutes,
+    settings.intervalMinutes,
+    targetTime,
+    currentTime,
+    clockState,
+    runningSecondsRemaining,
+    runningTotalSpanSeconds,
+    focusRemainingSeconds,
+    secondsUntilNext,
+  ]);
+
   return {
     clockState,
     currentTime,
@@ -240,14 +412,22 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
     availableVoices,
     isLoadingVoices,
     isTestingVoice,
+    totalSpanSeconds,
+    secondsRemaining,
+    departureLabel,
+    targetTime,
     start,
     pause,
     resume,
     stop,
     updateSettings,
+    setDepartureSettings,
+    setTimeTimerSettings,
     testVoiceNow,
     testChimeNow,
     setIntervalMinutes,
     setMode,
+    addMinutes,
   };
 }
+export default useSpeakingClock;

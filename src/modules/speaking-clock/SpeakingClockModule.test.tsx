@@ -312,10 +312,60 @@ describe('Speaking Clock UI & Module', () => {
       );
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText(/Ustawienia Głosu Czasu|Ustawienia/i)).toBeInTheDocument();
+      expect(screen.getByText(/Ustawienia/i)).toBeInTheDocument();
       expect(screen.getByText(/Styl ogłaszania/i)).toBeInTheDocument();
       expect(screen.getByText(/Sygnał gongu/i)).toBeInTheDocument();
       expect(screen.getByText(/Synchronizacja do pełnych minut/i)).toBeInTheDocument();
+    });
+
+    it('customizes Time Timer settings (enabled, color, showNumbers, direction)', () => {
+      const onUpdate = vi.fn();
+      render(
+        <ClockSettingsModal
+          isOpen={true}
+          onClose={vi.fn()}
+          settings={mockSettings}
+          onUpdateSettings={onUpdate}
+          availableVoices={mockVoices}
+        />
+      );
+
+      // 1. Toggle Time Timer switch
+      const timeTimerSwitch = screen.getByRole('switch', { name: /Wizualny Time Timer/i });
+      expect(timeTimerSwitch).toBeInTheDocument();
+      fireEvent.click(timeTimerSwitch);
+      expect(onUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeTimer: expect.objectContaining({ enabled: false }),
+        })
+      );
+
+      // 2. Select Amber color pill
+      const amberButton = screen.getByRole('button', { name: /Bursztyn/i });
+      fireEvent.click(amberButton);
+      expect(onUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeTimer: expect.objectContaining({ color: 'amber' }),
+        })
+      );
+
+      // 3. Toggle show numbers
+      const showNumbersSwitch = screen.getByLabelText(/Pokaż cyfry na tarczy/i);
+      fireEvent.click(showNumbersSwitch);
+      expect(onUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeTimer: expect.objectContaining({ showNumbers: false }),
+        })
+      );
+
+      // 4. Change direction to clockwise
+      const clockwiseRadio = screen.getByLabelText(/Zgodnie ze wskazówkami/i);
+      fireEvent.click(clockwiseRadio);
+      expect(onUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          timeTimer: expect.objectContaining({ direction: 'clockwise' }),
+        })
+      );
     });
 
     it('updates format style when option is changed', () => {
@@ -383,12 +433,23 @@ describe('Speaking Clock UI & Module', () => {
           <span data-testid="state">{clock.clockState}</span>
           <span data-testid="interval">{clock.settings.intervalMinutes}</span>
           <span data-testid="mode">{clock.settings.mode}</span>
+          <span data-testid="target-time">{clock.targetTime}</span>
+          <span data-testid="departure-label">{clock.departureLabel}</span>
+          <span data-testid="total-span">{clock.totalSpanSeconds}</span>
           <button onClick={() => clock.start()}>Start</button>
           <button onClick={() => clock.pause()}>Pause</button>
           <button onClick={() => clock.resume()}>Resume</button>
           <button onClick={() => clock.stop()}>Stop</button>
           <button onClick={() => clock.setIntervalMinutes(10)}>Set10Min</button>
           <button onClick={() => clock.setMode('focus')}>SetFocus</button>
+          <button onClick={() => clock.setMode('departure')}>SetDeparture</button>
+          <button onClick={() => clock.addMinutes(5)}>Add5Min</button>
+          <button onClick={() => clock.setDepartureSettings({ targetTime: '12:00', label: 'Dentysta' })}>
+            SetDepartureCustom
+          </button>
+          <button onClick={() => clock.setTimeTimerSettings({ color: 'ocean', showNumbers: false })}>
+            SetTimeTimerCustom
+          </button>
           <button onClick={() => clock.testVoiceNow()}>TestVoice</button>
         </div>
       );
@@ -401,6 +462,7 @@ describe('Speaking Clock UI & Module', () => {
       expect(screen.getByTestId('state').textContent).toBe('idle');
       expect(screen.getByTestId('interval').textContent).toBe('5');
       expect(screen.getByTestId('mode').textContent).toBe('continuous');
+      expect(screen.getByTestId('departure-label').textContent).toBe('Wyjście z domu');
     });
 
     it('manages state transitions start -> pause -> resume -> stop', async () => {
@@ -445,6 +507,38 @@ describe('Speaking Clock UI & Module', () => {
       expect(saved.intervalMinutes).toBe(10);
     });
 
+    it('updates departure settings and time timer settings via dedicated setters', async () => {
+      await act(async () => {
+        render(<HookConsumer />);
+      });
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'SetDepartureCustom' }));
+      });
+      expect(screen.getByTestId('target-time').textContent).toBe('12:00');
+      expect(screen.getByTestId('departure-label').textContent).toBe('Dentysta');
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'SetTimeTimerCustom' }));
+      });
+      const saved = JSON.parse(localStorage.getItem('ann_speaking_clock_settings') || '{}');
+      expect(saved.timeTimer.color).toBe('ocean');
+      expect(saved.timeTimer.showNumbers).toBe(false);
+    });
+
+    it('adjusts minutes via addMinutes', async () => {
+      await act(async () => {
+        render(<HookConsumer />);
+      });
+
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'Add5Min' }));
+      });
+
+      // In continuous mode, interval is adjusted +5 min (from 5 to 10)
+      expect(screen.getByTestId('interval').textContent).toBe('10');
+    });
+
     it('triggers test voice now', async () => {
       await act(async () => {
         render(<HookConsumer />);
@@ -459,21 +553,77 @@ describe('Speaking Clock UI & Module', () => {
   });
 
   describe('SpeakingClockModule Integration', () => {
-    it('renders complete speaking clock module with header, clock, presets, and controls', async () => {
+    it('renders complete Kotwica Czasu module with header, mode tabs, Time Timer disc, and controls', async () => {
       await act(async () => {
         render(<SpeakingClockModule />);
       });
 
-      expect(screen.getByText('Głos Czasu')).toBeInTheDocument();
+      expect(screen.getByText('Kotwica Czasu')).toBeInTheDocument();
+      expect(screen.getByRole('tablist', { name: /Wybór trybu zegara/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /start/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^15 min$/i })).toBeInTheDocument();
+      expect(screen.getByRole('progressbar')).toBeInTheDocument(); // Time Timer disc
     });
 
-    it('starts and stops clock via module controls', async () => {
+    it('switches between Continuous, Focus, and Departure modes via ModeTabs', async () => {
       await act(async () => {
         render(<SpeakingClockModule />);
       });
 
+      // 1. Switch to Focus mode
+      const focusTab = screen.getByRole('tab', { name: /Sesja Focus/i });
+      act(() => {
+        fireEvent.click(focusTab);
+      });
+      expect(focusTab).toHaveAttribute('aria-selected', 'true');
+
+      // 2. Switch to Departure mode
+      const departureTab = screen.getByRole('tab', { name: /Do Godziny/i });
+      act(() => {
+        fireEvent.click(departureTab);
+      });
+      expect(departureTab).toHaveAttribute('aria-selected', 'true');
+
+      // Departure configuration card should now be visible
+      expect(screen.getByLabelText(/Godzina docelowa/i)).toBeInTheDocument();
+      expect(screen.getByText(/Etykieta Celu/i)).toBeInTheDocument();
+    });
+
+    it('configures departure target time and activity label', async () => {
+      await act(async () => {
+        render(<SpeakingClockModule />);
+      });
+
+      // Switch to departure mode
+      const departureTab = screen.getByRole('tab', { name: /Do Godziny/i });
+      act(() => {
+        fireEvent.click(departureTab);
+      });
+
+      // Select preset label "Spotkanie"
+      const meetingPill = screen.getByRole('button', { name: /^Spotkanie$/i });
+      act(() => {
+        fireEvent.click(meetingPill);
+      });
+      expect(meetingPill).toHaveAttribute('aria-pressed', 'true');
+
+      // Change time input
+      const timeInput = screen.getByLabelText(/Godzina docelowa/i);
+      fireEvent.change(timeInput, { target: { value: '18:45' } });
+      expect(timeInput).toHaveValue('18:45');
+    });
+
+    it('starts and stops departure countdown with QuickTimeAdjusters active when running', async () => {
+      await act(async () => {
+        render(<SpeakingClockModule />);
+      });
+
+      // Switch to departure mode
+      const departureTab = screen.getByRole('tab', { name: /Do Godziny/i });
+      act(() => {
+        fireEvent.click(departureTab);
+      });
+
+      // Start countdown
       const startBtn = screen.getByRole('button', { name: /start/i });
       await act(async () => {
         fireEvent.click(startBtn);
@@ -481,6 +631,15 @@ describe('Speaking Clock UI & Module', () => {
 
       expect(screen.getByText(/działa w tle/i)).toBeInTheDocument();
 
+      // Quick time adjusters should be visible when running in departure mode
+      const add5Btn = screen.getByRole('button', { name: /Dodaj 5 minut/i });
+      expect(add5Btn).toBeInTheDocument();
+
+      act(() => {
+        fireEvent.click(add5Btn);
+      });
+
+      // Stop countdown
       const stopBtn = screen.getByRole('button', { name: /stop/i });
       act(() => {
         fireEvent.click(stopBtn);
@@ -489,17 +648,25 @@ describe('Speaking Clock UI & Module', () => {
       expect(screen.getByText(/gotowy|zatrzymany/i)).toBeInTheDocument();
     });
 
-    it('switches preset interval when clicked in module', async () => {
+    it('renders digital ClockDisplay and TimeProgressRing when Time Timer is disabled', async () => {
+      localStorage.setItem(
+        'ann_speaking_clock_settings',
+        JSON.stringify({
+          ...DEFAULT_SPEAKING_CLOCK_SETTINGS,
+          timeTimer: {
+            ...DEFAULT_SPEAKING_CLOCK_SETTINGS.timeTimer,
+            enabled: false,
+          },
+        })
+      );
+
       await act(async () => {
         render(<SpeakingClockModule />);
       });
 
-      const pill10 = screen.getByRole('button', { name: /^10 min$/i });
-      act(() => {
-        fireEvent.click(pill10);
-      });
-
-      expect(pill10).toHaveAttribute('aria-pressed', 'true');
+      // With visual Time Timer disabled, TimeTimerDisc progressbar should not render, but ClockDisplay & TimeProgressRing should
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(screen.getByText(/Zegar w spoczynku/i)).toBeInTheDocument();
     });
 
     it('opens and closes settings modal in module', async () => {
@@ -507,7 +674,7 @@ describe('Speaking Clock UI & Module', () => {
         render(<SpeakingClockModule />);
       });
 
-      const settingsBtn = screen.getByRole('button', { name: /ustawienia/i });
+      const settingsBtn = screen.getAllByRole('button', { name: /ustawienia/i })[0];
       act(() => {
         fireEvent.click(settingsBtn);
       });

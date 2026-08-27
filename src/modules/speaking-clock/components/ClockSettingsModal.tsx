@@ -89,7 +89,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
               id="clock-settings-title"
               className="text-lg font-semibold text-warmgray-900 dark:text-warmgray-100"
             >
-              Ustawienia Głosu Czasu
+              Ustawienia Kotwicy Czasu
             </h2>
           </div>
           <button
@@ -104,7 +104,169 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 text-sm">
-          {/* Section 1: Tryb Pracy (Mode) */}
+          {/* Section 1: Wizualny Time Timer */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="time-timer-toggle"
+                className="text-xs font-semibold uppercase tracking-wider text-warmgray-500 dark:text-warmgray-400 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Wizualny Time Timer</span>
+              </label>
+
+              <button
+                id="time-timer-toggle"
+                type="button"
+                role="switch"
+                aria-label="Wizualny Time Timer"
+                aria-checked={settings.timeTimer?.enabled ?? true}
+                onClick={() =>
+                  onUpdateSettings({
+                    timeTimer: {
+                      ...settings.timeTimer,
+                      enabled: !(settings.timeTimer?.enabled ?? true),
+                    },
+                  })
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out border-2 border-transparent ${
+                  (settings.timeTimer?.enabled ?? true)
+                    ? 'bg-sage-600'
+                    : 'bg-warmgray-300 dark:bg-warmgray-700'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    (settings.timeTimer?.enabled ?? true) ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {(settings.timeTimer?.enabled ?? true) && (
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-warmgray-850 border border-warmgray-200 dark:border-warmgray-750 space-y-3.5">
+                {/* Kolor tarczy Time Timer */}
+                <div>
+                  <span className="block text-xs font-medium text-warmgray-600 dark:text-warmgray-400 mb-1.5">
+                    Kolor tarczy zegara
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {[
+                      { id: 'sage', label: 'Szałwia', color: '#5B8272' },
+                      { id: 'amber', label: 'Bursztyn', color: '#F59E0B' },
+                      { id: 'lavender', label: 'Lawenda', color: '#8B5CF6' },
+                      { id: 'rose', label: 'Koral', color: '#F43F5E' },
+                      { id: 'ocean', label: 'Ocean', color: '#0EA5E9' },
+                    ].map((palette) => {
+                      const isActive = (settings.timeTimer?.color || 'sage') === palette.id;
+                      return (
+                        <button
+                          key={palette.id}
+                          type="button"
+                          onClick={() =>
+                            onUpdateSettings({
+                              timeTimer: {
+                                ...settings.timeTimer,
+                                color: palette.id as any,
+                              },
+                            })
+                          }
+                          className={`min-h-[40px] py-1.5 px-2 rounded-xl text-xs font-medium border flex items-center justify-center gap-1.5 transition-all ${
+                            isActive
+                              ? 'bg-warmgray-100 dark:bg-warmgray-800 border-sage-500 font-semibold ring-1 ring-sage-500 text-warmgray-900 dark:text-warmgray-100'
+                              : 'bg-warmgray-50 dark:bg-warmgray-800/60 border-warmgray-200 dark:border-warmgray-700 text-warmgray-700 dark:text-warmgray-300 hover:bg-warmgray-100'
+                          }`}
+                        >
+                          <span
+                            className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                            style={{ backgroundColor: palette.color }}
+                          />
+                          <span>{palette.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Opcja cyfr na tarczy */}
+                <label className="flex items-center justify-between pt-1 border-t border-warmgray-100 dark:border-warmgray-800 cursor-pointer">
+                  <div>
+                    <span className="font-medium text-xs text-warmgray-800 dark:text-warmgray-200">
+                      Pokaż cyfry na tarczy
+                    </span>
+                    <p className="text-[11px] text-warmgray-500 dark:text-warmgray-400 mt-0.5">
+                      Wyświetla oznaczenia 0, 5, 10... 55 min wokół tarczy
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    aria-label="Pokaż cyfry na tarczy"
+                    checked={settings.timeTimer?.showNumbers ?? true}
+                    onChange={(e) =>
+                      onUpdateSettings({
+                        timeTimer: {
+                          ...settings.timeTimer,
+                          showNumbers: e.target.checked,
+                        },
+                      })
+                    }
+                    className="w-4 h-4 rounded text-sage-600 accent-sage-600"
+                  />
+                </label>
+
+                {/* Kierunek odliczania */}
+                <div className="pt-1 border-t border-warmgray-100 dark:border-warmgray-800 space-y-1.5">
+                  <span className="block text-xs font-medium text-warmgray-600 dark:text-warmgray-400">
+                    Kierunek tarczy
+                  </span>
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-warmgray-700 dark:text-warmgray-300">
+                      <input
+                        type="radio"
+                        name="ttDirection"
+                        value="counter-clockwise"
+                        checked={
+                          (settings.timeTimer?.direction ?? 'counter-clockwise') ===
+                          'counter-clockwise'
+                        }
+                        onChange={() =>
+                          onUpdateSettings({
+                            timeTimer: {
+                              ...settings.timeTimer,
+                              direction: 'counter-clockwise',
+                            },
+                          })
+                        }
+                        className="accent-sage-600"
+                      />
+                      <span>Przeciwnie do wskazówek zegara (Time Timer)</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-warmgray-700 dark:text-warmgray-300">
+                      <input
+                        type="radio"
+                        name="ttDirection"
+                        value="clockwise"
+                        checked={settings.timeTimer?.direction === 'clockwise'}
+                        onChange={() =>
+                          onUpdateSettings({
+                            timeTimer: {
+                              ...settings.timeTimer,
+                              direction: 'clockwise',
+                            },
+                          })
+                        }
+                        className="accent-sage-600"
+                      />
+                      <span>Zgodnie ze wskazówkami</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 2: Tryb Pracy (Mode) */}
           <div className="space-y-2.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-warmgray-500 dark:text-warmgray-400 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
@@ -166,7 +328,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
             )}
           </div>
 
-          {/* Section 2: Styl ogłaszania (Time format style) */}
+          {/* Section 3: Styl ogłaszania (Time format style) */}
           <div className="space-y-2.5">
             <label className="text-xs font-semibold uppercase tracking-wider text-warmgray-500 dark:text-warmgray-400 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
