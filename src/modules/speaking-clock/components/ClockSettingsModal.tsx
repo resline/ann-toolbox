@@ -34,6 +34,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
   settings,
   onUpdateSettings,
   availableVoices,
+  onTestVoice,
 }) => {
   // Close on Escape key press
   const handleKeyDown = useCallback(
@@ -271,6 +272,17 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                 />
               </div>
             </div>
+
+            {onTestVoice && (
+              <button
+                type="button"
+                onClick={() => onTestVoice()}
+                className="w-full py-2 px-3 rounded-xl border border-warmgray-200 dark:border-warmgray-750 bg-warmgray-50 dark:bg-warmgray-800 text-warmgray-700 dark:text-warmgray-300 hover:bg-warmgray-100 dark:hover:bg-warmgray-750 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>Przetestuj wybrany głos i tempo</span>
+              </button>
+            )}
           </div>
 
           {/* Section 4: Sygnał gongu (Chime) */}
