@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <rect width="192" height="192" rx="44" fill="#4A6B5D"/>
+  <circle cx="96" cy="96" r="70" stroke="#F8FAF8" stroke-width="7" stroke-opacity="0.9" fill="#3D5A4E"/>
+  
+  <!-- Hour tick marks -->
+  <line x1="96" y1="36" x2="96" y2="44" stroke="#F8FAF8" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"/>
+  <line x1="96" y1="148" x2="96" y2="156" stroke="#F8FAF8" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"/>
+  <line x1="36" y1="96" x2="44" y2="96" stroke="#F8FAF8" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"/>
+  <line x1="148" y1="96" x2="156" y2="96" stroke="#F8FAF8" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"/>
+
+  <!-- Clock hands at 10:10 -->
+  <line x1="96" y1="96" x2="66" y2="60" stroke="#F8FAF8" stroke-width="8" stroke-linecap="round"/>
+  <line x1="96" y1="96" x2="132" y2="72" stroke="#F8FAF8" stroke-width="6.5" stroke-linecap="round"/>
+  
+  <!-- Center hub -->
+  <circle cx="96" cy="96" r="9" fill="#F8FAF8"/>
+  <circle cx="96" cy="96" r="4" fill="#4A6B5D"/>
+
+  <!-- Sound / chime waves radiating from top-right -->
+  <path d="M140 48C148 56 153 68 153 82" stroke="#81E6D9" stroke-width="7" stroke-linecap="round" stroke-opacity="0.9"/>
+  <path d="M156 32C170 46 176 64 176 84" stroke="#81E6D9" stroke-width="7" stroke-linecap="round" stroke-opacity="0.6"/>
+</svg>
