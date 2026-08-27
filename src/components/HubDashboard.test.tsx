@@ -26,19 +26,18 @@ describe('HubDashboard Component', () => {
     expect(handleSelect).toHaveBeenCalledWith('speaking-clock');
   });
 
-  it('renders "Wkrótce" badges for coming soon modules and prevents selection', async () => {
+  it('allows clicking visual timer since it is available now', async () => {
     const user = userEvent.setup();
     const handleSelect = vi.fn();
 
     render(<HubDashboard onSelectTool={handleSelect} />);
 
-    const comingSoonBadges = screen.getAllByText('Wkrótce');
-    expect(comingSoonBadges.length).toBeGreaterThanOrEqual(3);
+    const activeBadges = screen.getAllByText('Aktywny');
+    expect(activeBadges.length).toBeGreaterThanOrEqual(4);
 
-    // Finding card for visual timer
-    const visualTimerCard = screen.getByTestId('tool-card-visual-timer');
+    const visualTimerCard = screen.getByRole('button', { name: /Wizualny Timer/i });
     await user.click(visualTimerCard);
 
-    expect(handleSelect).not.toHaveBeenCalledWith('visual-timer');
+    expect(handleSelect).toHaveBeenCalledWith('visual-timer');
   });
 });

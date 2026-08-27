@@ -1,6 +1,9 @@
 import { Volume2, Timer, Sparkles, ListTodo } from 'lucide-react';
 import type { ToolCategory, ToolCategoryId, ToolModule } from './types';
 import { SpeakingClockModule } from '../modules/speaking-clock/SpeakingClockModule';
+import { VisualTimerModule } from '../modules/visual-timer/components/VisualTimerModule';
+import { DopamineDashboard } from '../modules/dopamine-menu/components/DopamineDashboard';
+import { MicroTasksModule } from '../modules/micro-tasks/components/MicroTasksModule';
 
 export const TOOL_CATEGORIES: ToolCategory[] = [
   {
@@ -46,8 +49,9 @@ export const DEFAULT_TOOLS: ToolModule[] = [
       'Kolorowy zegar wizualny ułatwiający poczucie upływającego czasu bez presji i stresu.',
     icon: Timer,
     category: 'time',
-    status: 'coming_soon',
-    badge: 'Wkrótce',
+    status: 'available',
+    badge: 'Aktywny',
+    component: VisualTimerModule,
   },
   {
     id: 'dopamine-menu',
@@ -57,8 +61,9 @@ export const DEFAULT_TOOLS: ToolModule[] = [
       'Osobiste menu aktywności podnoszących poziom dopaminy: przystawki, dania główne, deski przekąsek.',
     icon: Sparkles,
     category: 'wellbeing',
-    status: 'coming_soon',
-    badge: 'Wkrótce',
+    status: 'available',
+    badge: 'Aktywny',
+    component: DopamineDashboard,
   },
   {
     id: 'micro-tasks',
@@ -68,8 +73,9 @@ export const DEFAULT_TOOLS: ToolModule[] = [
       'Rozbijanie paraliżujących zadań na mikrokroki wymagające poniżej 2 minut zaangażowania.',
     icon: ListTodo,
     category: 'tasks',
-    status: 'coming_soon',
-    badge: 'Wkrótce',
+    status: 'available',
+    badge: 'Aktywny',
+    component: MicroTasksModule,
   },
 ];
 

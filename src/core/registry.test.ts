@@ -47,21 +47,21 @@ describe('Tool Registry', () => {
       expect(visualTimer?.title).toBe('Wizualny Timer');
       expect(visualTimer?.subtitle).toBe('Upływ czasu w kolorach');
       expect(visualTimer?.category).toBe('time');
-      expect(visualTimer?.status).toBe('coming_soon');
+      expect(visualTimer?.status).toBe('available');
 
       const dopamineMenu = getToolById('dopamine-menu');
       expect(dopamineMenu).toBeDefined();
       expect(dopamineMenu?.title).toBe('Menu Dopaminowe');
       expect(dopamineMenu?.subtitle).toBe('Zasoby energii i mikronagrody');
       expect(dopamineMenu?.category).toBe('wellbeing');
-      expect(dopamineMenu?.status).toBe('coming_soon');
+      expect(dopamineMenu?.status).toBe('available');
 
       const microTasks = getToolById('micro-tasks');
       expect(microTasks).toBeDefined();
       expect(microTasks?.title).toBe('Mikro-Zadania');
       expect(microTasks?.subtitle).toBe('Krok po kroku bez oporu');
       expect(microTasks?.category).toBe('tasks');
-      expect(microTasks?.status).toBe('coming_soon');
+      expect(microTasks?.status).toBe('available');
     });
   });
 
@@ -91,7 +91,7 @@ describe('Tool Registry', () => {
       const available = getAvailableTools();
       expect(available.every((t) => t.status === 'available')).toBe(true);
       expect(available.some((t) => t.id === 'speaking-clock')).toBe(true);
-      expect(available.some((t) => t.id === 'visual-timer')).toBe(false);
+      expect(available.some((t) => t.id === 'visual-timer')).toBe(true);
     });
   });
 
