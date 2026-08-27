@@ -22,3 +22,6 @@ export interface ToolCategory {
   label: string;
   description: string;
 }
+
+export * from '../modules/speaking-clock/types';
+

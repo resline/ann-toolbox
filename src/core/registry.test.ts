@@ -31,12 +31,14 @@ describe('Tool Registry', () => {
     it('has speaking-clock configured as available with correct metadata', () => {
       const clock = getToolById('speaking-clock');
       expect(clock).toBeDefined();
-      expect(clock?.title).toBe('Głos Czasu');
-      expect(clock?.subtitle).toBe('Mówiący zegar w tle');
+      expect(clock?.title).toBe('Kotwica Czasu');
+      expect(clock?.subtitle).toBe('Mówiący zegar, odliczanie i Time Timer');
       expect(clock?.category).toBe('time');
       expect(clock?.status).toBe('available');
       expect(clock?.icon).toBeDefined();
-      expect(clock?.description).toBeTruthy();
+      expect(clock?.description).toBe(
+        'Dyskretny mówiący zegar, odliczanie do wyjścia z domu oraz wizualny Time Timer dla wsparcia percepcji czasu.'
+      );
     });
 
     it('has planned tools configured as coming_soon', () => {

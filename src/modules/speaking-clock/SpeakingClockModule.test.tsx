@@ -9,6 +9,10 @@ import { ClockSettingsModal } from './components/ClockSettingsModal';
 import { SpeakingClockModule } from './SpeakingClockModule';
 import { getToolById } from '../../core/registry';
 import * as speechService from './services/speechService';
+import {
+  type SpeakingClockSettings,
+  DEFAULT_SPEAKING_CLOCK_SETTINGS,
+} from './types';
 
 // Mock Web Speech & Chime services
 vi.mock('./services/speechService', () => ({
@@ -269,20 +273,26 @@ describe('Speaking Clock UI & Module', () => {
   });
 
   describe('ClockSettingsModal Component', () => {
-    const mockSettings = {
+    const mockSettings: SpeakingClockSettings = {
+      ...DEFAULT_SPEAKING_CLOCK_SETTINGS,
       intervalMinutes: 15,
-      mode: 'continuous' as const,
-      formatStyle: 'natural' as const,
+      mode: 'continuous',
+      formatStyle: 'natural',
       playChimeBefore: true,
-      chimeTone: 'gentle' as const,
+      chimeEnabled: true,
+      chimeTone: 'gentle',
       chimeVolume: 0.7,
       voiceURI: 'pl-voice-1',
+      rate: 1.0,
+      pitch: 1.0,
+      volume: 1.0,
       speechRate: 1.0,
       speechPitch: 1.0,
       speechVolume: 1.0,
       clockSync: true,
       focusDurationMinutes: 25,
       wakeLockEnabled: false,
+      keepAwake: false,
     };
 
     const mockVoices = [
@@ -389,7 +399,7 @@ describe('Speaking Clock UI & Module', () => {
         render(<HookConsumer />);
       });
       expect(screen.getByTestId('state').textContent).toBe('idle');
-      expect(screen.getByTestId('interval').textContent).toBe('15');
+      expect(screen.getByTestId('interval').textContent).toBe('5');
       expect(screen.getByTestId('mode').textContent).toBe('continuous');
     });
 

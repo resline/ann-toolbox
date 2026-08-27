@@ -28,10 +28,10 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
 export const DEFAULT_TOOLS: ToolModule[] = [
   {
     id: 'speaking-clock',
-    title: 'Głos Czasu',
-    subtitle: 'Mówiący zegar w tle',
+    title: 'Kotwica Czasu',
+    subtitle: 'Mówiący zegar, odliczanie i Time Timer',
     description:
-      'Głosowe ogłaszanie aktualnej godziny w regularnych odstępach czasu z łagodnym sygnałem chime i pracą w tle.',
+      'Dyskretny mówiący zegar, odliczanie do wyjścia z domu oraz wizualny Time Timer dla wsparcia percepcji czasu.',
     icon: Volume2,
     category: 'time',
     status: 'available',

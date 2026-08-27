@@ -27,7 +27,7 @@ describe('Header Component', () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByText(/Głos Czasu/i)).toBeInTheDocument();
+    expect(screen.getByText(/Kotwica Czasu|Głos Czasu/i)).toBeInTheDocument();
   });
 
   it('triggers onNavigateToHub when Hub/back button or logo is clicked', async () => {

@@ -32,8 +32,8 @@ describe('App Component', () => {
     expect(screen.getByText(/Cześć Aniu/i)).toBeInTheDocument();
     expect(screen.getByText(/Menu Dopaminowe/i)).toBeInTheDocument();
 
-    // Click "Głos Czasu" card in Hub
-    const speakingClockCard = screen.getByRole('button', { name: /Głos Czasu/i });
+    // Click "Kotwica Czasu" card in Hub
+    const speakingClockCard = screen.getByRole('button', { name: /Kotwica Czasu|Głos Czasu/i });
     await user.click(speakingClockCard);
 
     // Should return to SpeakingClock view

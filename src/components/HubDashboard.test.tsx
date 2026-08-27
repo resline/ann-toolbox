@@ -8,19 +8,19 @@ describe('HubDashboard Component', () => {
     render(<HubDashboard onSelectTool={vi.fn()} />);
 
     expect(screen.getByText(/Cześć Aniu/i)).toBeInTheDocument();
-    expect(screen.getByText(/Głos Czasu/i)).toBeInTheDocument();
+    expect(screen.getByText(/Kotwica Czasu|Głos Czasu/i)).toBeInTheDocument();
     expect(screen.getByText(/Wizualny Timer/i)).toBeInTheDocument();
     expect(screen.getByText(/Menu Dopaminowe/i)).toBeInTheDocument();
     expect(screen.getByText(/Mikro-Zadania/i)).toBeInTheDocument();
   });
 
-  it('allows clicking an available tool (e.g. Głos Czasu) to select it', async () => {
+  it('allows clicking an available tool (e.g. Kotwica Czasu) to select it', async () => {
     const user = userEvent.setup();
     const handleSelect = vi.fn();
 
     render(<HubDashboard onSelectTool={handleSelect} />);
 
-    const speakingClockCard = screen.getByRole('button', { name: /Głos Czasu/i });
+    const speakingClockCard = screen.getByRole('button', { name: /Kotwica Czasu|Głos Czasu/i });
     await user.click(speakingClockCard);
 
     expect(handleSelect).toHaveBeenCalledWith('speaking-clock');

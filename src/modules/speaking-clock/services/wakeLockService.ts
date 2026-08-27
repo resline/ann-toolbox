@@ -35,6 +35,10 @@ export class WakeLockService {
    * Requests a screen wake lock and binds visibilitychange listener.
    */
   async request(): Promise<boolean> {
+    if (!this.isSupported()) {
+      return false;
+    }
+
     this.isRequested = true;
 
     if (typeof document !== 'undefined' && document.addEventListener) {

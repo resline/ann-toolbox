@@ -240,7 +240,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-warmgray-600 dark:text-warmgray-400">Tempo mowy</span>
                   <span className="font-semibold text-warmgray-800 dark:text-warmgray-200">
-                    {settings.speechRate.toFixed(2)}x
+                    {(settings.speechRate ?? settings.rate ?? 1.0).toFixed(2)}x
                   </span>
                 </div>
                 <input
@@ -248,8 +248,8 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                   min={0.8}
                   max={1.4}
                   step={0.05}
-                  value={settings.speechRate}
-                  onChange={(e) => onUpdateSettings({ speechRate: Number(e.target.value) })}
+                  value={settings.speechRate ?? settings.rate ?? 1.0}
+                  onChange={(e) => onUpdateSettings({ speechRate: Number(e.target.value), rate: Number(e.target.value) })}
                   className="w-full accent-sage-600"
                 />
               </div>
@@ -258,7 +258,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-warmgray-600 dark:text-warmgray-400">Wysokość tonu</span>
                   <span className="font-semibold text-warmgray-800 dark:text-warmgray-200">
-                    {settings.speechPitch.toFixed(2)}x
+                    {(settings.speechPitch ?? settings.pitch ?? 1.0).toFixed(2)}x
                   </span>
                 </div>
                 <input
@@ -266,8 +266,8 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                   min={0.8}
                   max={1.2}
                   step={0.05}
-                  value={settings.speechPitch}
-                  onChange={(e) => onUpdateSettings({ speechPitch: Number(e.target.value) })}
+                  value={settings.speechPitch ?? settings.pitch ?? 1.0}
+                  onChange={(e) => onUpdateSettings({ speechPitch: Number(e.target.value), pitch: Number(e.target.value) })}
                   className="w-full accent-sage-600"
                 />
               </div>
