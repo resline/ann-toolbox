@@ -3,19 +3,40 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root,
+  .theme-sage-calm {
     color-scheme: light;
+    --bg-app: #F8FAF8;
+    --text-app: #2D3748;
+    --card-bg: #FFFFFF;
+    --accent-color: #4A6B5D;
   }
-  .dark {
+
+  .theme-dark-warm {
     color-scheme: dark;
+    --bg-app: #1A202C;
+    --text-app: #F8FAF8;
+    --card-bg: #2D3748;
+    --accent-color: #81E6D9;
   }
-  
+
+  .theme-oled-night {
+    color-scheme: dark;
+    --bg-app: #000000;
+    --text-app: #FAF8F5;
+    --card-bg: #111722;
+    --accent-color: #10B981;
+  }
+
   body {
     min-height: 100vh;
     min-height: 100dvh;
     margin: 0;
     padding: 0;
+    background-color: var(--bg-app);
+    color: var(--text-app);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 }
