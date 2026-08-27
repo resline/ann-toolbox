@@ -18,6 +18,7 @@ export interface DepartureSettings {
   targetTime: string; // HH:MM (e.g. "08:30")
   label: string; // e.g. "Wyjście z domu"
   smartDensity: boolean;
+  intervalMinutes?: number; // Interval in minutes when smartDensity is false (e.g. 1, 2, 3, 5, 10, 15)
   customMilestonesMinutes?: number[];
 }
 
@@ -85,6 +86,7 @@ export const DEFAULT_SPEAKING_CLOCK_SETTINGS: SpeakingClockSettings = {
     targetTime: '08:30',
     label: 'Wyjście z domu',
     smartDensity: true,
+    intervalMinutes: 2,
   },
   timeTimer: {
     enabled: true,

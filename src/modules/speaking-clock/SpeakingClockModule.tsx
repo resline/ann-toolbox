@@ -96,7 +96,10 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
   if (settings.mode === 'departure') {
     discCenterLabel = 'Do wyjścia';
     discCenterTime = formatSecondsToDigital(secondsRemaining);
-    discCenterSublabel = departureLabel || 'Wyjście z domu';
+    const cadence = settings.departure?.smartDensity
+      ? 'Smart'
+      : `co ${settings.departure?.intervalMinutes || 2}m`;
+    discCenterSublabel = `${departureLabel || 'Wyjście'} • ${cadence}`;
   } else if (settings.mode === 'focus') {
     discCenterLabel = 'Skupienie';
     discCenterTime = formatSecondsToDigital(secondsRemaining);
@@ -193,8 +196,11 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
                   <div className="text-xs font-semibold uppercase tracking-wider text-warmgray-500 dark:text-warmgray-400">
                     Cel wyjścia:
                   </div>
-                  <div className="text-sm sm:text-base font-bold text-warmgray-900 dark:text-warmgray-100">
-                    {departureLabel} o <span className="font-mono text-sage-700 dark:text-sage-300">{targetTime}</span>
+                  <div className="text-sm sm:text-base font-bold text-warmgray-900 dark:text-warmgray-100 flex flex-wrap items-center gap-1.5">
+                    <span>{departureLabel} o <span className="font-mono text-sage-700 dark:text-sage-300">{targetTime}</span></span>
+                    <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-sage-50 dark:bg-sage-900/40 text-sage-700 dark:text-sage-300 border border-sage-200 dark:border-sage-800">
+                      {settings.departure?.smartDensity ? 'Smart' : `co ${settings.departure?.intervalMinutes || 2} min`}
+                    </span>
                   </div>
                 </div>
               </div>

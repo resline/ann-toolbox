@@ -150,50 +150,66 @@ describe('DepartureConfig Component', () => {
     });
   });
 
-  describe('Smart Density Toggle', () => {
-    it('renders smart density toggle with explanation text', () => {
+  describe('Announcement Frequency & Cadence Selection', () => {
+    it('renders frequency selector with Smart and fixed interval pills', () => {
       render(<DepartureConfig {...defaultProps} />);
 
-      expect(
-        screen.getByText(/Inteligentne zagęszczanie/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/częściej przed wyjściem/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Częstotliwość Ogłoszeń/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Smart \(Zagęszczanie\)/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Co 1 min/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Co 2 min/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Co 3 min/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Co 5 min/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Co 10 min/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Co 15 min/i })).toBeInTheDocument();
     });
 
-    it('calls onChange with inverted smartDensity when toggle is clicked', () => {
+    it('marks Smart as active when smartDensity is true', () => {
+      render(<DepartureConfig {...defaultProps} settings={{ ...initialSettings, smartDensity: true }} />);
+
+      const smartBtn = screen.getByRole('button', { name: /Smart \(Zagęszczanie\)/i });
+      expect(smartBtn).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('calls onChange with smartDensity: false and intervalMinutes when fixed interval pill is clicked', () => {
       const onChange = vi.fn();
-      const { rerender } = render(
+      render(<DepartureConfig {...defaultProps} onChange={onChange} />);
+
+      const co2Btn = screen.getByRole('button', { name: /Co 2 min/i });
+      fireEvent.click(co2Btn);
+
+      expect(onChange).toHaveBeenCalledWith({ smartDensity: false, intervalMinutes: 2 });
+
+      const co1Btn = screen.getByRole('button', { name: /Co 1 min/i });
+      fireEvent.click(co1Btn);
+
+      expect(onChange).toHaveBeenCalledWith({ smartDensity: false, intervalMinutes: 1 });
+
+      const co3Btn = screen.getByRole('button', { name: /Co 3 min/i });
+      fireEvent.click(co3Btn);
+
+      expect(onChange).toHaveBeenCalledWith({ smartDensity: false, intervalMinutes: 3 });
+    });
+
+    it('calls onChange with smartDensity: true when Smart pill is clicked', () => {
+      const onChange = vi.fn();
+      render(
         <DepartureConfig
           {...defaultProps}
-          settings={{ ...initialSettings, smartDensity: true }}
+          settings={{ ...initialSettings, smartDensity: false, intervalMinutes: 3 }}
           onChange={onChange}
         />
       );
 
-      const toggle = screen.getByRole('switch', { name: /Inteligentne zagęszczanie/i });
-      expect(toggle).toHaveAttribute('aria-checked', 'true');
+      const smartBtn = screen.getByRole('button', { name: /Smart \(Zagęszczanie\)/i });
+      fireEvent.click(smartBtn);
 
-      fireEvent.click(toggle);
-      expect(onChange).toHaveBeenCalledWith({ smartDensity: false });
-
-      rerender(
-        <DepartureConfig
-          {...defaultProps}
-          settings={{ ...initialSettings, smartDensity: false }}
-          onChange={onChange}
-        />
-      );
-      expect(toggle).toHaveAttribute('aria-checked', 'false');
-
-      fireEvent.click(toggle);
       expect(onChange).toHaveBeenCalledWith({ smartDensity: true });
     });
   });
 
   describe('Disabled state', () => {
-    it('disables all inputs, buttons, and switches when disabled is true', () => {
+    it('disables all inputs, buttons, and controls when disabled is true', () => {
       const onChange = vi.fn();
       render(<DepartureConfig {...defaultProps} onChange={onChange} disabled={true} />);
 
@@ -205,10 +221,6 @@ describe('DepartureConfig Component', () => {
         expect(btn).toBeDisabled();
         fireEvent.click(btn);
       });
-
-      const toggle = screen.getByRole('switch', { name: /Inteligentne zagęszczanie/i });
-      expect(toggle).toBeDisabled();
-      fireEvent.click(toggle);
 
       const labelInput = screen.getByPlaceholderText(/Wpisz własny cel|Nazwa celu/i);
       expect(labelInput).toBeDisabled();

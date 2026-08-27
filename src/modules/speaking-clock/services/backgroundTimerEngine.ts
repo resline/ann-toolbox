@@ -181,7 +181,7 @@ export class BackgroundTimerEngine {
       this.triggeredMilestones.clear();
       const milestones = this.getDepartureMilestones();
       for (const m of milestones) {
-        if (m * 60 > remaining) {
+        if (m * 60 >= remaining) {
           this.triggeredMilestones.add(m);
         }
       }
@@ -290,8 +290,10 @@ export class BackgroundTimerEngine {
    * Returns sorted descending list of departure milestones in minutes.
    */
   private getDepartureMilestones(): number[] {
+    if (this.settings.departure.smartDensity) {
+      return [120, 90, 60, 45, 30, 20, 15, 10, 5, 4, 3, 2, 1, 0];
+    }
     if (
-      !this.settings.departure.smartDensity &&
       this.settings.departure.customMilestonesMinutes &&
       this.settings.departure.customMilestonesMinutes.length > 0
     ) {
@@ -299,7 +301,14 @@ export class BackgroundTimerEngine {
       set.add(0);
       return Array.from(set).sort((a, b) => b - a);
     }
-    return [120, 90, 60, 45, 30, 20, 15, 10, 5, 4, 3, 2, 1, 0];
+    // Fixed interval mode (e.g. 1, 2, 3, 5, 10, 15 min)
+    const interval = Math.max(1, Math.floor(this.settings.departure.intervalMinutes || 2));
+    const maxMinutes = 720; // Up to 12 hours countdown
+    const milestones: number[] = [];
+    for (let m = 0; m <= maxMinutes; m += interval) {
+      milestones.push(m);
+    }
+    return milestones.sort((a, b) => b - a);
   }
 
   /**
@@ -356,7 +365,7 @@ export class BackgroundTimerEngine {
       this.triggeredMilestones.clear();
       const milestones = this.getDepartureMilestones();
       for (const m of milestones) {
-        if (m * 60 > initialSecondsRemaining) {
+        if (m * 60 >= initialSecondsRemaining) {
           this.triggeredMilestones.add(m);
         }
       }
@@ -508,7 +517,7 @@ export class BackgroundTimerEngine {
         this.triggeredMilestones.clear();
         const milestones = this.getDepartureMilestones();
         for (const m of milestones) {
-          if (m * 60 > remaining) {
+          if (m * 60 >= remaining) {
             this.triggeredMilestones.add(m);
           }
         }

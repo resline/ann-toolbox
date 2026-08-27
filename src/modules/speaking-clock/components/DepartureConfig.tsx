@@ -185,45 +185,68 @@ export const DepartureConfig: React.FC<DepartureConfigProps> = ({
         </div>
       </div>
 
-      {/* 3. Smart Density Toggle */}
-      <div className="pt-1 border-t border-warmgray-200/60 dark:border-warmgray-800">
-        <label
-          htmlFor="smart-density-toggle"
-          className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-warmgray-50/70 dark:bg-warmgray-900/60 border border-warmgray-200/60 dark:border-warmgray-800 cursor-pointer transition-all hover:bg-warmgray-100/60 dark:hover:bg-warmgray-900"
-        >
-          <div className="space-y-0.5 pr-2">
-            <div className="text-xs sm:text-sm font-semibold text-warmgray-800 dark:text-warmgray-200 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-sage-600 dark:text-sage-400 shrink-0" />
-              <span>Inteligentne zagęszczanie (częściej przed wyjściem)</span>
-            </div>
-            <p className="text-[11px] sm:text-xs text-warmgray-500 dark:text-warmgray-400 font-normal leading-relaxed">
-              Ogłasza czas częściej w miarę zbliżania się do godziny wyjścia (np. co 15 min, potem co 5, 2 i 1 min).
-            </p>
-          </div>
+      {/* 3. Announcement Frequency / Cadence Selection */}
+      <div className="pt-1 border-t border-warmgray-200/60 dark:border-warmgray-800 space-y-2.5">
+        <label className="text-xs font-semibold uppercase tracking-wider text-warmgray-500 dark:text-warmgray-400 flex items-center gap-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-sage-600 dark:text-sage-400" />
+          <span>Częstotliwość Ogłoszeń</span>
+        </label>
 
+        <div
+          className="flex flex-wrap items-center gap-1.5 sm:gap-2"
+          role="group"
+          aria-label="Wybór częstotliwości ogłoszeń do wyjścia"
+        >
+          {/* Smart Density Pill */}
           <button
-            id="smart-density-toggle"
             type="button"
-            role="switch"
-            aria-label="Inteligentne zagęszczanie (częściej przed wyjściem)"
-            aria-checked={settings.smartDensity}
+            aria-pressed={settings.smartDensity}
             disabled={disabled}
-            onClick={() => onChange({ smartDensity: !settings.smartDensity })}
-            className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ease-in-out border-2 border-transparent ${
-              settings.smartDensity ? 'bg-sage-600' : 'bg-warmgray-300 dark:bg-warmgray-700'
+            onClick={() => onChange({ smartDensity: true })}
+            className={`min-h-[44px] px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium transition-all duration-150 select-none flex items-center gap-1.5 ${
+              settings.smartDensity
+                ? 'bg-sage-600 dark:bg-sage-500 text-white shadow-sm ring-1 ring-sage-400/50 scale-[1.02]'
+                : 'bg-warmgray-50 dark:bg-warmgray-800/80 text-warmgray-700 dark:text-warmgray-300 hover:bg-sage-50 dark:hover:bg-warmgray-750 border border-warmgray-200/80 dark:border-warmgray-700'
             } ${
               disabled
                 ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                : 'cursor-pointer'
+                : 'cursor-pointer active:scale-95'
             }`}
           >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                settings.smartDensity ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
+            <span>⚡ Smart (Zagęszczanie)</span>
           </button>
-        </label>
+
+          {/* Fixed Interval Pills: 1m, 2m, 3m, 5m, 10m, 15m */}
+          {[1, 2, 3, 5, 10, 15].map((mins) => {
+            const active = !settings.smartDensity && (settings.intervalMinutes ?? 2) === mins;
+            return (
+              <button
+                key={mins}
+                type="button"
+                aria-pressed={active}
+                disabled={disabled}
+                onClick={() => onChange({ smartDensity: false, intervalMinutes: mins })}
+                className={`min-h-[44px] px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium transition-all duration-150 select-none ${
+                  active
+                    ? 'bg-sage-600 dark:bg-sage-500 text-white shadow-sm ring-1 ring-sage-400/50 scale-[1.02]'
+                    : 'bg-warmgray-50 dark:bg-warmgray-800/80 text-warmgray-700 dark:text-warmgray-300 hover:bg-sage-50 dark:hover:bg-warmgray-750 border border-warmgray-200/80 dark:border-warmgray-700'
+                } ${
+                  disabled
+                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
+                    : 'cursor-pointer active:scale-95'
+                }`}
+              >
+                Co {mins} min
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-[11px] sm:text-xs text-warmgray-500 dark:text-warmgray-400 font-normal leading-relaxed pt-0.5">
+          {settings.smartDensity
+            ? 'Ogłasza czas częściej w miarę zbliżania się do godziny wyjścia (np. co 15 min, potem co 5, 2 i 1 min).'
+            : `Głos lektora będzie ogłaszać pozostały czas regularnie co ${settings.intervalMinutes || 2} min aż do wyjścia.`}
+        </p>
       </div>
     </div>
   );

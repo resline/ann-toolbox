@@ -656,7 +656,46 @@ describe('BackgroundTimerEngine', () => {
       expect(engine.getState()).toBe('idle');
     });
 
-    it('triggers custom milestones when smartDensity is false', async () => {
+    it('triggers regular interval announcements (e.g. every 2 minutes) when smartDensity is false', async () => {
+      // Start at 08:20:00, target 08:26:00 (6 min remaining, interval: 2 min)
+      const baseDate = new Date(2026, 7, 27, 8, 20, 0);
+      vi.setSystemTime(baseDate);
+
+      const announcements: AnnouncementPayload[] = [];
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:26',
+            label: 'Spotkanie',
+            smartDensity: false,
+            intervalMinutes: 2,
+          },
+        },
+        { onAnnounce: (a) => announcements.push(a) }
+      );
+
+      await engine.start();
+      expect(announcements.length).toBe(0);
+
+      // Advance 2 min -> 08:22:00 (4 min left) -> triggers
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      expect(announcements.length).toBe(1);
+      expect(announcements[0].text).toBe('Za 4 minuty: Spotkanie.');
+
+      // Advance 2 min -> 08:24:00 (2 min left) -> triggers
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      expect(announcements.length).toBe(2);
+      expect(announcements[1].text).toBe('Za 2 minuty: Spotkanie.');
+
+      // Advance 2 min -> 08:26:00 (0 min left) -> triggers done & stops
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      expect(announcements.length).toBe(3);
+      expect(announcements[2].text).toContain('Czas na: Spotkanie!');
+      expect(engine.getState()).toBe('idle');
+    });
+
+    it('triggers custom milestones when smartDensity is false and customMilestonesMinutes is provided', async () => {
       // Start at 08:10:00, target 08:30:00 (20 min remaining)
       const baseDate = new Date(2026, 7, 27, 8, 10, 0);
       vi.setSystemTime(baseDate);
@@ -669,6 +708,7 @@ describe('BackgroundTimerEngine', () => {
             targetTime: '08:30',
             label: 'Pociąg',
             smartDensity: false,
+            intervalMinutes: 5,
             customMilestonesMinutes: [10, 2, 0],
           },
         },
