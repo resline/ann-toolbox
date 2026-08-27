@@ -16,6 +16,7 @@ import {
   type SpeakingClockSettings,
   type TimeFormatStyle,
   type ChimeTone,
+  type TimeTimerColor,
 } from '../types';
 import { playChime } from '../services/chimeSynthesizer';
 
@@ -151,13 +152,15 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                     Kolor tarczy zegara
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    {[
-                      { id: 'sage', label: 'Szałwia', color: '#5B8272' },
-                      { id: 'amber', label: 'Bursztyn', color: '#F59E0B' },
-                      { id: 'lavender', label: 'Lawenda', color: '#8B5CF6' },
-                      { id: 'rose', label: 'Koral', color: '#F43F5E' },
-                      { id: 'ocean', label: 'Ocean', color: '#0EA5E9' },
-                    ].map((palette) => {
+                    {(
+                      [
+                        { id: 'sage', label: 'Szałwia', color: '#5B8272' },
+                        { id: 'amber', label: 'Bursztyn', color: '#F59E0B' },
+                        { id: 'lavender', label: 'Lawenda', color: '#8B5CF6' },
+                        { id: 'rose', label: 'Koral', color: '#F43F5E' },
+                        { id: 'ocean', label: 'Ocean', color: '#0EA5E9' },
+                      ] as const satisfies readonly { id: TimeTimerColor; label: string; color: string }[]
+                    ).map((palette) => {
                       const isActive = (settings.timeTimer?.color || 'sage') === palette.id;
                       return (
                         <button
@@ -167,7 +170,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                             onUpdateSettings({
                               timeTimer: {
                                 ...settings.timeTimer,
-                                color: palette.id as any,
+                                color: palette.id,
                               },
                             })
                           }
