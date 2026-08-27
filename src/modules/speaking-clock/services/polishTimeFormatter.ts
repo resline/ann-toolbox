@@ -343,3 +343,50 @@ export function formatPolishTime(
       return formatPreciseTime(date);
   }
 }
+
+function getCountdownMinutePhrase(minutes: number): string {
+  if (minutes === 1) {
+    return 'Za minutę';
+  }
+  const mod10 = minutes % 10;
+  const mod100 = minutes % 100;
+  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) {
+    return `Za ${minutes} minuty`;
+  }
+  return `Za ${minutes} minut`;
+}
+
+export function formatDepartureAnnouncement(
+  remainingSeconds: number,
+  label: string,
+  targetTime?: Date,
+  isDone?: boolean
+): string {
+  if (isDone || remainingSeconds <= 0) {
+    if (targetTime) {
+      const hoursStr = String(targetTime.getHours()).padStart(2, '0');
+      const minutesStr = String(targetTime.getMinutes()).padStart(2, '0');
+      return `Czas na: ${label}! Jest ${hoursStr}:${minutesStr}.`;
+    }
+    return `Czas na: ${label}!`;
+  }
+
+  if (remainingSeconds < 60) {
+    if (remainingSeconds <= 30) {
+      return `Za pół minuty: ${label}.`;
+    }
+    return `Mniej niż minuta do: ${label}.`;
+  }
+
+  const minutes = Math.round(remainingSeconds / 60);
+  const phrase = getCountdownMinutePhrase(minutes);
+
+  if (targetTime && remainingSeconds >= 900) {
+    const currentTime = new Date(targetTime.getTime() - remainingSeconds * 1000);
+    const hoursStr = String(currentTime.getHours()).padStart(2, '0');
+    const minutesStr = String(currentTime.getMinutes()).padStart(2, '0');
+    return `${phrase}: ${label}. Jest ${hoursStr}:${minutesStr}.`;
+  }
+
+  return `${phrase}: ${label}.`;
+}

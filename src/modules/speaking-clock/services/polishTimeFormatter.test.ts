@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatPolishTime,
   formatElapsedAnnouncement,
+  formatDepartureAnnouncement,
   getHourInWords,
   getMinuteInWords,
   getDeclinedMinutes,
@@ -375,6 +376,191 @@ describe('polishTimeFormatter', () => {
       expect(
         formatPolishTime(date, 'elapsed', { elapsedMinutes: 30, isSessionEnd: true })
       ).toBe('Czas sesji minął! Jest 11:00.');
+    });
+  });
+
+  describe('departure style & formatDepartureAnnouncement', () => {
+    describe('completion state (isDone or remainingSeconds <= 0)', () => {
+      it('formats done state with targetTime', () => {
+        const target = createDate(8, 30);
+        expect(formatDepartureAnnouncement(0, 'Wyjście z domu', target, true)).toBe(
+          'Czas na: Wyjście z domu! Jest 08:30.'
+        );
+        expect(formatDepartureAnnouncement(0, 'Wyjście z domu', target)).toBe(
+          'Czas na: Wyjście z domu! Jest 08:30.'
+        );
+        expect(formatDepartureAnnouncement(-15, 'Spotkanie', createDate(14, 0))).toBe(
+          'Czas na: Spotkanie! Jest 14:00.'
+        );
+      });
+
+      it('formats done state without targetTime', () => {
+        expect(formatDepartureAnnouncement(0, 'Wyjście z domu')).toBe(
+          'Czas na: Wyjście z domu!'
+        );
+        expect(formatDepartureAnnouncement(-5, 'Pociąg')).toBe(
+          'Czas na: Pociąg!'
+        );
+        expect(formatDepartureAnnouncement(60, 'Leki', undefined, true)).toBe(
+          'Czas na: Leki!'
+        );
+      });
+    });
+
+    describe('sub-minute countdowns (0 < remainingSeconds < 60)', () => {
+      it('formats <= 30 seconds as "Za pół minuty: {label}."', () => {
+        expect(formatDepartureAnnouncement(30, 'Wyjście z domu')).toBe(
+          'Za pół minuty: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(15, 'Spotkanie')).toBe(
+          'Za pół minuty: Spotkanie.'
+        );
+        expect(formatDepartureAnnouncement(1, 'Pociąg')).toBe(
+          'Za pół minuty: Pociąg.'
+        );
+      });
+
+      it('formats > 30 seconds as "Mniej niż minuta do: {label}."', () => {
+        expect(formatDepartureAnnouncement(31, 'Wyjście z domu')).toBe(
+          'Mniej niż minuta do: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(45, 'Spotkanie')).toBe(
+          'Mniej niż minuta do: Spotkanie.'
+        );
+        expect(formatDepartureAnnouncement(59, 'Pociąg')).toBe(
+          'Mniej niż minuta do: Pociąg.'
+        );
+      });
+    });
+
+    describe('minutes declension for countdowns', () => {
+      it('formats 1 minute as "Za minutę: {label}."', () => {
+        expect(formatDepartureAnnouncement(60, 'Wyjście z domu')).toBe(
+          'Za minutę: Wyjście z domu.'
+        );
+      });
+
+      it('formats 2, 3, 4 minutes as "Za {n} minuty: {label}."', () => {
+        expect(formatDepartureAnnouncement(120, 'Spotkanie')).toBe(
+          'Za 2 minuty: Spotkanie.'
+        );
+        expect(formatDepartureAnnouncement(180, 'Gotowanie')).toBe(
+          'Za 3 minuty: Gotowanie.'
+        );
+        expect(formatDepartureAnnouncement(240, 'Pociąg')).toBe(
+          'Za 4 minuty: Pociąg.'
+        );
+      });
+
+      it('formats 5 to 21 minutes as "Za {n} minut: {label}."', () => {
+        expect(formatDepartureAnnouncement(300, 'Wyjście z domu')).toBe(
+          'Za 5 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(600, 'Wyjście z domu')).toBe(
+          'Za 10 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(660, 'Wyjście z domu')).toBe(
+          'Za 11 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(720, 'Wyjście z domu')).toBe(
+          'Za 12 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(780, 'Wyjście z domu')).toBe(
+          'Za 13 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(840, 'Wyjście z domu')).toBe(
+          'Za 14 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(900, 'Wyjście z domu')).toBe(
+          'Za 15 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(1200, 'Wyjście z domu')).toBe(
+          'Za 20 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(1260, 'Wyjście z domu')).toBe(
+          'Za 21 minut: Wyjście z domu.'
+        );
+      });
+
+      it('formats 22, 23, 24 minutes as "Za {n} minuty: {label}."', () => {
+        expect(formatDepartureAnnouncement(1320, 'Wyjście z domu')).toBe(
+          'Za 22 minuty: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(1380, 'Wyjście z domu')).toBe(
+          'Za 23 minuty: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(1440, 'Wyjście z domu')).toBe(
+          'Za 24 minuty: Wyjście z domu.'
+        );
+      });
+
+      it('formats 25+ minutes correctly', () => {
+        expect(formatDepartureAnnouncement(1500, 'Wyjście z domu')).toBe(
+          'Za 25 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(1860, 'Wyjście z domu')).toBe(
+          'Za 31 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(1920, 'Wyjście z domu')).toBe(
+          'Za 32 minuty: Wyjście z domu.'
+        );
+      });
+    });
+
+    describe('wall-clock time context for >= 900s with targetTime', () => {
+      it('appends current time when remainingSeconds >= 900 and targetTime is provided', () => {
+        const target1 = createDate(8, 30);
+        expect(formatDepartureAnnouncement(900, 'Wyjście z domu', target1)).toBe(
+          'Za 15 minut: Wyjście z domu. Jest 08:15.'
+        );
+
+        const target2 = createDate(9, 0);
+        expect(formatDepartureAnnouncement(1800, 'Spotkanie', target2)).toBe(
+          'Za 30 minut: Spotkanie. Jest 08:30.'
+        );
+
+        const target3 = createDate(10, 0);
+        expect(formatDepartureAnnouncement(2700, 'Pociąg', target3)).toBe(
+          'Za 45 minut: Pociąg. Jest 09:15.'
+        );
+
+        const target4 = createDate(12, 0);
+        expect(formatDepartureAnnouncement(3600, 'Wizyta u lekarza', target4)).toBe(
+          'Za 60 minut: Wizyta u lekarza. Jest 11:00.'
+        );
+
+        const target5 = createDate(8, 30);
+        expect(formatDepartureAnnouncement(1320, 'Wyjście z domu', target5)).toBe(
+          'Za 22 minuty: Wyjście z domu. Jest 08:08.'
+        );
+      });
+
+      it('does NOT append current time when remainingSeconds < 900 even if targetTime is provided', () => {
+        const target = createDate(8, 30);
+        expect(formatDepartureAnnouncement(300, 'Wyjście z domu', target)).toBe(
+          'Za 5 minut: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(240, 'Wyjście z domu', target)).toBe(
+          'Za 4 minuty: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(60, 'Wyjście z domu', target)).toBe(
+          'Za minutę: Wyjście z domu.'
+        );
+      });
+    });
+
+    describe('rounding of remainingSeconds to nearest minute', () => {
+      it('rounds non-exact seconds when >= 60', () => {
+        expect(formatDepartureAnnouncement(119, 'Wyjście z domu')).toBe(
+          'Za 2 minuty: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(121, 'Wyjście z domu')).toBe(
+          'Za 2 minuty: Wyjście z domu.'
+        );
+        expect(formatDepartureAnnouncement(65, 'Wyjście z domu')).toBe(
+          'Za minutę: Wyjście z domu.'
+        );
+      });
     });
   });
 
