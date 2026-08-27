@@ -248,6 +248,18 @@ describe('speechService', () => {
       expect(voices).toEqual([]);
     });
 
+    it('restores original onvoiceschanged listener upon completion', async () => {
+      mockSynthesis.setVoices([]);
+      const customHandler = vi.fn();
+      mockSynthesis.onvoiceschanged = customHandler;
+
+      const promise = getAllVoices();
+      mockSynthesis.triggerVoicesChanged([createMockVoice()]);
+      await promise;
+
+      expect(mockSynthesis.onvoiceschanged).toBe(customHandler);
+    });
+
     it('filters Polish voices with various locale formats (pl-PL, pl_PL, pl)', async () => {
       const mixedVoices = [
         createMockVoice({ name: 'Voice EN', lang: 'en-US', voiceURI: 'en' }),
@@ -417,7 +429,7 @@ describe('speechService', () => {
       expect(isSpeaking()).toBe(false);
     });
 
-    it('cancels previous speech when new speakText is invoked', async () => {
+    it('cancels previous speech when new speakText is invoked and resolves immediately without leaking promise', async () => {
       const speakPromise1 = speakText('Pierwsza wypowiedź');
       expect(isSpeaking()).toBe(true);
 
@@ -426,20 +438,40 @@ describe('speechService', () => {
       // The second speak cancels previous
       expect(mockSynthesis.cancel).toHaveBeenCalledTimes(2);
 
+      // speakPromise1 resolves immediately on cancel via stopSpeaking()
+      await expect(speakPromise1).resolves.toBeUndefined();
+
       lastSpokenUtterance?.onend?.({} as SpeechSynthesisEvent);
-      await Promise.all([speakPromise1, speakPromise2]);
+      await speakPromise2;
       expect(isSpeaking()).toBe(false);
+    });
+
+    it('guards against execution if stopped while await getAllVoices() was pending', async () => {
+      mockSynthesis.setVoices([]);
+      const speakPromise = speakText('Wypowiedź z oczekiwaniem');
+
+      // stopSpeaking is called before voices resolve
+      stopSpeaking();
+
+      // Now voices resolve
+      mockSynthesis.triggerVoicesChanged([createMockVoice()]);
+      await expect(speakPromise).resolves.toBeUndefined();
+      // Should not have spoken utterance since it was cancelled during async voice resolution
+      expect(mockSynthesis.speak).not.toHaveBeenCalled();
     });
   });
 
   describe('stopSpeaking & isSpeaking', () => {
-    it('stopSpeaking cancels speech synthesis and updates isSpeaking', () => {
-      speakText('Długa wypowiedź');
+    it('stopSpeaking cancels speech synthesis, updates isSpeaking, and resolves pending promise', async () => {
+      const speakPromise = speakText('Długa wypowiedź');
       expect(isSpeaking()).toBe(true);
 
       stopSpeaking();
       expect(mockSynthesis.cancel).toHaveBeenCalled();
       expect(isSpeaking()).toBe(false);
+
+      // Verify pending promise resolved cleanly
+      await expect(speakPromise).resolves.toBeUndefined();
     });
 
     it('isSpeaking returns true if window.speechSynthesis.speaking is true', () => {

@@ -15,7 +15,9 @@ export interface SpeechOptions {
 
 let isCurrentlySpeaking = false;
 let currentSafetyTimeout: ReturnType<typeof setTimeout> | null = null;
+let currentUtteranceResolve: (() => void) | null = null;
 let pendingVoicesPromise: Promise<SpeechSynthesisVoice[]> | null = null;
+let speechGeneration = 0;
 
 /**
  * Checks whether Web Speech API (speechSynthesis and SpeechSynthesisUtterance) is supported in current environment.
@@ -92,6 +94,7 @@ export function getAllVoices(): Promise<SpeechSynthesisVoice[]> {
 
   pendingVoicesPromise = new Promise<SpeechSynthesisVoice[]>((resolve) => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const originalOnVoicesChanged = window.speechSynthesis ? window.speechSynthesis.onvoiceschanged : null;
 
     const handleVoicesChanged = () => {
       if (timeoutId !== null) {
@@ -99,10 +102,10 @@ export function getAllVoices(): Promise<SpeechSynthesisVoice[]> {
         timeoutId = null;
       }
       if (window.speechSynthesis) {
-        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-        if (window.speechSynthesis.onvoiceschanged === handleVoicesChanged) {
-          window.speechSynthesis.onvoiceschanged = null;
+        if (window.speechSynthesis.removeEventListener) {
+          window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
         }
+        window.speechSynthesis.onvoiceschanged = originalOnVoicesChanged;
       }
       pendingVoicesPromise = null;
       resolve(window.speechSynthesis ? window.speechSynthesis.getVoices() : []);
@@ -112,10 +115,9 @@ export function getAllVoices(): Promise<SpeechSynthesisVoice[]> {
       window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged, { once: true });
     }
 
-    const prevOnVoicesChanged = window.speechSynthesis.onvoiceschanged;
     window.speechSynthesis.onvoiceschanged = (ev) => {
-      if (typeof prevOnVoicesChanged === 'function') {
-        prevOnVoicesChanged.call(window.speechSynthesis, ev);
+      if (typeof originalOnVoicesChanged === 'function') {
+        originalOnVoicesChanged.call(window.speechSynthesis, ev);
       }
       handleVoicesChanged();
     };
@@ -149,16 +151,25 @@ export function isSpeaking(): boolean {
 }
 
 /**
- * Stops any active or queued speech synthesis immediately.
+ * Stops any active or queued speech synthesis immediately and resolves any pending utterance promise.
  */
 export function stopSpeaking(): void {
   if (!isSpeechSynthesisSupported()) {
     return;
   }
+  speechGeneration++;
+
   if (currentSafetyTimeout !== null) {
     clearTimeout(currentSafetyTimeout);
     currentSafetyTimeout = null;
   }
+
+  if (currentUtteranceResolve !== null) {
+    const resolve = currentUtteranceResolve;
+    currentUtteranceResolve = null;
+    resolve();
+  }
+
   isCurrentlySpeaking = false;
   window.speechSynthesis.cancel();
 }
@@ -176,13 +187,19 @@ export async function speakText(text: string, options: SpeechOptions = {}): Prom
     return Promise.resolve();
   }
 
-  // Stop previous speech to prevent overlapping or blocked queues
+  // Stop previous speech to prevent overlapping or blocked queues, and resolve previous pending promise
   stopSpeaking();
+
+  const currentGen = speechGeneration;
   isCurrentlySpeaking = true;
 
   let voices = window.speechSynthesis.getVoices();
   if (!voices || voices.length === 0) {
     voices = await getAllVoices();
+    // Guard: if stopSpeaking() or another speakText() was called while awaiting voices
+    if (speechGeneration !== currentGen) {
+      return;
+    }
   }
 
   let selectedVoice: SpeechSynthesisVoice | undefined;
@@ -220,15 +237,31 @@ export async function speakText(text: string, options: SpeechOptions = {}): Prom
   utterance.volume = volume;
 
   return new Promise<void>((resolve, reject) => {
+    // Guard: check if cancelled right before speaking
+    if (speechGeneration !== currentGen) {
+      resolve();
+      return;
+    }
+
     const cleanup = () => {
       if (currentSafetyTimeout !== null) {
         clearTimeout(currentSafetyTimeout);
         currentSafetyTimeout = null;
       }
+      if (currentUtteranceResolve === handleResolve) {
+        currentUtteranceResolve = null;
+      }
       isCurrentlySpeaking = false;
       utterance.onend = null;
       utterance.onerror = null;
     };
+
+    const handleResolve = () => {
+      cleanup();
+      resolve();
+    };
+
+    currentUtteranceResolve = handleResolve;
 
     // Safety timeout: Chrome occasionally drops onend event on background/long speech
     const estimatedDurationMs = Math.max(5000, ((text.length * 150) / rate) + 3000);
@@ -236,13 +269,11 @@ export async function speakText(text: string, options: SpeechOptions = {}): Prom
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
-      cleanup();
-      resolve();
+      handleResolve();
     }, estimatedDurationMs);
 
     utterance.onend = () => {
-      cleanup();
-      resolve();
+      handleResolve();
     };
 
     utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
