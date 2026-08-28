@@ -31,7 +31,7 @@ const TestThemeConsumer: React.FC = () => {
 };
 
 const themeOf = () => document.documentElement.dataset.theme;
-const isDarkClass = () => document.documentElement.classList.contains('dark');
+const hasLegacyDarkClass = () => document.documentElement.classList.contains('dark');
 
 describe('ThemeContext & useTheme', () => {
   beforeEach(() => {
@@ -57,7 +57,7 @@ describe('ThemeContext & useTheme', () => {
     expect(screen.getByTestId('theme-name')).toHaveTextContent(THEMES.day.name);
     expect(screen.getByTestId('is-dark')).toHaveTextContent('light');
     expect(themeOf()).toBe('day');
-    expect(isDarkClass()).toBe(false);
+    expect(hasLegacyDarkClass()).toBe(false);
   });
 
   it('przywraca zapisany motyw', () => {
@@ -71,7 +71,7 @@ describe('ThemeContext & useTheme', () => {
 
     expect(screen.getByTestId('current-theme')).toHaveTextContent('dusk');
     expect(themeOf()).toBe('dusk');
-    expect(isDarkClass()).toBe(true);
+    expect(hasLegacyDarkClass()).toBe(false);
   });
 
   it('wraca do motywu dziennego przy nieznanej wartości', () => {
@@ -95,7 +95,7 @@ describe('ThemeContext & useTheme', () => {
 
     expect(screen.getByTestId('current-theme')).toHaveTextContent('oled');
     expect(themeOf()).toBe('oled');
-    expect(isDarkClass()).toBe(true);
+    expect(hasLegacyDarkClass()).toBe(false);
   });
 
   it('setTheme aktualizuje atrybut na <html> i zapis', async () => {
@@ -109,12 +109,12 @@ describe('ThemeContext & useTheme', () => {
 
     await user.click(screen.getByTestId('btn-set-dusk'));
     expect(themeOf()).toBe('dusk');
-    expect(isDarkClass()).toBe(true);
+    expect(hasLegacyDarkClass()).toBe(false);
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dusk');
 
     await user.click(screen.getByTestId('btn-set-day'));
     expect(themeOf()).toBe('day');
-    expect(isDarkClass()).toBe(false);
+    expect(hasLegacyDarkClass()).toBe(false);
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('day');
   });
 

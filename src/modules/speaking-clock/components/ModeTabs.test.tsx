@@ -1,83 +1,65 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ModeTabs } from './ModeTabs';
-import { ClockMode } from '../types';
+import { czasIds } from '../testIds';
 
-describe('ModeTabs Component', () => {
-  const defaultProps = {
-    activeMode: 'continuous' as ClockMode,
-    onModeChange: vi.fn(),
-  };
+describe('ModeTabs', () => {
+  it('renderuje trzy tryby jako listę zakładek', () => {
+    render(<ModeTabs activeMode="continuous" onModeChange={vi.fn()} />);
 
-  it('renders all 3 clock modes with titles and subtitles', () => {
-    render(<ModeTabs {...defaultProps} />);
-
-    expect(screen.getByText('Zegar Ciągły')).toBeInTheDocument();
-    expect(screen.getByText('Co N minut')).toBeInTheDocument();
-
-    expect(screen.getByText('Sesja Focus')).toBeInTheDocument();
-    expect(screen.getByText('Blok czasu')).toBeInTheDocument();
-
-    expect(screen.getByText('Do Godziny')).toBeInTheDocument();
-    expect(screen.getByText('Wyjście / Cel')).toBeInTheDocument();
+    expect(screen.getByRole('tablist')).toHaveAccessibleName();
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    for (const mode of ['continuous', 'focus', 'departure']) {
+      expect(screen.getByTestId(czasIds.modeTab(mode))).toBeInTheDocument();
+    }
   });
 
-  it('indicates active mode with aria-selected or aria-pressed', () => {
-    const { rerender } = render(<ModeTabs {...defaultProps} activeMode="continuous" />);
+  it('oznacza aktywny tryb', () => {
+    render(<ModeTabs activeMode="focus" onModeChange={vi.fn()} />);
 
-    const continuousTab = screen.getByRole('tab', { name: /Zegar Ciągły/i });
-    const focusTab = screen.getByRole('tab', { name: /Sesja Focus/i });
-    const departureTab = screen.getByRole('tab', { name: /Do Godziny/i });
-
-    expect(continuousTab).toHaveAttribute('aria-selected', 'true');
-    expect(focusTab).toHaveAttribute('aria-selected', 'false');
-    expect(departureTab).toHaveAttribute('aria-selected', 'false');
-
-    rerender(<ModeTabs {...defaultProps} activeMode="focus" />);
-    expect(continuousTab).toHaveAttribute('aria-selected', 'false');
-    expect(focusTab).toHaveAttribute('aria-selected', 'true');
-    expect(departureTab).toHaveAttribute('aria-selected', 'false');
-
-    rerender(<ModeTabs {...defaultProps} activeMode="departure" />);
-    expect(continuousTab).toHaveAttribute('aria-selected', 'false');
-    expect(focusTab).toHaveAttribute('aria-selected', 'false');
-    expect(departureTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId(czasIds.modeTab('focus'))).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId(czasIds.modeTab('continuous'))).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('calls onModeChange when a mode tab is clicked', () => {
+  it('zgłasza zmianę trybu po kliknięciu', async () => {
+    const user = userEvent.setup();
     const onModeChange = vi.fn();
-    render(<ModeTabs {...defaultProps} onModeChange={onModeChange} activeMode="continuous" />);
+    render(<ModeTabs activeMode="continuous" onModeChange={onModeChange} />);
 
-    const focusTab = screen.getByRole('tab', { name: /Sesja Focus/i });
-    fireEvent.click(focusTab);
-    expect(onModeChange).toHaveBeenCalledWith('focus');
-
-    const departureTab = screen.getByRole('tab', { name: /Do Godziny/i });
-    fireEvent.click(departureTab);
+    await user.click(screen.getByTestId(czasIds.modeTab('departure')));
     expect(onModeChange).toHaveBeenCalledWith('departure');
-
-    const continuousTab = screen.getByRole('tab', { name: /Zegar Ciągły/i });
-    fireEvent.click(continuousTab);
-    expect(onModeChange).toHaveBeenCalledWith('continuous');
   });
 
-  it('disables all tabs when disabled prop is true', () => {
+  it('pozwala przechodzić między trybami klawiaturą', async () => {
+    const user = userEvent.setup();
     const onModeChange = vi.fn();
-    render(<ModeTabs {...defaultProps} onModeChange={onModeChange} disabled={true} />);
+    render(<ModeTabs activeMode="continuous" onModeChange={onModeChange} />);
 
-    const tabs = screen.getAllByRole('tab');
-    tabs.forEach((tab) => {
+    screen.getByTestId(czasIds.modeTab('continuous')).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onModeChange).toHaveBeenCalledWith('focus');
+  });
+
+  it('blokuje przełączanie, gdy zegar pracuje', async () => {
+    const user = userEvent.setup();
+    const onModeChange = vi.fn();
+    render(<ModeTabs activeMode="continuous" onModeChange={onModeChange} disabled />);
+
+    for (const tab of screen.getAllByRole('tab')) {
       expect(tab).toBeDisabled();
-      fireEvent.click(tab);
-    });
+    }
 
+    await user.click(screen.getByTestId(czasIds.modeTab('focus')));
     expect(onModeChange).not.toHaveBeenCalled();
   });
 
-  it('has role="tablist" with accessible label', () => {
-    render(<ModeTabs {...defaultProps} />);
-    const tablist = screen.getByRole('tablist');
-    expect(tablist).toBeInTheDocument();
-    expect(tablist).toHaveAttribute('aria-label');
+  it('mieści wszystkie trzy tryby w jednym rzędzie na każdej szerokości', () => {
+    render(<ModeTabs activeMode="continuous" onModeChange={vi.fn()} />);
+    // trzy równe kolumny bez breakpointu — wcześniej do `sm` układały się pionowo,
+    // przez co tarcza schodziła poniżej zgięcia ekranu
+    const list = screen.getByRole('tablist');
+    expect(list).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
   });
 });

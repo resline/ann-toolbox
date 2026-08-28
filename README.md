@@ -1,171 +1,175 @@
-# 🌸 Narzędziownik Ani (Ann Toolbox)
+# ⚓ Przystań
 
-> **Zintegrowany pakiet narzędziowy PWA wspierający osoby z ADHD w codziennym funkcjonowaniu, pracy i przezwyciężaniu „ślepoty czasowej” (*time blindness*).**
+> Spokojne miejsce na czas, skupienie, energię i pierwszy krok.
+> Aplikacja PWA dla osoby z ADHD — działa bez internetu, wszystko zostaje na telefonie.
 
----
-
-## ⚓ Moduł 1: „Kotwica Czasu” (Time Anchor & Speaking Clock)
-
-Głównym modułem narzędziownika jest **Kotwica Czasu** — multisensoryczny system wsparcia percepcji czasu łączący **dyskretny mówiący zegar w języku polskim**, **wizualny dysk Time Timer** oraz **asystenta wyjść i deadline'ów**.
-
-Dla osób z ADHD pojęcie czasu bywa abstrakcyjne (*time blindness*). Zwykłe cyfry na zegarku wymagają ciągłego przeliczania w pamięci roboczej, co przy zmęczeniu lub hiperfokusie prowadzi do paraliżu decyzyjnego albo nagłego stresu (*„jak to minęły 2 godziny?!”*). **Kotwica Czasu** zakotwicza Cię w teraźniejszości poprzez łagodne bodźce słuchowe i wzrokowe.
+Nazwa ma dwa znaczenia naraz: **przystań** to bezpieczna zatoka, a jednocześnie tryb
+rozkazujący od *przystanąć*. Dokładnie o to chodzi.
 
 ---
 
-### 🎛️ 3 Tryby Pracy
+## Cztery moduły, nazwane stanem, a nie mechanizmem
 
-| Tryb | Nazwa | Zastosowanie | Działanie |
-| :--- | :--- | :--- | :--- |
-| 🕒 **1** | **Zegar Ciągły** | Praca codzienna, hobby, poranki | Ogłasza godzinę na głos co zadany interwał (np. co `1`, `2`, `5`, `10`, `15`, `30`, `60` min) bez limitu czasu. Opcja synchronizacji do pełnych minut zegara ściennego (`:00`, `:15`, `:30`). |
-| 🎯 **2** | **Sesja Focus** | Praca głęboka, nauka, sprinty | Boczny blok czasu (np. 15, 25, 45, 60 min). Pomaga utrzymać skupienie na jednym zadaniu, informuje o upływie minut i łagodnie sygnalizuje koniec sesji. |
-| 🚪 **3** | **Do Godziny (Wyjście / Cel)** | Przygotowania do wyjścia, pociąg, wizyta u lekarza, spotkanie | Odlicza czas do wyznaczonej godziny z **inteligentnym zagęszczaniem komunikatów** w miarę zbliżania się terminu. |
+Przy ADHD nawiguje się tym, **czego się właśnie potrzebuje**, a nie tym, jak coś działa
+w środku. Dlatego moduły nie nazywają się „mówiący zegar" ani „menu dopaminowe".
 
----
+| Moduł | Kiedy się po niego sięga |
+| :--- | :--- |
+| ⏱ **Czas** | Kiedy tracisz poczucie, ile minęło |
+| ◉ **Skupienie** | Kiedy trzeba wejść w pracę |
+| ✦ **Energia** | Kiedy bak jest pusty |
+| 👣 **Start** | Kiedy nie możesz ruszyć z miejsca |
 
-### 🚪 Tryb Wyjścia i Inteligentne Zagęszczanie Komunikatów (`Smart Density`)
-
-Koniec z nerwowym zerkaniem na zegarek przed wyjściem! Wpisujesz godzinę (lub wybierasz szybki preset `+15m`, `+30m`, `+45m`, `+1h`) oraz etykietę (np. *„Wyjście z domu”*, *„Trening”*, *„Pociąg”*, *„Lekarz”*, *„Obiad”*, *„Praca”*).
-
-Aplikacja przejmuje kontrolę nad upływem czasu i automatycznie dostosowuje częstotliwość przypomnień:
-- **Powyżej 15 minut do celu:** Spokojne przypomnienia co 15 minut.
-- **5 – 15 minut do celu:** Przypomnienia co 5 minut (*„Za 10 minut: Wyjście z domu”*, *„Za 5 minut: Wyjście z domu”*).
-- **Ostatnie 5 minut:** Precyzyjne odliczanie co minutę (*„Za 4 minuty: Wyjście z domu”*, *„Za 3 minuty...”*, *„Za minutę: Wyjście z domu”*).
-- **Godzina 0:00:** Podwójny miękki gong + finałowy komunikat: *„Czas na: Wyjście z domu! Jest godzina 08:30.”*.
+Ekran startowy **Teraz** pokazuje żywy stan każdego z nich — „mówi co 5 minut",
+„3 iskierki dzisiaj", „krok 2 z 6" — zamiast opisów, których nikt nie czyta po drugim
+uruchomieniu.
 
 ---
 
-### ⏱️ Wizualny Dysk Time Timer (`TimeTimerDisc`)
+## ⏱ Czas
 
-Wizualny kolorowy dysk pozwala natychmiast, bez liczenia i angażowania kory przedczołowej, ocenić ile czasu zostało:
-- **Znikający sektor kołowy:** Płynna reprezentacja upływającego czasu (kąt zmniejszający się lub narastający).
-- **5 kojących palet sensorycznych:**
-  - 🌿 **Szałwia** (`#5B8272`) — wyciszenie i równowaga (domyślny)
-  - 🍯 **Bursztyn** (`#F59E0B`) — ciepło i delikatne skupienie uwagi
-  - 🪻 **Lawenda** (`#8B5CF6`) — głęboki relaks
-  - 🪸 **Koral** (`#F43F5E`) — żywy, wyraźny akcent
-  - 🌊 **Ocean** (`#0EA5E9`) — przejrzystość i przestrzeń
-- **Dostosowanie tarczy:** Opcja włączenia/wyłączenia cyfr minutowych (`0, 5, 10... 55`) oraz wybór kierunku (klasyczny Time Timer przeciwnie do wskazówek zegara lub standardowy).
-- **Tryb alternatywny:** Możliwość wyłączenia dysku i powrotu do klasycznego zegara cyfrowego z minimalistycznym pierścieniem postępu.
+Multisensoryczne wsparcie percepcji czasu: mówiący zegar po polsku, wizualna tarcza
+Time Timera i asystent wyjść.
 
----
+**Trzy tryby**
 
-### ⚡ Szybkie Korekty Czasu w Locie (`QuickTimeAdjusters`)
+| Tryb | Zastosowanie |
+| :--- | :--- |
+| **Ciągły** | Ogłasza godzinę co zadany odstęp (1–60 min), opcjonalnie równo z zegarem ściennym |
+| **Sesja** | Zamknięty blok czasu na pracę głęboką (15 / 25 / 45 / 60 min) |
+| **Do wyjścia** | Odlicza do wyznaczonej godziny z zagęszczaniem komunikatów przy końcu |
 
-Coś Cię zatrzymało lub potrzebujesz kilku dodatkowych minut na ubranie butów czy znalezienie kluczy?
-Podczas aktywnego odliczania w trybie **Do Godziny** lub **Focus** pod tarczą pojawiają się przyciski szybkiej korekty:
-- `+1 min`
-- `+5 min`
-- `+10 min`
-- `-5 min`
+**Zagęszczanie przypomnień.** Powyżej 15 minut — co 15. Między 5 a 15 — co 5.
+Ostatnie pięć minut — co minutę. Na koniec podwójny gong i komunikat.
+Alternatywnie stały odstęp, jeśli tak jest spokojniej.
 
-Jedno dotknięcie natychmiast przesuwa godzinę docelową i dostosowuje harmonogram powiadomień bez zatrzymywania i resetowania odliczania.
+**Tarcza Time Timera.** Ubywający wycinek koła pozwala ocenić pozostały czas jednym
+spojrzeniem, bez liczenia. Pięć palet do wyboru (Szałwia, Bursztyn, Lawenda, Koral, Ocean),
+świadomych motywu — bursztyn na czarnym ekranie nie oślepia. Podziałka 0–55 do włączenia,
+kierunek ubywania do wyboru.
 
----
+**Korekta w locie.** W trakcie odliczania: −5, +1, +5, +10 minut jednym dotknięciem,
+bez zatrzymywania i resetowania.
 
-### 🔔 Łagodny Dźwięk Gongu (*Harmonic Chime*) i Naturalna Polszczyzna
+**Naturalna polszczyzna.** Silnik fleksyjny odmienia liczebniki poprawnie
+(„za minutę", „za 2 minuty", „za 5 minut"). Cztery sposoby mówienia: naturalnie
+(„za piętnaście druga"), dokładnie („trzynasta czterdzieści pięć"), krótko, oraz
+„ile minęło". Przed każdą wypowiedzią ciepły gong, żeby głos nie zaskakiwał w ciszy.
 
-- **Anty-przestraszeniowy gong (Harmonic Chime):** Przed każdą wypowiedzią lektora rozbrzmiewa ciepły, kojący akord marimby / 528 Hz. Dzięki temu mowa nie zaskakuje w ciszy i nie wywołuje reakcji lękowej (*startle response*). Dostępne 3 barwy: *Łagodny*, *Ciepły*, *Jasny*.
-- **Gramatyczna polszczyzna:** Silnik fleksyjny poprawnie odmienia liczebniki (*„za minutę”*, *„za 2 minuty”*, *„za 5 minut”*).
-- **4 style wypowiedzi:**
-  - **Naturalny:** *„Za piętnaście druga”*, *„Wpół do czwartej”*, *„Pięć po dwunastej”*.
-  - **Precyzyjny:** *„Trzynasta czterdzieści pięć”*, *„Ósma zero pięć”*.
-  - **Krótki:** *„Pierwsza czterdzieści pięć”*.
-  - **Upływ Czasu:** *„Minęło 15 minut sesji”*.
-- **Dostosowanie lektora:** Regulacja tempa mowy (0.8x – 1.4x), tonu głosu oraz głośności.
+**Działanie w tle.** Dedykowany Web Worker odporny na usypianie kart, MediaSession
+(sterowanie z ekranu blokady), cichy nośnik audio utrzymujący proces w systemie,
+opcjonalna blokada wygaszania ekranu.
 
 ---
 
-### 🔋 Niezawodne Działanie w Tle na Telefonie (PWA)
+## ◉ Skupienie
 
-Aplikacja została zaprojektowana tak, aby działać stabilnie nawet po zablokowaniu ekranu czy przełączeniu do innych aplikacji:
-- **Dedykowany Web Worker:** Czas jest odmierzany w osobnym wątku, odpornym na usypianie kart przez przeglądarkę.
-- **MediaSession API:** Pełna integracja z ekranem blokady i paskiem powiadomień telefonu (możliwość pauzowania i wznawiania).
-- **Cichy nośnik audio Web Audio API:** Utrzymuje aktywny proces audio w systemie operacyjnym (Android / iOS).
-- **Screen WakeLock:** Opcja blokady wygaszania ekranu (idealna do postawienia telefonu na biurku lub w kuchni).
-- **100% Offline (Service Worker):** Działa bez dostępu do Internetu.
+Fazowany timer bez presji tykającego zegara: rozgrzewka → praca → łagodne wyjście.
+Do tego ćwiczenia oddechowe (Box Breathing 4-4-4-4, Relaxing 4-7-8, Calm Flow)
+i dźwięki tła.
 
----
+## ✦ Energia
 
-## 📱 Instrukcja dla Ani — Jak zainstalować na telefonie
+Menu aktywności podnoszących poziom energii, w metaforze karty dań: przystawki (1–5 min),
+dania główne (20–60 min), dodatki w tle, desery i dania specjalne. Filtr według poziomu
+energii, koło losujące na wypadek paraliżu decyzyjnego oraz tryb SOS.
 
-Aplikacja jest pełnoprawną **PWA (Progressive Web App)** — nie wymaga pobierania ze sklepu Google Play ani App Store.
+## 👣 Start
 
-### 🤖 Android (Google Chrome / Brave / Edge)
-1. Otwórz adres aplikacji w przeglądarce na telefonie.
-2. Na dole ekranu pojawi się przycisk **„Zainstaluj aplikację na telefonie”** — kliknij go.
-3. *(Alternatywnie: kliknij menu z 3 kropkami w prawym górnym rogu przeglądarki i wybierz **„Zainstaluj aplikację”** lub **„Dodaj do ekranu głównego”**)*.
-4. Na pulpicie telefonu pojawi się ikonka **Kotwica Czasu** — kliknij ją, aby uruchomić aplikację w trybie pełnoekranowym bez pasków przeglądarki.
-
-### 🍏 iPhone / iPad (Safari)
-1. Otwórz adres aplikacji w przeglądarce **Safari**.
-2. Kliknij ikonę **Udostępnij** (kwadrat ze strzałką w górę na dolnym pasku).
-3. Przewiń w dół i wybierz **„Do ekranu początkowego”** (*Add to Home Screen*).
-4. Kliknij **Dodaj** w prawym górnym rogu.
+Rozbijanie przytłaczających zadań na kroki poniżej dwóch minut. Jeden krok na ekranie,
+wielkim fontem — długa lista paraliżuje. Ponad piętnaście gotowych szablonów, suwak
+oporu, dwuminutowy pierścień „zacznij tylko na chwilę" i celebracja po skończeniu.
+Postęp jest zapisywany, więc zamknięcie karty w połowie zadania niczego nie kasuje.
 
 ---
 
-## 🎨 Motywy Wizualne i Sensoryka
+## 🎨 Wygląd
 
-Aplikacja posiada 3 starannie dopasowane motywy kolorystyczne, przełączane jednym kliknięciem w nagłówku:
-- 🌿 **Szałwiowy Jasny (Sage Warm):** Ciepłe odcienie szarości i kojąca szałwiowa zieleń redukująca przebodźcowanie wzrokowe.
-- 🌙 **Ciepły Ciemny (Warm Dark):** Głęboki, miękki grafit ze zredukowanym kontrastem do pracy wieczornej.
-- 🖤 **OLED Czerń (OLED Black):** Maksymalna czerń dla ekranów AMOLED oszczędzająca baterię telefonu.
+**Trzy motywy** przełączane w ustawieniach, z podglądem:
 
-Wszystkie elementy interfejsu mają powiększone pole dotykowe (min. **48px**), zapobiegając przypadkowym kliknięciom.
+- **Dzień** — ciepła biel papieru i przygaszona szałwia
+- **Zmierzch** — ciepły grafit bez niebieskiego chłodu
+- **Noc** — czysta czerń dla ekranów AMOLED
+
+Kierunek wizualny to *ciche rzemiosło*: powierzchnie jak papier, jeden akcent używany
+znaczeniowo, typografia jako główny nośnik hierarchii, cienka linia zamiast ciężkich cieni.
+Nic nie krzyczy — to celowe przy wrażliwości sensorycznej.
+
+**Dostępność.** Kontrast każdej pary tekst × tło jest wyliczany i pilnowany testem
+(próg AA 4.5:1, 3:1 dla obrysów). Jedno pole dotykowe ma minimum 48 px. Ruch da się
+ograniczyć niezależnie od ustawień telefonu. Pinch-zoom działa.
 
 ---
 
-## 🚀 Uruchomienie lokalne i Development
+## 📱 Instalacja na telefonie
+
+Przystań jest pełnoprawną aplikacją PWA — nie wymaga sklepu.
+
+**Android (Chrome / Brave / Edge)**
+1. Otwórz adres aplikacji w przeglądarce.
+2. Pojawi się pasek **„Miej Przystań pod ręką"** — dotknij **Dodaj do ekranu**.
+3. Alternatywnie: menu z trzema kropkami → **Zainstaluj aplikację**.
+
+**iPhone / iPad (Safari)**
+1. Otwórz adres w Safari.
+2. Dotknij ikonę **Udostępnij**.
+3. Wybierz **Do ekranu początkowego** → **Dodaj**.
+
+---
+
+## 🛠 Uruchomienie lokalne
 
 Wymagania: **Node.js 22+**, **npm**.
 
 ```bash
-# 1. Wejdź do katalogu aplikacji
-cd ann-toolbox
-
-# 2. Zainstaluj zależności
 npm install
-
-# 3. Uruchom serwer developerski (z dostępem w sieci lokalnej WiFi)
-npm run dev -- --host
+npm run dev -- --host      # dostępne też w sieci lokalnej, do testów na telefonie
 ```
 
-Aplikacja uruchomi się pod adresem: `http://localhost:5173`.
-
----
-
-## 🧪 Testy i Jakość Kodu
-
-Projekt zachowuje najwyższy rygor jakościowy: 100% pokrycia kluczowych modułów i pełna zgodność z TypeScript strict mode (0 błędów, 0 typów `any`).
+## 🧪 Testy
 
 ```bash
-# Uruchomienie pełnego zestawu 256 testów jednostkowych i integracyjnych
-npm test -- --run
-
-# Weryfikacja typów i budowanie produkcyjne
-npm run build
+npm test            # pełny zestaw
+npx tsc --noEmit    # weryfikacja typów
+npm run build       # build produkcyjny
 ```
 
----
+Poza testami jednostkowymi zestaw zawiera bramki jakości, które trudno utrzymać ręcznie:
 
-## 🚢 Wdrożenie Produkcyjne (Docker / Coolify)
+| Plik | Czego pilnuje |
+| :--- | :--- |
+| `src/design/tokens.test.ts` | Zgodność `tokens.css` z `tokens.ts` oraz kontrast WCAG każdej pary kolorów we wszystkich trzech motywach |
+| `src/copy/copy.test.ts` | Brak angielszczyzny w interfejsie, jeden stan = jedna etykieta, rodzaj żeński |
+| `src/copy/plural.test.ts` | Poprawna odmiana liczebników |
+| `src/testing/conventions.test.ts` | Testy nie przywiązują się do wyglądu (brak asercji na klasach CSS, selektorów po klasach, kolejności w DOM, literałów interfejsu) |
+| `src/lib/icons.test.ts` | Ikony importowane pojedynczo — barrel `lucide-react` wciąga komplet ~1500 ikon |
 
-Repozytorium zawiera zoptymalizowany, wieloetapowy `Dockerfile` z serwerem Nginx do wdrożeń w środowisku **Coolify** / Docker Swarm / Kubernetes:
+## 🚢 Wdrożenie
+
+Wieloetapowy `Dockerfile` z Nginx, gotowy pod Coolify / Docker / Kubernetes:
 
 ```bash
-# Zbudowanie obrazu Docker
-docker build -t ann-toolbox:latest .
-
-# Uruchomienie kontenera na porcie 80
-docker run -d -p 8080:80 --name ann-toolbox ann-toolbox:latest
+docker build -t przystan:latest .
+docker run -d -p 8080:80 --name przystan przystan:latest
 ```
 
 ---
 
-## 🧭 Roadmapa i Kolejne Moduły Pakietu
+## 🏗 Architektura
 
-Architektura aplikacji oparta jest o scentralizowany rejestr modułów (`src/core/registry.ts`), przygotowany pod kolejne narzędzia:
-- ⚡ **Menu Dopaminowe** — podręczna lista szybkich mikronagród i zasobów energii przy spadkach nastroju.
-- 🧩 **Mikro-Zadania** — dekompozycja przytłaczających zadań na bezwysiłkowe mikrokroki.
-- 📅 **Wizualny Planer Dnia** — intuicyjny harmonogram blokowy chroniący przed przeciążeniem.
+```
+src/
+├── app/          powłoka: router, nagłówek, dolna nawigacja, ekran „Teraz", ustawienia
+├── components/ui prymitywy interfejsu (Button, Card, Sheet, Field, Slider…)
+├── copy/         wszystkie teksty interfejsu — zero napisów w JSX
+├── core/         rejestr modułów i motywy
+├── design/       tokeny wizualne i typografia
+├── lib/          cn(), ikony, warstwa ruchu, media query, historia arkuszy
+└── modules/      cztery moduły, każdy z własną logiką domenową
+```
 
+Nawigacja korzysta z History API, więc każdy moduł ma własny adres (`/czas`,
+`/skupienie`, `/energia`, `/start`), a przycisk Wstecz wraca na ekran startowy
+zamiast zamykać aplikację. Otwarty arkusz też jest wpisem w historii.
+
+Dane trzymane są wyłącznie w `localStorage` tego telefonu. Nic nie wychodzi na zewnątrz.

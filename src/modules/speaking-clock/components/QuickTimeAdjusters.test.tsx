@@ -1,57 +1,42 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QuickTimeAdjusters } from './QuickTimeAdjusters';
+import { czasIds } from '../testIds';
 
-describe('QuickTimeAdjusters Component', () => {
-  const defaultProps = {
-    onAdjustMinutes: vi.fn(),
-  };
-
-  it('renders all 4 adjustment buttons: -5 min, +1 min, +5 min, +10 min', () => {
-    render(<QuickTimeAdjusters {...defaultProps} />);
-
-    expect(screen.getByRole('button', { name: /-5 min|Odejmij 5 minut/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /\+1 min|Dodaj 1 minut/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /\+5 min|Dodaj 5 minut/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /\+10 min|Dodaj 10 minut/i })).toBeInTheDocument();
+describe('QuickTimeAdjusters', () => {
+  it('daje cztery korekty w grupie o nazwie dostępnej', () => {
+    render(<QuickTimeAdjusters onAdjustMinutes={vi.fn()} />);
+    expect(screen.getByRole('group')).toHaveAccessibleName();
+    expect(screen.getAllByRole('button')).toHaveLength(4);
   });
 
-  it('calls onAdjustMinutes with correct negative and positive minute values', () => {
+  it.each([[-5], [1], [5], [10]])('zgłasza korektę o %i minut', async (minutes) => {
+    const user = userEvent.setup();
     const onAdjustMinutes = vi.fn();
     render(<QuickTimeAdjusters onAdjustMinutes={onAdjustMinutes} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /-5 min|Odejmij 5 minut/i }));
-    expect(onAdjustMinutes).toHaveBeenCalledWith(-5);
-
-    fireEvent.click(screen.getByRole('button', { name: /\+1 min|Dodaj 1 minut/i }));
-    expect(onAdjustMinutes).toHaveBeenCalledWith(1);
-
-    fireEvent.click(screen.getByRole('button', { name: /\+5 min|Dodaj 5 minut/i }));
-    expect(onAdjustMinutes).toHaveBeenCalledWith(5);
-
-    fireEvent.click(screen.getByRole('button', { name: /\+10 min|Dodaj 10 minut/i }));
-    expect(onAdjustMinutes).toHaveBeenCalledWith(10);
+    await user.click(screen.getByTestId(czasIds.quickAdjust(minutes)));
+    expect(onAdjustMinutes).toHaveBeenCalledWith(minutes);
   });
 
-  it('disables all buttons when disabled is true', () => {
+  it('każdy przycisk ma nazwę dostępną opisującą kierunek zmiany', () => {
+    render(<QuickTimeAdjusters onAdjustMinutes={vi.fn()} />);
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toHaveAccessibleName();
+      expect(button.getAttribute('aria-label')).not.toBe('');
+    }
+  });
+
+  it('daje się wyłączyć', async () => {
+    const user = userEvent.setup();
     const onAdjustMinutes = vi.fn();
-    render(<QuickTimeAdjusters onAdjustMinutes={onAdjustMinutes} disabled={true} />);
+    render(<QuickTimeAdjusters onAdjustMinutes={onAdjustMinutes} disabled />);
 
-    const buttons = screen.getAllByRole('button');
-    expect(buttons.length).toBe(4);
-
-    buttons.forEach((button) => {
+    for (const button of screen.getAllByRole('button')) {
       expect(button).toBeDisabled();
-      fireEvent.click(button);
-    });
-
+    }
+    await user.click(screen.getByTestId(czasIds.quickAdjust(5)));
     expect(onAdjustMinutes).not.toHaveBeenCalled();
-  });
-
-  it('has role="group" with accessible label', () => {
-    render(<QuickTimeAdjusters {...defaultProps} />);
-
-    const group = screen.getByRole('group', { name: /Szybka zmiana czasu|Korekta czasu/i });
-    expect(group).toBeInTheDocument();
   });
 });

@@ -6,7 +6,7 @@ export interface NumberDisplayProps extends React.HTMLAttributes<HTMLDivElement>
   /** Gotowy do wyświetlenia napis, np. "02:14" — formatowanie należy do wywołującego. */
   value: string;
   label?: string;
-  size?: 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   /**
    * Ogłaszanie zmian czytnikowi ekranu. Domyślnie wyłączone — licznik
    * odliczający co sekundę zagłuszyłby wszystko inne.
@@ -15,6 +15,7 @@ export interface NumberDisplayProps extends React.HTMLAttributes<HTMLDivElement>
 }
 
 const SIZE = {
+  sm: 'text-3xl',
   md: 'text-display-1',
   lg: 'text-display-2',
   xl: 'text-display-3',

@@ -9,13 +9,13 @@ import {
   type AnnouncementPayload,
   type ClockState,
 } from '../types';
-import * as chimeSynthesizer from './chimeSynthesizer';
+import * as chimeSynthesizer from '../../../lib/audio/chime';
 import * as speechService from './speechService';
 import { WakeLockService } from './wakeLockService';
 import { SilentAudioLoop } from './silentAudioLoop';
 
 // Mock dependencies
-vi.mock('./chimeSynthesizer', () => ({
+vi.mock('../../../lib/audio/chime', () => ({
   playChime: vi.fn().mockResolvedValue(undefined),
   closeAudioContext: vi.fn().mockResolvedValue(undefined),
 }));
@@ -189,7 +189,7 @@ describe('BackgroundTimerEngine', () => {
           intervalMinutes: 15,
           clockSync: true,
           formatStyle: 'natural',
-          playChimeBefore: true,
+          chimeEnabled: true,
         },
         { onAnnounce: (a) => announcements.push(a) }
       );
@@ -211,14 +211,14 @@ describe('BackgroundTimerEngine', () => {
       engine.stop();
     });
 
-    it('does not play chime when playChimeBefore is false', async () => {
+    it('does not play chime when chimeEnabled is false', async () => {
       const baseDate = new Date(2026, 7, 27, 10, 14, 58);
       vi.setSystemTime(baseDate);
 
       const engine = new BackgroundTimerEngine({
         intervalMinutes: 15,
         clockSync: true,
-        playChimeBefore: false,
+        chimeEnabled: false,
       });
 
       await engine.start();
@@ -319,7 +319,7 @@ describe('BackgroundTimerEngine', () => {
 
       const announcements: AnnouncementPayload[] = [];
       const engine = new BackgroundTimerEngine(
-        { formatStyle: 'natural', playChimeBefore: true },
+        { formatStyle: 'natural', chimeEnabled: true },
         { onAnnounce: (a) => announcements.push(a) }
       );
 
@@ -447,7 +447,7 @@ describe('BackgroundTimerEngine', () => {
       const silentAudioStopSpy = vi.spyOn(SilentAudioLoop.prototype, 'stop').mockReturnValue(undefined);
 
       const engine = new BackgroundTimerEngine({
-        wakeLockEnabled: true,
+        keepAwake: true,
       });
 
       await engine.start();
@@ -467,7 +467,7 @@ describe('BackgroundTimerEngine', () => {
 
       const onError = vi.fn();
       const engine = new BackgroundTimerEngine(
-        { playChimeBefore: true },
+        { chimeEnabled: true },
         { onError }
       );
 
@@ -596,7 +596,7 @@ describe('BackgroundTimerEngine', () => {
             label: 'Wyjście z domu',
             smartDensity: true,
           },
-          playChimeBefore: true,
+          chimeEnabled: true,
         },
         {
           onAnnounce: (a) => announcements.push(a),

@@ -1,44 +1,53 @@
 import React from 'react';
+import { Slider, Text, LabelText } from '../../../components/ui';
+import { start } from '../../../copy';
+import { startIds } from '../testIds';
 
-interface ResistanceSliderProps {
-  level: number;
-  onChange: (level: number) => void;
+export type ResistanceLevel = 1 | 2 | 3 | 4 | 5;
+
+export interface ResistanceSliderProps {
+  level: ResistanceLevel;
+  onChange: (level: ResistanceLevel) => void;
 }
 
+function toLevel(value: number): ResistanceLevel {
+  const clamped = Math.min(5, Math.max(1, Math.round(value)));
+  return clamped as ResistanceLevel;
+}
+
+/**
+ * Poziom oporu steruje tym, jak drobne mają być kroki.
+ *
+ * Opis pod suwakiem jest jednym zdaniem — nie akapitem — bo ten ekran ma
+ * odejmować przytłoczenia, a nie dokładać czytania.
+ */
 export const ResistanceSlider: React.FC<ResistanceSliderProps> = ({ level, onChange }) => {
-  const getExplanation = (lvl: number) => {
-    switch(lvl) {
-      case 1: return "Lekki opór. Kształtujemy zadanie w naturalne bloki 5-10 minutowe.";
-      case 2: return "Niewielka niechęć. Dzielimy na mniejsze, 3-5 minutowe kroczki.";
-      case 3: return "Umiarkowany opór. Rozbijamy na bardzo konkretne akcje 1-3 minutowe.";
-      case 4: return "Duża blokada. Każdy krok to zaledwie 30-60 sekund bez wysiłku.";
-      case 5: return "Totalny paraliż. Mikroskopijne kroki (15-30s). Cel: po prostu zacząć.";
-      default: return "";
-    }
-  };
+  const copy = start.decomposer.resistance;
+  const info = copy.levels[level];
 
   return (
-    <div className="w-full py-4">
-      <label htmlFor="resistance-slider" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-        Jak duży opór czujesz przed tym zadaniem?
-      </label>
-      <input
-        id="resistance-slider"
-        type="range"
-        min="1"
-        max="5"
-        step="1"
+    <div className="flex flex-col gap-3" data-testid={startIds.decomposerResistance}>
+      <Text size="base">{copy.label}</Text>
+
+      <Slider
         value={level}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600"
+        onValueChange={(value) => onChange(toLevel(value))}
+        min={1}
+        max={5}
+        step={1}
+        label={copy.label}
+        valueText={info.name}
       />
-      <div className="flex justify-between text-xs text-gray-500 mt-2 px-1">
-        <span>Lekki opór</span>
-        <span>Umiarkowany</span>
-        <span>Totalny paraliż</span>
-      </div>
-      <div className="mt-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-200 rounded-lg text-sm transition-all">
-        <strong>Poziom {level}:</strong> {getExplanation(level)}
+
+      <div
+        className="flex flex-col gap-1 rounded-card bg-surface-sunken px-card py-3"
+        data-testid={startIds.decomposerResistanceNote}
+        aria-live="polite"
+      >
+        <LabelText tone="module">{info.name}</LabelText>
+        <Text size="sm" tone="muted">
+          {info.hint}
+        </Text>
       </div>
     </div>
   );

@@ -1,4 +1,12 @@
 /**
+ * Syntezator gongu (Web Audio).
+ *
+ * Mieszka poza modułami, bo używają go dwa: Czas (sygnał przed wypowiedzią)
+ * i Energia (tykanie koła, dźwięk trybu SOS). Wcześniej Energia importowała
+ * go z wnętrza Czasu, co wiązało ze sobą moduły bez powodu.
+ */
+
+/**
  * Chime Synthesizer Service
  *
  * Generates soft, ADHD-friendly harmonic alert chimes using the Web Audio API.

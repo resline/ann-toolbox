@@ -29,6 +29,8 @@ export interface MicroTask {
   category?: 'home' | 'work' | 'health' | 'selfcare';
   resistanceLevel?: 1 | 2 | 3 | 4 | 5;
   isCustomTemplate?: boolean;
+  /** Zadanie doraźne, złożone w arkuszu rozbijania — nie pokazuje się w katalogu. */
+  isAdHoc?: boolean;
   createdAt?: string;
 }
 

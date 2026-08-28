@@ -1,39 +1,72 @@
 import React from 'react';
 import { cn } from '../../../lib/cn';
+import { LabelText } from '../../../components/ui';
+import type { TimerPhase } from '../types';
+import { skupienieIds as ids } from '../testIds';
 
-interface PhaseTimelineProps {
-  currentPhaseIndex: number;
-  phases: Array<{ id: string; type: 'focus' | 'short-break' | 'long-break'; duration: number }>;
+export interface TimelineItem {
+  phase: TimerPhase;
+  /** Nazwa fazy po polsku. */
+  label: string;
+  /** Gotowy napis z czasem, np. „25 min". */
+  minutesLabel: string;
+  /** Proporcja szerokości paska — po prostu długość fazy w minutach. */
+  weight: number;
 }
 
-export const PhaseTimeline: React.FC<PhaseTimelineProps> = ({
-  currentPhaseIndex,
-  phases,
-}) => {
+export interface PhaseTimelineProps {
+  items: TimelineItem[];
+  current: TimerPhase | null;
+  /** Nazwa dostępna listy. */
+  label: string;
+}
+
+/**
+ * Plan sesji: trzy fazy presetu, szerokość paska proporcjonalna do długości.
+ *
+ * Wcześniej pokazywał cztery fazy Pomodoro z zaślepki w komponencie — czyli
+ * coś, czego w danych nigdy nie było.
+ */
+export const PhaseTimeline: React.FC<PhaseTimelineProps> = ({ items, current, label }) => {
+  const currentIndex = items.findIndex((item) => item.phase === current);
+
   return (
-    <div className="w-full flex items-center justify-center gap-2 overflow-x-auto py-4 px-2 no-scrollbar">
-      {phases.map((phase, index) => {
-        const isPast = index < currentPhaseIndex;
-        const isCurrent = index === currentPhaseIndex;
-        
+    <ol data-testid={ids.timeline} aria-label={label} className="flex items-stretch gap-2 w-full">
+      {items.map((item, index) => {
+        const isCurrent = index === currentIndex;
+        const isDone = currentIndex > -1 && index < currentIndex;
+
         return (
-          <div key={phase.id} className="flex items-center gap-2">
-            <div 
+          <li
+            key={item.phase}
+            data-testid={ids.timelinePhase(item.phase)}
+            aria-current={isCurrent ? 'step' : undefined}
+            className="flex flex-col gap-1.5 min-w-0"
+            style={{ flexGrow: item.weight, flexBasis: 0 }}
+          >
+            <span
+              aria-hidden
               className={cn(
-                  'h-2 rounded-full transition-all duration-300',
-                  phase.type === 'focus' ? 'w-12' : phase.type === 'long-break' ? 'w-8' : 'w-4',
-                  isPast 
-                    ? 'bg-sage-400 dark:bg-sage-600'
-                    : isCurrent
-                    ? 'bg-sage-600 dark:bg-sage-400 scale-110 shadow-sm'
-                    : 'bg-warmgray-200 dark:bg-warmgray-700'
-                )
-              }
-              title={`${phase.type} - ${phase.duration}m`}
+                'h-1 rounded-full transition-colors',
+                isCurrent ? 'bg-module' : isDone ? 'bg-module/40' : 'bg-line'
+              )}
             />
-          </div>
+            <span className="flex flex-col gap-0.5 min-w-0">
+              <LabelText tone={isCurrent ? 'module' : 'faint'} className="truncate">
+                {item.label}
+              </LabelText>
+              <span
+                className={cn(
+                  'numeric text-xs',
+                  isCurrent ? 'text-ink' : 'text-ink-faint'
+                )}
+              >
+                {item.minutesLabel}
+              </span>
+            </span>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 };

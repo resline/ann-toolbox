@@ -1,134 +1,290 @@
-import React, { useState, useEffect } from 'react';
-import { Settings2, RefreshCcw } from '../../../lib/icons';
-import { MultiPhaseProgressDisc } from './MultiPhaseProgressDisc';
-import { BreathingCircle } from './BreathingCircle';
+import React, { useEffect, useRef, useState } from 'react';
+import { Circle, Clock, Settings2 } from '../../../lib/icons';
+import { common, skupienie } from '../../../copy';
+import {
+  Badge,
+  Button,
+  Divider,
+  EmptyState,
+  IconButton,
+  SegmentedTabs,
+  Section,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  Stack,
+  Switch,
+  TabPanel,
+  Text,
+} from '../../../components/ui';
+import { useVisualTimerStore } from '../store';
+import { useAmbience } from '../useAmbience';
+import { skupienieIds as ids } from '../testIds';
+import type { TimerPhase } from '../types';
 import { AmbienceControls } from './AmbienceControls';
-import { PhaseTimeline } from './PhaseTimeline';
+import { BreathingCircle } from './BreathingCircle';
+import { MultiPhaseProgressDisc } from './MultiPhaseProgressDisc';
+import { PhaseTimeline, type TimelineItem } from './PhaseTimeline';
+import { PresetPicker } from './PresetPicker';
 
-type PhaseType = 'focus' | 'short-break' | 'long-break';
+type ModeKey = 'sesja' | 'oddech';
 
-interface Phase {
-  id: string;
-  type: PhaseType;
-  duration: number; // in minutes
+/** MM:SS — jedyne formatowanie czasu w tym module. */
+function formatTime(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+/**
+ * Skupienie.
+ *
+ * Moduł stał wcześniej na zaślepce: cztery fazy Pomodoro w useState, własny
+ * setInterval i sesja znikająca po odświeżeniu strony. Store z fazami
+ * rozgrzewka → skupienie → wyciszenie leżał obok, nieużywany. Teraz cały stan
+ * biegu pochodzi ze store'u, a komponent dokłada wyłącznie tykanie zegara.
+ */
 export const VisualTimerModule: React.FC = () => {
-  const [isActive, setIsActive] = useState(false);
-  const [isBreathingMode, setIsBreathingMode] = useState(false);
-  const [activeSound, setActiveSound] = useState<string | null>(null);
-  const [volume, setVolume] = useState(50);
-  
-  const [phases] = useState<Phase[]>([
-    { id: '1', type: 'focus', duration: 25 },
-    { id: '2', type: 'short-break', duration: 5 },
-    { id: '3', type: 'focus', duration: 25 },
-    { id: '4', type: 'long-break', duration: 15 },
-  ]);
-  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
-  
-  const currentPhase = phases[currentPhaseIndex];
-  
-  // Mock time left for UI
-  const [timeLeftSec, setTimeLeftSec] = useState(currentPhase.duration * 60);
+  const presets = useVisualTimerStore((s) => s.presets);
+  const activePresetId = useVisualTimerStore((s) => s.activePresetId);
+  const currentPhase = useVisualTimerStore((s) => s.currentPhase);
+  const timeRemainingSeconds = useVisualTimerStore((s) => s.timeRemainingSeconds);
+  const totalPhaseSeconds = useVisualTimerStore((s) => s.totalPhaseSeconds);
+  const isRunning = useVisualTimerStore((s) => s.isRunning);
+  const startTimer = useVisualTimerStore((s) => s.startTimer);
+  const pauseTimer = useVisualTimerStore((s) => s.pauseTimer);
+  const resumeTimer = useVisualTimerStore((s) => s.resumeTimer);
+  const stopTimer = useVisualTimerStore((s) => s.stopTimer);
+  const skipPhase = useVisualTimerStore((s) => s.skipPhase);
+  const tick = useVisualTimerStore((s) => s.tick);
 
+  const [mode, setMode] = useState<ModeKey>('sesja');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [autoSound, setAutoSound] = useState(false);
+
+  const ambience = useAmbience();
+  const { stop: stopAmbience } = ambience;
+  /** Czy to sesja włączyła dźwięk — tylko wtedy sama go gasi na końcu. */
+  const soundStartedBySession = useRef(false);
+
+  // Jedyny zegar w module. Store liczy, komponent tylko go trąca.
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isActive && timeLeftSec > 0) {
-      interval = setInterval(() => {
-        setTimeLeftSec((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeftSec === 0) {
-      // Auto advance
-      setIsActive(false);
-      if (currentPhaseIndex < phases.length - 1) {
-        setCurrentPhaseIndex(prev => prev + 1);
-        setTimeLeftSec(phases[currentPhaseIndex + 1].duration * 60);
-      }
-    }
+    if (!isRunning) return;
+    const interval = setInterval(() => tick(), 1000);
     return () => clearInterval(interval);
-  }, [isActive, timeLeftSec, currentPhaseIndex, phases]);
+  }, [isRunning, tick]);
 
-  const toggleTimer = () => setIsActive(!isActive);
+  // Koniec sesji — czy przez „Zatrzymaj", czy przez wyczerpanie ostatniej fazy.
+  useEffect(() => {
+    if (currentPhase === null && soundStartedBySession.current) {
+      soundStartedBySession.current = false;
+      stopAmbience();
+    }
+  }, [currentPhase, stopAmbience]);
 
-  const resetTimer = () => {
-    setIsActive(false);
-    setTimeLeftSec(currentPhase.duration * 60);
+  const activePreset = presets.find((preset) => preset.id === activePresetId) ?? null;
+
+  const handleStart = (presetId: string) => {
+    const preset = presets.find((p) => p.id === presetId);
+    startTimer(presetId);
+    setSettingsOpen(false);
+
+    // Wciąż jesteśmy w geście dotknięcia — tylko tutaj iOS pozwoli odblokować
+    // AudioContext, więc dźwięk startuje dokładnie w tym miejscu.
+    if (autoSound && preset && preset.ambience !== 'none') {
+      soundStartedBySession.current = true;
+      ambience.play(preset.ambience);
+    }
   };
 
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  // Dotknięcie przycisku dźwięku odbiera sesji prawo do gaszenia go na końcu —
+  // od tej chwili tłem steruje użytkowniczka, nie licznik.
+  const handleAmbienceToggle = (sound: Parameters<typeof ambience.toggle>[0]) => {
+    soundStartedBySession.current = false;
+    ambience.toggle(sound);
   };
 
-  const progress = 100 - (timeLeftSec / (currentPhase.duration * 60)) * 100;
+  const progress =
+    totalPhaseSeconds > 0
+      ? ((totalPhaseSeconds - timeRemainingSeconds) / totalPhaseSeconds) * 100
+      : 0;
+
+  const timelineItems: TimelineItem[] = activePreset
+    ? (
+        [
+          ['warmup', activePreset.warmupMinutes],
+          ['flow', activePreset.flowMinutes],
+          ['cooldown', activePreset.cooldownMinutes],
+        ] as Array<[TimerPhase, number]>
+      ).map(([phase, minutes]) => ({
+        phase,
+        label: skupienie.phase[phase],
+        minutesLabel: skupienie.timeline.minutes(minutes),
+        weight: Math.max(1, minutes),
+      }))
+    : [];
+
+  const sessionView = currentPhase ? (
+    <Stack gap="lg">
+      <MultiPhaseProgressDisc
+        progress={progress}
+        phaseLabel={skupienie.phase[currentPhase]}
+        timeLeft={formatTime(timeRemainingSeconds)}
+        totalLabel={skupienie.disc.ofTotal(Math.round(totalPhaseSeconds / 60))}
+        progressLabel={skupienie.disc.progressLabel(skupienie.phase[currentPhase])}
+        paused={!isRunning}
+      />
+
+      <Text size="sm" tone="muted" className="text-center" data-testid={ids.phaseHint}>
+        {skupienie.phaseHint[currentPhase]}
+      </Text>
+
+      <Stack gap="sm">
+        <Button
+          variant="primary"
+          tone="module"
+          size="lg"
+          data-testid={ids.primaryAction}
+          onClick={isRunning ? pauseTimer : resumeTimer}
+        >
+          {isRunning ? skupienie.action.pause : skupienie.action.resume}
+        </Button>
+
+        <div className="flex gap-2">
+          <Button
+            variant="quiet"
+            tone="neutral"
+            className="flex-1"
+            data-testid={ids.skipAction}
+            onClick={skipPhase}
+          >
+            {skupienie.action.skip}
+          </Button>
+          <Button
+            variant="quiet"
+            tone="neutral"
+            className="flex-1"
+            data-testid={ids.stopAction}
+            onClick={stopTimer}
+          >
+            {skupienie.action.stop}
+          </Button>
+        </div>
+      </Stack>
+
+      <PhaseTimeline items={timelineItems} current={currentPhase} label={skupienie.timeline.label} />
+    </Stack>
+  ) : presets.length > 0 ? (
+    <Section title={skupienie.preset.title}>
+      <PresetPicker presets={presets} scope="ekran" onStart={handleStart} />
+    </Section>
+  ) : (
+    <EmptyState title={skupienie.empty.title} description={skupienie.empty.description} />
+  );
 
   return (
-    <div className="w-full h-full max-w-lg mx-auto flex flex-col px-4 py-6 sm:py-8 space-y-6 duration-500">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-warmgray-900 dark:text-white tracking-tight">
-            Visual Timer
-          </h1>
-          <p className="text-sm text-warmgray-500 dark:text-warmgray-400 mt-1">
-            Stay focused. Remember to breathe.
-          </p>
+    <div data-testid={ids.root} className="py-gutter flex flex-col gap-section">
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-2 min-w-0">
+          {/* Nazwa modułu stoi w nagłówku powłoki — powtórzona tutaj zabierałaby
+              pierwszy ekran na informację, którą użytkowniczka już widzi. */}
+          {currentPhase ? (
+            <span>
+              <Badge tone={isRunning ? 'module' : 'caution'} data-testid={ids.statusBadge}>
+                {isRunning ? skupienie.state.running : skupienie.state.paused}
+              </Badge>
+            </span>
+          ) : (
+            <Text size="sm" tone="muted">
+              {skupienie.lead}
+            </Text>
+          )}
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setIsBreathingMode(!isBreathingMode)}
-            className="px-4 py-2 min-h-[48px] rounded-xl text-sm font-medium text-sage-700 bg-sage-100 hover:bg-sage-200 dark:bg-sage-900/30 dark:text-sage-300 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-          >
-            {isBreathingMode ? 'Timer' : 'Breathe'}
-          </button>
-          <button className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-xl text-warmgray-500 hover:bg-warmgray-100 dark:hover:bg-warmgray-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500">
-            <Settings2 className="w-5 h-5" />
-          </button>
-        </div>
+
+        <IconButton
+          label={skupienie.action.openSettings}
+          variant="quiet"
+          tone="neutral"
+          data-testid={ids.settingsAction}
+          onClick={() => setSettingsOpen(true)}
+        >
+          <Settings2 className="w-5 h-5" aria-hidden />
+        </IconButton>
       </header>
 
-      <div className="flex-1 flex flex-col justify-center">
-        {isBreathingMode ? (
-          <BreathingCircle isActive={isActive} />
-        ) : (
-          <div className="space-y-8">
-            <MultiPhaseProgressDisc
-              progress={progress}
-              phase={currentPhase.type}
-              timeLeft={formatTime(timeLeftSec)}
-              totalDuration={`${currentPhase.duration}m`}
-              isActive={isActive}
-              onToggle={toggleTimer}
-            />
-            
-            <div className="flex justify-center">
-              <button
-                onClick={resetTimer}
-                className="flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-xl text-sm font-medium text-warmgray-500 hover:bg-warmgray-100 dark:hover:bg-warmgray-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-                aria-label="Reset timer"
-              >
-                <RefreshCcw className="w-4 h-4" />
-                Reset
-              </button>
-            </div>
-            
-            <PhaseTimeline
-              currentPhaseIndex={currentPhaseIndex}
-              phases={phases}
-            />
-          </div>
-        )}
-      </div>
+      <SegmentedTabs
+        value={mode}
+        onValueChange={setMode}
+        label={skupienie.mode.label}
+        items={[
+          {
+            value: 'sesja',
+            label: skupienie.mode.session,
+            icon: <Clock className="w-4 h-4" data-testid={ids.modeTab('sesja')} aria-hidden />,
+          },
+          {
+            value: 'oddech',
+            label: skupienie.mode.breathing,
+            icon: <Circle className="w-4 h-4" data-testid={ids.modeTab('oddech')} aria-hidden />,
+          },
+        ]}
+      >
+        <TabPanel value="sesja" className="pt-section focus:outline-none">
+          {sessionView}
+        </TabPanel>
+        <TabPanel value="oddech" className="pt-section focus:outline-none">
+          <BreathingCircle />
+        </TabPanel>
+      </SegmentedTabs>
 
-      <div className="mt-auto pt-6">
-        <AmbienceControls
-          activeSound={activeSound}
-          volume={volume}
-          onToggleSound={(id) => setActiveSound(activeSound === id ? null : id)}
-          onVolumeChange={setVolume}
-        />
-      </div>
+      <AmbienceControls
+        active={ambience.active}
+        volume={ambience.volume}
+        supported={ambience.supported}
+        onToggle={handleAmbienceToggle}
+        onVolumeChange={ambience.setVolume}
+      />
+
+      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <SheetContent size="md">
+          <SheetHeader
+            title={skupienie.sheet.title}
+            description={skupienie.sheet.description}
+            closeLabel={common.action.close}
+          />
+          <SheetBody data-testid={ids.sheet}>
+            <Stack gap="lg">
+              <Section title={skupienie.sheet.presetSection}>
+                <PresetPicker presets={presets} scope="arkusz" onStart={handleStart} />
+              </Section>
+
+              <Divider />
+
+              <Section title={skupienie.sheet.soundSection}>
+                <Switch
+                  checked={autoSound}
+                  onCheckedChange={setAutoSound}
+                  label={skupienie.sheet.autoSound}
+                  hint={skupienie.sheet.autoSoundHint}
+                />
+              </Section>
+            </Stack>
+          </SheetBody>
+          <SheetFooter>
+            <Button
+              variant="secondary"
+              tone="neutral"
+              className="flex-1"
+              onClick={() => setSettingsOpen(false)}
+            >
+              {common.action.done}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

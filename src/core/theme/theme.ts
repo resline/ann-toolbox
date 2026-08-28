@@ -97,9 +97,9 @@ export function resolveStoredTheme(stored: unknown): ThemeId | null {
 /**
  * Ustawia motyw na <html>.
  *
- * Poza atrybutem `data-theme` nadal dokłada klasę `dark`, bo moduły wciąż
- * opierają się na wariantach `dark:`. Klasa znika w fazie domykającej, kiedy
- * ostatni moduł przejdzie na tokeny.
+ * Jedynym nośnikiem motywu jest atrybut `data-theme`. Klasa `dark` i warianty
+ * `dark:` zniknęły, gdy ostatni moduł przeszedł na tokeny — było ich 672
+ * w 35 plikach, a trzeci motyw był przez nie nieodróżnialny od drugiego.
  */
 export function applyThemeToDocument(theme: ThemeId): void {
   if (typeof document === 'undefined') return;
@@ -108,7 +108,6 @@ export function applyThemeToDocument(theme: ThemeId): void {
   const config = THEMES[theme] || THEMES[DEFAULT_THEME];
 
   root.dataset.theme = config.id;
-  root.classList.toggle('dark', config.isDark);
 
   const metaThemeColor = document.querySelector('meta[name="theme-color"]:not([media])');
   if (metaThemeColor) {

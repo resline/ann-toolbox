@@ -1,118 +1,97 @@
 import React from 'react';
 import { cn } from '../../../lib/cn';
+import { LabelText, NumberDisplay, Text } from '../../../components/ui';
+import { skupienieIds as ids } from '../testIds';
 
-interface MultiPhaseProgressDiscProps {
-  progress: number; // 0 to 100
-  phase: 'focus' | 'short-break' | 'long-break';
+export interface MultiPhaseProgressDiscProps {
+  /** 0–100. Ile fazy już minęło. */
+  progress: number;
+  /** Nazwa fazy po polsku — komponent nie tłumaczy enumów. */
+  phaseLabel: string;
+  /** Gotowy napis licznika, np. „24:59". */
   timeLeft: string;
-  totalDuration: string;
-  isActive: boolean;
-  onToggle: () => void;
+  /** Podpis pod licznikiem, np. „z 25 min". */
+  totalLabel: string;
+  /** Nazwa dostępna paska postępu. */
+  progressLabel: string;
+  paused?: boolean;
 }
+
+/*
+ * Tarcza sesji.
+ *
+ * Wcześniej miała trzy gradienty (emerald / cyan / violet), grubą kreskę i
+ * dwa cienie — czyli dokładnie to, czego przy nadwrażliwości sensorycznej się
+ * unika. Teraz jest jeden pierścień w akcencie modułu, reszta to typografia.
+ * viewBox zamiast sztywnych wymiarów: tarcza skaluje się z szerokością ekranu.
+ */
+const RADIUS = 44;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export const MultiPhaseProgressDisc: React.FC<MultiPhaseProgressDiscProps> = ({
   progress,
-  phase,
+  phaseLabel,
   timeLeft,
-  totalDuration,
-  isActive,
-  onToggle,
+  totalLabel,
+  progressLabel,
+  paused = false,
 }) => {
-  const radius = 130;
-  const stroke = 16;
-  const normalizedRadius = radius - stroke * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
-  const phaseGradients = {
-    'focus': 'url(#focusGradient)',
-    'short-break': 'url(#shortBreakGradient)',
-    'long-break': 'url(#longBreakGradient)',
-  };
-
-  const phaseColors = {
-    'focus': 'text-emerald-500',
-    'short-break': 'text-cyan-500',
-    'long-break': 'text-violet-400',
-  };
+  const clamped = Math.min(100, Math.max(0, progress));
+  const dashoffset = CIRCUMFERENCE - (clamped / 100) * CIRCUMFERENCE;
 
   return (
-    <button
-      onClick={onToggle}
-      className="relative flex items-center justify-center w-full max-w-[320px] aspect-square mx-auto rounded-full focus:outline-none focus-visible:ring-4 focus-visible:ring-sage-500 group"
-      aria-label={isActive ? 'Pause timer' : 'Start timer'}
+    <div
+      data-testid={ids.disc}
+      role="progressbar"
+      aria-label={progressLabel}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(clamped)}
+      // Dzieci elementu o roli progressbar są w ARIA prezentacyjne — czytnik
+      // ekranu nie ogłosi nazwy fazy ani licznika, choć oba są w środku.
+      // Kanoniczna droga to aria-valuetext, a warstwę wizualną chowamy.
+      aria-valuetext={[phaseLabel, timeLeft, totalLabel].filter(Boolean).join(', ')}
+      className="relative mx-auto w-full max-w-[19rem] aspect-square"
     >
-      {/* Velvet shadow backdrop */}
-      <div className="absolute inset-4 rounded-full bg-white dark:bg-warmgray-800 shadow-[inset_0_10px_30px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_10px_30px_rgba(0,0,0,0.4)]" />
-
-      {/* SVG Tracks */}
-      <svg
-        height={radius * 2}
-        width={radius * 2}
-        className="absolute inset-0 w-full h-full transform -rotate-90 z-10 drop-shadow-md"
-      >
-        <defs>
-          <linearGradient id="focusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#10b981" /> {/* Emerald 500 */}
-            <stop offset="100%" stopColor="#34d399" /> {/* Emerald 400 */}
-          </linearGradient>
-          <linearGradient id="shortBreakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#06b6d4" /> {/* Cyan 500 */}
-            <stop offset="100%" stopColor="#67e8f9" /> {/* Cyan 300 */}
-          </linearGradient>
-          <linearGradient id="longBreakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#a78bfa" /> {/* Violet 400 (Lavender) */}
-            <stop offset="100%" stopColor="#c4b5fd" /> {/* Violet 300 */}
-          </linearGradient>
-        </defs>
-        
+      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full -rotate-90" aria-hidden>
         <circle
+          cx="50"
+          cy="50"
+          r={RADIUS}
+          fill="none"
           stroke="currentColor"
-          fill="transparent"
-          strokeWidth={stroke}
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
-          className="text-warmgray-100 dark:text-warmgray-700/50 transition-colors"
+          strokeWidth="4"
+          className="text-line"
         />
-        
-        {/* Progress track */}
         <circle
-          stroke={phaseGradients[phase]}
-          fill="transparent"
-          strokeWidth={stroke}
-          strokeDasharray={circumference + ' ' + circumference}
-          style={{ strokeDashoffset }}
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
-          className="transition-all duration-1000 ease-linear"
+          cx="50"
+          cy="50"
+          r={RADIUS}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="4"
           strokeLinecap="round"
+          strokeDasharray={CIRCUMFERENCE}
+          strokeDashoffset={dashoffset}
+          className={cn(
+            'text-module transition-[stroke-dashoffset] duration-1000 ease-linear',
+            paused && 'opacity-50'
+          )}
         />
       </svg>
-      
-      {/* Inner content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
-        <span className={cn("text-sm font-semibold tracking-widest uppercase mb-2 transition-colors duration-500", phaseColors[phase])}>
-          {phase.replace('-', ' ')}
-        </span>
-        <span className="text-6xl sm:text-7xl font-extrabold text-warmgray-900 dark:text-white tabular-nums tracking-tighter drop-shadow-sm">
-          {timeLeft}
-        </span>
-        <span className="text-sm font-medium text-warmgray-400 dark:text-warmgray-500 mt-2 tracking-wide">
-          of {totalDuration}
-        </span>
+
+      <div
+        aria-hidden
+        className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center"
+      >
+        <LabelText tone="module" data-testid={ids.discPhase}>
+          {phaseLabel}
+        </LabelText>
+        <NumberDisplay value={timeLeft} size="md" data-testid={ids.discValue} />
+        <Text size="sm" tone="faint" data-testid={ids.discTotal}>
+          {totalLabel}
+        </Text>
       </div>
-      
-      {/* Hover overlay for play/pause */}
-      <div className={cn(
-        "absolute inset-6 rounded-full bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-30",
-        isActive ? "" : "backdrop-blur-sm"
-      )}>
-        <span className="bg-white/95 dark:bg-warmgray-900/95 text-warmgray-900 dark:text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg tracking-wide uppercase">
-          {isActive ? 'Pause' : 'Start'}
-        </span>
-      </div>
-    </button>
+    </div>
   );
 };

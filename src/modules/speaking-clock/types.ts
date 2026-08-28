@@ -23,7 +23,6 @@ export interface DepartureSettings {
 }
 
 export interface TimeTimerSettings {
-  enabled: boolean;
   color: TimeTimerColor;
   showNumbers: boolean;
   direction: 'clockwise' | 'counter-clockwise';
@@ -60,13 +59,6 @@ export interface SpeakingClockSettings {
   timeTimer: TimeTimerSettings;
   /** Whether to keep screen awake via Screen Wake Lock API */
   keepAwake: boolean;
-
-  /** Legacy / compatibility aliases */
-  speechRate?: number;
-  speechPitch?: number;
-  speechVolume?: number;
-  playChimeBefore?: boolean;
-  wakeLockEnabled?: boolean;
 }
 
 export const DEFAULT_SPEAKING_CLOCK_SETTINGS: SpeakingClockSettings = {
@@ -89,17 +81,11 @@ export const DEFAULT_SPEAKING_CLOCK_SETTINGS: SpeakingClockSettings = {
     intervalMinutes: 2,
   },
   timeTimer: {
-    enabled: true,
     color: 'sage',
     showNumbers: true,
     direction: 'counter-clockwise',
   },
   keepAwake: true,
-  speechRate: 1.0,
-  speechPitch: 1.0,
-  speechVolume: 1.0,
-  playChimeBefore: true,
-  wakeLockEnabled: true,
 };
 
 export interface TickPayload {

@@ -1,110 +1,89 @@
 import React from 'react';
-import { Volume2, VolumeX, CloudRain, Waves, TreePine } from '../../../lib/icons';
+import { CloudRain, Music, Volume2, VolumeX, Waves } from '../../../lib/icons';
+import type { LucideIcon } from '../../../lib/icons';
 import { cn } from '../../../lib/cn';
+import { skupienie } from '../../../copy';
+import { Button, Card, LabelText, Slider, Text } from '../../../components/ui';
+import type { SensoryAmbience } from '../types';
+import { skupienieIds as ids } from '../testIds';
 
-interface AmbienceControlsProps {
-  activeSound: string | null;
+export interface AmbienceControlsProps {
+  active: SensoryAmbience;
   volume: number;
-  onToggleSound: (soundId: string) => void;
-  onVolumeChange: (volume: number) => void;
+  supported: boolean;
+  onToggle: (sound: SensoryAmbience) => void;
+  onVolumeChange: (percent: number) => void;
 }
 
-export const AmbienceControls: React.FC<AmbienceControlsProps> = ({
-  activeSound,
-  volume,
-  onToggleSound,
-  onVolumeChange,
-}) => {
-  const sounds = [
-    { id: 'rain', label: 'Deszcz', icon: CloudRain },
-    { id: 'brown-noise', label: 'Szum brązowy', icon: Waves },
-    { id: 'forest', label: 'Las', icon: TreePine },
-  ];
+/*
+ * Trzy dźwięki, a nie pięć: „las" i „fale" z typu SensoryAmbience audio.ts
+ * syntezuje tym samym szumem brązowym, więc jako osobne przyciski byłyby
+ * obietnicą bez pokrycia.
+ */
+const SOUNDS: Array<{ id: SensoryAmbience; label: string; icon: LucideIcon }> = [
+  { id: 'rain', label: skupienie.ambience.sound.rain, icon: CloudRain },
+  { id: 'brown-noise', label: skupienie.ambience.sound.brown, icon: Waves },
+  { id: 'pink-noise', label: skupienie.ambience.sound.pink, icon: Music },
+];
 
-  return (
-    <div className="bg-white/60 dark:bg-warmgray-800/60 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-white/20 dark:border-warmgray-700/50 shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h3 className="text-sm font-bold text-warmgray-900 dark:text-warmgray-100 uppercase tracking-widest">
-            Tło Dźwiękowe
-          </h3>
-          {activeSound && (
-            <div className="flex items-center gap-1">
-              {[...Array(4)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className="w-1 bg-sage-500 rounded-full animate-pulse" 
-                  style={{ 
-                    height: `${Math.random() * 8 + 4}px`, 
-                    animationDelay: `${i * 150}ms`,
-                    animationDuration: '800ms'
-                  }} 
-                />
-              ))}
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-3 bg-white/50 dark:bg-warmgray-900/50 px-3 py-1.5 rounded-full shadow-inner">
-          {volume === 0 ? (
-            <VolumeX className="w-4 h-4 text-warmgray-400" />
-          ) : (
-            <Volume2 className="w-4 h-4 text-sage-500" />
-          )}
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            onChange={(e) => onVolumeChange(parseInt(e.target.value))}
-            className="w-20 sm:w-24 h-1.5 bg-warmgray-200 dark:bg-warmgray-700 rounded-lg appearance-none cursor-pointer accent-sage-500"
-            aria-label="Volume"
-          />
-          <span className="text-xs font-semibold text-warmgray-500 dark:text-warmgray-400 w-8 text-right tabular-nums">
-            {volume}%
-          </span>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
-        {sounds.map((sound) => {
-          const Icon = sound.icon;
-          const isActive = activeSound === sound.id;
-          
-          return (
-            <button
-              key={sound.id}
-              onClick={() => onToggleSound(sound.id)}
-              className={cn(
-                  'relative overflow-hidden flex flex-col items-center justify-center gap-3 p-4 min-h-[96px] rounded-2xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 group',
-                  isActive
-                    ? 'bg-sage-100/80 text-sage-700 dark:bg-sage-900/60 dark:text-sage-300 shadow-inner'
-                    : 'bg-white/50 text-warmgray-500 hover:bg-white hover:shadow-sm hover:-translate-y-0.5 dark:bg-warmgray-800/50 dark:text-warmgray-400 dark:hover:bg-warmgray-700/80'
-                )
-              }
-              aria-pressed={isActive}
-            >
-              {isActive && (
-                <div className="absolute inset-0 bg-gradient-to-t from-sage-200/50 to-transparent dark:from-sage-800/50 opacity-50" />
-              )}
-              
-              <div className="relative z-10">
-                <Icon className={cn(
-                  "w-7 h-7 transition-transform duration-500", 
-                  isActive ? "scale-110 drop-shadow-sm" : "group-hover:scale-110 group-hover:text-warmgray-700 dark:group-hover:text-warmgray-200"
-                )} />
-              </div>
-              
-              <span className={cn(
-                "relative z-10 text-xs font-semibold tracking-wide",
-                isActive ? "" : "group-hover:text-warmgray-700 dark:group-hover:text-warmgray-200"
-              )}>
-                {sound.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+export const AmbienceControls: React.FC<AmbienceControlsProps> = ({
+  active,
+  volume,
+  supported,
+  onToggle,
+  onVolumeChange,
+}) => (
+  <Card data-testid={ids.ambience} className="p-card flex flex-col gap-4">
+    <div className="flex items-center justify-between gap-3">
+      <LabelText>{skupienie.ambience.title}</LabelText>
+      <span className="text-ink-faint" aria-hidden>
+        {volume === 0 || active === 'none' ? (
+          <VolumeX className="w-4 h-4" />
+        ) : (
+          <Volume2 className="w-4 h-4" />
+        )}
+      </span>
     </div>
-  );
-};
+
+    <div className="grid grid-cols-3 gap-2">
+      {SOUNDS.map((sound) => {
+        const Icon = sound.icon;
+        const isActive = active === sound.id;
+
+        return (
+          <Button
+            key={sound.id}
+            data-testid={ids.ambienceSound(sound.id)}
+            variant={isActive ? 'secondary' : 'quiet'}
+            tone={isActive ? 'module' : 'neutral'}
+            aria-pressed={isActive}
+            onClick={() => onToggle(sound.id)}
+            className={cn('h-auto flex-col gap-2 py-3 px-2 min-h-tap')}
+          >
+            <Icon className="w-5 h-5" aria-hidden />
+            <span className="text-xs font-normal leading-tight text-center">{sound.label}</span>
+          </Button>
+        );
+      })}
+    </div>
+
+    <div data-testid={ids.ambienceVolume}>
+      <Slider
+        value={volume}
+        onValueChange={onVolumeChange}
+        label={skupienie.ambience.volume}
+        valueText={skupienie.ambience.volumeValue(volume)}
+      />
+    </div>
+
+    {!supported ? (
+      <Text size="xs" tone="faint" data-testid={ids.ambienceNotice}>
+        {skupienie.ambience.unsupported}
+      </Text>
+    ) : active !== 'none' ? (
+      <Text size="xs" tone="faint">
+        {skupienie.ambience.hint}
+      </Text>
+    ) : null}
+  </Card>
+);

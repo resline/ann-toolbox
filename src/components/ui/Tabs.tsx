@@ -7,6 +7,8 @@ export interface TabItem<T extends string> {
   label: string;
   hint?: string;
   icon?: React.ReactNode;
+  /** Identyfikator testowy zakładki — zawsze ze stałej modułu, nigdy literał. */
+  testId?: string;
 }
 
 export interface SegmentedTabsProps<T extends string> {
@@ -14,6 +16,8 @@ export interface SegmentedTabsProps<T extends string> {
   onValueChange: (value: T) => void;
   items: TabItem<T>[];
   label: string;
+  /** Blokuje przełączanie — np. gdy zmiana trybu w trakcie pracy nie ma sensu. */
+  disabled?: boolean;
   className?: string;
   children?: React.ReactNode;
 }
@@ -28,6 +32,7 @@ export function SegmentedTabs<T extends string>({
   onValueChange,
   items,
   label,
+  disabled = false,
   className,
   children,
 }: SegmentedTabsProps<T>) {
@@ -46,11 +51,14 @@ export function SegmentedTabs<T extends string>({
           <RadixTabs.Trigger
             key={item.value}
             value={item.value}
+            data-testid={item.testId}
+            disabled={disabled}
             className={cn(
               'flex items-center justify-center gap-1.5 min-h-[2.75rem] px-2 rounded-[calc(var(--radius-control)-2px)]',
               'text-sm font-medium text-ink-muted transition-colors',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--focus-ring))]',
-              'data-[state=active]:bg-surface-raised data-[state=active]:text-module-ink data-[state=active]:shadow-hairline'
+              'data-[state=active]:bg-surface-raised data-[state=active]:text-module-ink data-[state=active]:shadow-hairline',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
             )}
           >
             {item.icon}

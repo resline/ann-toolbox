@@ -1,17 +1,9 @@
-/**
- * ModeTabs Component
- *
- * Sensory-friendly, ergonomic mode selector for the Speaking Clock & Time Anchor:
- * - Continuous Speaking Clock (Zegar Ciągły)
- * - Bounded Focus Session (Sesja Focus)
- * - Departure & Target Deadline Countdown (Do Godziny)
- *
- * Designed with large tap targets (>=48px), clear tactile visual feedback, and full accessibility.
- */
-
 import React from 'react';
 import { Clock, Sparkles, Footprints } from '../../../lib/icons';
-import { ClockMode } from '../types';
+import { czas } from '../../../copy';
+import { SegmentedTabs } from '../../../components/ui';
+import { type ClockMode } from '../types';
+import { czasIds } from '../testIds';
 
 export interface ModeTabsProps {
   activeMode: ClockMode;
@@ -20,97 +12,34 @@ export interface ModeTabsProps {
   className?: string;
 }
 
-interface ModeOption {
-  id: ClockMode;
-  title: string;
-  subtitle: string;
-  icon: React.ElementType;
-}
-
-const MODE_OPTIONS: ModeOption[] = [
-  {
-    id: 'continuous',
-    title: 'Zegar Ciągły',
-    subtitle: 'Co N minut',
-    icon: Clock,
-  },
-  {
-    id: 'focus',
-    title: 'Sesja Focus',
-    subtitle: 'Blok czasu',
-    icon: Sparkles,
-  },
-  {
-    id: 'departure',
-    title: 'Do Godziny',
-    subtitle: 'Wyjście / Cel',
-    icon: Footprints,
-  },
-];
-
+/**
+ * Przełącznik trybu.
+ *
+ * Zawsze w jednym rzędzie — wcześniej do breakpointu `sm` układał trzy kafle jeden
+ * pod drugim, przez co tarcza lądowała około 150 px niżej, poniżej zgięcia ekranu.
+ * W module, którego sensem jest jedno spojrzenie na tarczę, to była główna wada.
+ */
 export const ModeTabs: React.FC<ModeTabsProps> = ({
   activeMode,
   onModeChange,
   disabled = false,
   className = '',
 }) => {
+  const items = [
+    { value: 'continuous' as const, label: czas.mode.continuous.title, testId: czasIds.modeTab('continuous'), icon: <Clock className="w-4 h-4" aria-hidden /> },
+    { value: 'focus' as const, label: czas.mode.focus.title, testId: czasIds.modeTab('focus'), icon: <Sparkles className="w-4 h-4" aria-hidden /> },
+    { value: 'departure' as const, label: czas.mode.departure.title, testId: czasIds.modeTab('departure'), icon: <Footprints className="w-4 h-4" aria-hidden /> },
+  ];
+
   return (
-    <div
-      role="tablist"
-      aria-label="Wybór trybu zegara"
-      className={`grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5 p-1.5 rounded-3xl bg-warmgray-100/90 dark:bg-warmgray-900/90 border border-warmgray-200/80 dark:border-warmgray-800 ${className}`}
-    >
-      {MODE_OPTIONS.map((mode) => {
-        const isActive = activeMode === mode.id;
-        const IconComponent = mode.icon;
-
-        return (
-          <button
-            key={mode.id}
-            type="button"
-            role="tab"
-            aria-selected={isActive}
-            aria-label={`${mode.title} - ${mode.subtitle}`}
-            tabIndex={isActive ? 0 : -1}
-            disabled={disabled}
-            onClick={() => onModeChange(mode.id)}
-            className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center gap-3 transition-all duration-300 select-none text-left ${
-              isActive
-                ? 'bg-sage-100 dark:bg-sage-900/60 text-sage-900 dark:text-sage-100 shadow-sm border border-sage-300/60 dark:border-sage-700/60 font-medium scale-[1.02]'
-                : 'bg-white/70 dark:bg-warmgray-850/60 text-warmgray-700 dark:text-warmgray-300 hover:bg-white dark:hover:bg-warmgray-800 border border-warmgray-200/60 dark:border-warmgray-750/60'
-            } ${
-              disabled
-                ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                : 'cursor-pointer active:scale-95'
-            }`}
-          >
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                isActive
-                  ? 'bg-sage-200 dark:bg-sage-800 text-sage-700 dark:text-sage-300'
-                  : 'bg-warmgray-100 dark:bg-warmgray-800 text-sage-600 dark:text-sage-400'
-              }`}
-            >
-              <IconComponent className="w-5 h-5" />
-            </div>
-
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold truncate leading-tight">
-                {mode.title}
-              </span>
-              <span
-                className={`text-xs truncate leading-normal transition-colors ${
-                  isActive
-                    ? 'text-sage-700 dark:text-sage-400'
-                    : 'text-warmgray-500 dark:text-warmgray-400'
-                }`}
-              >
-                {mode.subtitle}
-              </span>
-            </div>
-          </button>
-        );
-      })}
+    <div data-testid={czasIds.modeTabs} className={className}>
+      <SegmentedTabs<ClockMode>
+        label={czas.modeLabel}
+        value={activeMode}
+        onValueChange={onModeChange}
+        disabled={disabled}
+        items={items}
+      />
     </div>
   );
 };

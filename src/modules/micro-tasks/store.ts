@@ -3,8 +3,29 @@ import { persist } from 'zustand/middleware';
 import { MicroTasksState, StepStatus, TimerState } from './types';
 import { MICRO_TASK_TEMPLATES } from './templates';
 
+export const AD_HOC_PREFIX = 't-adhoc-';
+
 interface MicroTasksStore extends MicroTasksState {
   startTask: (taskId: string) => void;
+  /**
+   * Zadanie złożone w locie w arkuszu rozbijania.
+   *
+   * Bez tego ścieżka „własne zadanie" nie miała dokąd zapisać kroków —
+   * widok trzymał je w useState i traciła je każda zmiana karty.
+   * Zwraca identyfikator nowego zadania albo pusty napis, gdy nie było
+   * ani jednego niepustego kroku.
+   */
+  startAdHocTask: (title: string, stepTitles: string[]) => string;
+  /**
+   * Wyjście z zadania bez wpisywania go do historii.
+   *
+   * Zadanie ZOSTAJE — także doraźne, złożone w arkuszu. Potwierdzenie obiecuje
+   * powrót do niego, a dla zadania doraźnego ten wpis jest jedynym miejscem,
+   * gdzie te kroki w ogóle istnieją. Kasuje wyłącznie `discardTask`.
+   */
+  abandonTask: () => void;
+  /** Usunięcie zadania razem z krokami — tylko na wyraźne żądanie z ekranu. */
+  discardTask: (taskId: string) => void;
   setStepStatus: (stepId: string, status: StepStatus) => void;
   nextStep: () => void;
   finishTask: () => void;
@@ -79,23 +100,89 @@ export const useMicroTasksStore = create<MicroTasksStore>()(
 
       startTask: (taskId) => {
         const state = get();
-        const foundInTemplates = state.tasks.find((t) => t.id === taskId);
-        const foundInCustom = state.userTemplates.find((t) => t.id === taskId);
-        
-        let task = foundInTemplates || foundInCustom;
+        const foundInTasks = state.tasks.find((t) => t.id === taskId);
+        const task = foundInTasks || state.userTemplates.find((t) => t.id === taskId);
 
         if (task && task.steps.length > 0) {
           const resetSteps = task.steps.map(s => ({ ...s, status: 'pending' as StepStatus }));
-          
+
+          // Szablon użytkowniczki żyje poza `tasks`, a cała progresja kroków
+          // szuka zadania właśnie tam — bez tej kopii nextStep nie znajdował
+          // zadania i „uruchom" nic nie robiło.
+          const tasks = foundInTasks
+            ? state.tasks.map(t => t.id === taskId ? { ...t, steps: resetSteps } : t)
+            : [...state.tasks, { ...task, steps: resetSteps }];
+
           set({
             activeTaskId: taskId,
             currentStepId: resetSteps[0].id,
             timerState: 'idle',
             timeRemainingSeconds: (resetSteps[0].estimatedMinutes || 2) * 60,
-            tasks: state.tasks.map(t => t.id === taskId ? { ...t, steps: resetSteps } : t)
+            tasks
           });
         }
       },
+
+      startAdHocTask: (title, stepTitles) => {
+        const stamp = Date.now();
+        const steps = stepTitles
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0)
+          .map((t, i) => ({
+            id: `s-adhoc-${stamp}-${i}`,
+            title: t,
+            status: 'pending' as StepStatus,
+            estimatedMinutes: 2
+          }));
+
+        if (steps.length === 0) return '';
+
+        // sufiks losowy, bo dwa wywołania w tej samej milisekundzie dałyby ten sam klucz
+        const id = `${AD_HOC_PREFIX}${stamp}-${Math.random().toString(36).slice(2, 7)}`;
+
+        set((state) => ({
+          // Zamknięte zadania doraźne znikają — zostawione w `tasks` rosłyby
+          // w localStorage bez końca. Odłożone (z krokami jeszcze do zrobienia)
+          // zostają: ekran startowy obiecuje, że można do nich wrócić, więc
+          // złożenie kolejnego zadania nie może ich po cichu skasować.
+          tasks: [
+            ...state.tasks.filter(
+              (t) => !t.isAdHoc || t.steps.some((s) => s.status === 'pending')
+            ),
+            { id, title: title.trim(), steps, isAdHoc: true, createdAt: new Date(stamp).toISOString() }
+          ]
+        }));
+
+        get().startTask(id);
+        return id;
+      },
+
+      abandonTask: () => set((state) => ({
+        // Kroki wracają do stanu wyjściowego — dokładnie to, co obiecuje pytanie
+        // przed odłożeniem. Samo zadanie zostaje: doraźne czeka na ekranie
+        // startowym jako odłożone, gotowe zadanie wraca do katalogu.
+        tasks: state.tasks.map((t) =>
+          t.id === state.activeTaskId
+            ? { ...t, steps: t.steps.map((s) => ({ ...s, status: 'pending' as StepStatus })) }
+            : t
+        ),
+        activeTaskId: null,
+        currentStepId: null,
+        timerState: 'idle',
+        timeRemainingSeconds: 0
+      })),
+
+      discardTask: (taskId) => set((state) => {
+        const tasks = state.tasks.filter((t) => t.id !== taskId);
+        if (state.activeTaskId !== taskId) return { tasks };
+        return {
+          tasks,
+          activeTaskId: null,
+          currentStepId: null,
+          timerState: 'idle' as TimerState,
+          timeRemainingSeconds: 0
+        };
+      }),
 
       setStepStatus: (stepId, status) => {
         set((state) => ({
@@ -141,13 +228,15 @@ export const useMicroTasksStore = create<MicroTasksStore>()(
       finishTask: () => {
         const state = get();
         const task = state.tasks.find((t) => t.id === state.activeTaskId);
-        
-        if (task) {
+
+        // Historia jest dowodem rzeczowym na zrobione kroki, więc wchodzi na nią
+        // tylko zadanie faktycznie doprowadzone do końca. Krok pominięty nie jest
+        // krokiem zrobionym — inaczej listę „Ukończone zadania" dałoby się
+        // napełnić samym klikaniem „pomiń".
+        if (task && task.steps.every((s) => s.status === 'completed')) {
           get().recordTaskCompletion(task);
-          set({ activeTaskId: null, currentStepId: null, timerState: 'finished' });
-        } else {
-          set({ activeTaskId: null, currentStepId: null, timerState: 'finished' });
         }
+        set({ activeTaskId: null, currentStepId: null, timerState: 'finished' });
       },
 
       setTimerState: (timerState) => set({ timerState }),

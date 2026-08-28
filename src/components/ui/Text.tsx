@@ -11,8 +11,13 @@ const TONE: Record<TextTone, string> = {
   module: 'text-module-ink',
 };
 
+export type HeadingSize = 'sm' | 'md' | 'lg' | 'xl' | 'display';
+
 export interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  /** Poziom w drzewie dokumentu — semantyka, nie wygląd. */
   level?: 1 | 2 | 3;
+  /** Stopień skali. Domyślnie wynika z poziomu. */
+  size?: HeadingSize;
   tone?: TextTone;
 }
 
@@ -20,14 +25,19 @@ export interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement> {
  * Hierarchia idzie rozmiarem i odstępem, nie grubością — stąd maksymalna waga
  * to 600, a nie 700/800.
  */
-const HEADING_SIZE: Record<1 | 2 | 3, string> = {
-  1: 'text-2xl font-semibold tracking-tight',
-  2: 'text-xl font-semibold tracking-tight',
-  3: 'text-base font-medium',
+const HEADING_SIZE: Record<HeadingSize, string> = {
+  sm: 'text-base font-medium',
+  md: 'text-xl font-semibold tracking-tight',
+  lg: 'text-2xl font-semibold tracking-tight',
+  xl: 'text-3xl font-semibold tracking-tight',
+  display: 'text-display-1 font-medium tracking-tight',
 };
+
+const SIZE_FOR_LEVEL: Record<1 | 2 | 3, HeadingSize> = { 1: 'lg', 2: 'md', 3: 'sm' };
 
 export const Heading: React.FC<HeadingProps> = ({
   level = 2,
+  size,
   tone = 'default',
   className,
   children,
@@ -35,7 +45,7 @@ export const Heading: React.FC<HeadingProps> = ({
 }) => {
   const Tag = ({ 1: 'h1', 2: 'h2', 3: 'h3' } as const)[level];
   return (
-    <Tag className={cn(HEADING_SIZE[level], TONE[tone], className)} {...rest}>
+    <Tag className={cn(HEADING_SIZE[size ?? SIZE_FOR_LEVEL[level]], TONE[tone], className)} {...rest}>
       {children}
     </Tag>
   );

@@ -14,6 +14,15 @@ export interface ConfirmDialogProps {
   onConfirm: () => void;
   /** Ton przycisku potwierdzenia — `attention` dla działań nieodwracalnych. */
   tone?: 'accent' | 'attention';
+  /**
+   * Identyfikatory testowe przycisków.
+   *
+   * Bez nich test skutku potwierdzenia musiałby sięgnąć po napis z warstwy
+   * copy, czyli złamać rozdział dwóch warstw testów. Dwa moduły zgłosiły to
+   * niezależnie jako brak pokrycia.
+   */
+  confirmTestId?: string;
+  cancelTestId?: string;
 }
 
 /**
@@ -29,6 +38,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   cancelLabel = 'Anuluj',
   onConfirm,
   tone = 'attention',
+  confirmTestId,
+  cancelTestId,
 }) => (
   <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
     <AlertDialog.Portal>
@@ -52,12 +63,18 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         ) : null}
         <div className="flex gap-2 pt-2">
           <AlertDialog.Cancel asChild>
-            <Button variant="quiet" tone="neutral" className="flex-1">
+            <Button data-testid={cancelTestId} variant="quiet" tone="neutral" className="flex-1">
               {cancelLabel}
             </Button>
           </AlertDialog.Cancel>
           <AlertDialog.Action asChild>
-            <Button variant="primary" tone={tone} className="flex-1" onClick={onConfirm}>
+            <Button
+              data-testid={confirmTestId}
+              variant="primary"
+              tone={tone}
+              className="flex-1"
+              onClick={onConfirm}
+            >
               {confirmLabel}
             </Button>
           </AlertDialog.Action>

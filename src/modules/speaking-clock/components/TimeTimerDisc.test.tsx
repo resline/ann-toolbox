@@ -1,296 +1,154 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { TimeTimerDisc } from './TimeTimerDisc';
-import { type TimeTimerColor } from '../types';
+import { NUMBERS_SERIES } from './discGeometry';
+import { czasIds } from '../testIds';
 
-describe('TimeTimerDisc Component', () => {
-  describe('Rendering and SVG Structure', () => {
-    it('renders SVG disc container with progressbar role and accessibility attributes', () => {
-      render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-          centerLabel="Pozostało"
-        />
-      );
+/**
+ * Zostaje tu wyłącznie to, czego nie da się sprawdzić bez renderu: semantyka
+ * dostępności, obecność elementów i obsługa wejścia. Cała matematyka tarczy
+ * jest testowana w discGeometry.test.ts, na liczbach.
+ */
+describe('TimeTimerDisc', () => {
+  it('jest paskiem postępu z pełną semantyką wartości', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={300} centerLabel="Do wyjścia" />);
 
-      const progressbar = screen.getByRole('progressbar');
-      expect(progressbar).toBeInTheDocument();
-      expect(progressbar).toHaveAttribute('aria-valuenow', '1800');
-      expect(progressbar).toHaveAttribute('aria-valuemin', '0');
-      expect(progressbar).toHaveAttribute('aria-valuemax', '3600');
-      expect(progressbar).toHaveAttribute('aria-label', 'Pozostało');
-    });
-
-    it('renders SVG element with customized size', () => {
-      const { container } = render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-          size={320}
-        />
-      );
-
-      const svg = container.querySelector('svg');
-      expect(svg).toBeInTheDocument();
-      expect(svg).toHaveAttribute('viewBox', '0 0 300 300');
-    });
+    const disc = screen.getByRole('progressbar');
+    expect(disc).toHaveAttribute('aria-valuenow', '300');
+    expect(disc).toHaveAttribute('aria-valuemin', '0');
+    expect(disc).toHaveAttribute('aria-valuemax', '600');
+    expect(disc).toHaveAccessibleName('Do wyjścia');
   });
 
-  describe('Sector Arc Generation', () => {
-    it('renders full circle when secondsRemaining === totalSeconds (100%)', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={3600} />
-      );
+  it('podaje czytnikowi ekranu odczyt środkowy przez aria-valuetext', () => {
+    // Dzieci elementu o roli progressbar są w ARIA prezentacyjne, więc sam
+    // napis w środku tarczy byłby dla czytnika niewidoczny.
+    render(
+      <TimeTimerDisc
+        totalSeconds={600}
+        secondsRemaining={300}
+        centerLabel="Do wyjścia"
+        centerTimeText="05:00"
+        centerSublabel="Trening"
+      />
+    );
 
-      const fullCircle = container.querySelector('.time-timer-full-disc');
-      expect(fullCircle).toBeInTheDocument();
-      expect(container.querySelector('.time-timer-sector')).toBeNull();
-    });
-
-    it('renders sector path when 0 < secondsRemaining < totalSeconds (50%)', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={1800} />
-      );
-
-      const sector = container.querySelector('.time-timer-sector');
-      expect(sector).toBeInTheDocument();
-      const pathData = sector?.getAttribute('d');
-      expect(pathData).toBeDefined();
-      expect(pathData).toContain('M 150 150');
-      // Starts at 12 o'clock (150, 150 - r)
-      expect(pathData).toContain('L 150');
-    });
-
-    it('renders sector path with largeArcFlag = 0 for <= 50% fraction', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={900} /> // 25%
-      );
-
-      const sector = container.querySelector('.time-timer-sector');
-      expect(sector).toBeInTheDocument();
-      const pathData = sector?.getAttribute('d');
-      // largeArcFlag should be 0 for <= 50%
-      expect(pathData).toMatch(/A\s+\d+(\.\d+)?\s+\d+(\.\d+)?\s+0\s+0\s+0/);
-    });
-
-    it('renders sector path with largeArcFlag = 1 for > 50% fraction', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={2700} /> // 75%
-      );
-
-      const sector = container.querySelector('.time-timer-sector');
-      expect(sector).toBeInTheDocument();
-      const pathData = sector?.getAttribute('d');
-      // largeArcFlag should be 1 for > 50%
-      expect(pathData).toMatch(/A\s+\d+(\.\d+)?\s+\d+(\.\d+)?\s+0\s+1\s+0/);
-    });
-
-    it('renders empty state when secondsRemaining === 0', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={0} />
-      );
-
-      expect(container.querySelector('.time-timer-full-disc')).toBeNull();
-      expect(container.querySelector('.time-timer-sector')).toBeNull();
-    });
-
-    it('clamps negative secondsRemaining to 0 and does not render sector', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={-50} />
-      );
-
-      expect(container.querySelector('.time-timer-full-disc')).toBeNull();
-      expect(container.querySelector('.time-timer-sector')).toBeNull();
-    });
-
-    it('clamps secondsRemaining > totalSeconds to 100% and renders full disc', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={4000} />
-      );
-
-      expect(container.querySelector('.time-timer-full-disc')).toBeInTheDocument();
-    });
-
-    it('supports clockwise direction', () => {
-      const { container } = render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={900}
-          direction="clockwise"
-        />
-      );
-
-      const sector = container.querySelector('.time-timer-sector');
-      expect(sector).toBeInTheDocument();
-      const pathData = sector?.getAttribute('d');
-      // Sweep flag for clockwise is 1
-      expect(pathData).toMatch(/A\s+\d+(\.\d+)?\s+\d+(\.\d+)?\s+0\s+0\s+1/);
-    });
+    const disc = screen.getByRole('progressbar');
+    expect(disc).toHaveAttribute('aria-valuetext', '05:00, Trening');
+    // warstwa wizualna jest schowana, żeby nie dublować odczytu
+    expect(screen.getByTestId(czasIds.discValue).closest('[aria-hidden]')).not.toBeNull();
   });
 
-  describe('Color Palettes', () => {
-    const colors: TimeTimerColor[] = ['sage', 'amber', 'lavender', 'rose', 'ocean'];
+  it('przycina wartość zgłaszaną czytnikowi do zakresu', () => {
+    const { rerender } = render(<TimeTimerDisc totalSeconds={600} secondsRemaining={900} />);
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '600');
 
-    colors.forEach((color) => {
-      it(`renders color palette "${color}" with gradient definition`, () => {
-        const { container } = render(
-          <TimeTimerDisc
-            totalSeconds={3600}
-            secondsRemaining={1800}
-            color={color}
-          />
-        );
-
-        const gradient = container.querySelector(`linearGradient[id*="${color}"]`);
-        expect(gradient).toBeInTheDocument();
-        const sector = container.querySelector('.time-timer-sector');
-        expect(sector?.getAttribute('fill')).toContain(color);
-      });
-    });
-
-    it('defaults to sage color when color prop is omitted', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={1800} />
-      );
-
-      const sector = container.querySelector('.time-timer-sector');
-      expect(sector?.getAttribute('fill')).toContain('sage');
-    });
+    rerender(<TimeTimerDisc totalSeconds={600} secondsRemaining={-50} />);
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
   });
 
-  describe('Dial Ticks and Rim Numbers', () => {
-    it('renders 60 dial tick marks', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={1800} />
-      );
-
-      const majorTicks = container.querySelectorAll('.time-timer-major-tick');
-      const minorTicks = container.querySelectorAll('.time-timer-minor-tick');
-
-      expect(majorTicks.length).toBe(12); // Every 5 minutes
-      expect(minorTicks.length).toBe(48); // Remaining 48 minutes
-      expect(majorTicks.length + minorTicks.length).toBe(60);
-    });
-
-    it('renders rim numbers (0, 5, 10 ... 55) by default (showNumbers=true)', () => {
-      render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={1800} showNumbers={true} />
-      );
-
-      const numbers = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
-      numbers.forEach((num) => {
-        expect(screen.getByText(String(num))).toBeInTheDocument();
-      });
-    });
-
-    it('hides rim numbers when showNumbers=false', () => {
-      const { container } = render(
-        <TimeTimerDisc totalSeconds={3600} secondsRemaining={1800} showNumbers={false} />
-      );
-
-      const rimTextGroup = container.querySelector('.time-timer-rim-numbers');
-      expect(rimTextGroup).toBeNull();
-    });
+  it('rysuje pełny okrąg, gdy nic jeszcze nie upłynęło', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={600} />);
+    expect(screen.getByTestId(czasIds.discFull)).toBeInTheDocument();
+    expect(screen.queryByTestId(czasIds.discSector)).not.toBeInTheDocument();
   });
 
-  describe('Center Readout Overlay & Content', () => {
-    it('renders center digital time text, label, and sublabel', () => {
-      render(
-        <TimeTimerDisc
-          totalSeconds={1800}
-          secondsRemaining={1200}
-          centerTimeText="20:00"
-          centerLabel="Do wyjścia"
-          centerSublabel="Wyjście z domu"
-        />
-      );
-
-      expect(screen.getByText('20:00')).toBeInTheDocument();
-      expect(screen.getByText('Do wyjścia')).toBeInTheDocument();
-      expect(screen.getByText('Wyjście z domu')).toBeInTheDocument();
-    });
-
-    it('renders subtle active pulse indicator when isActive=true', () => {
-      const { container } = render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-          isActive={true}
-        />
-      );
-
-      const activeRing = container.querySelector('.time-timer-active-pulse');
-      expect(activeRing).toBeInTheDocument();
-    });
-
-    it('does not render active pulse when isActive=false', () => {
-      const { container } = render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-          isActive={false}
-        />
-      );
-
-      const activeRing = container.querySelector('.time-timer-active-pulse');
-      expect(activeRing).toBeNull();
-    });
+  it('rysuje wycinek dla czasu częściowego', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={150} />);
+    expect(screen.getByTestId(czasIds.discSector)).toBeInTheDocument();
+    expect(screen.queryByTestId(czasIds.discFull)).not.toBeInTheDocument();
   });
 
-  describe('Interactions and Accessibility', () => {
-    it('triggers onDiscClick when clicked', () => {
-      const onDiscClick = vi.fn();
-      render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-          onDiscClick={onDiscClick}
-        />
-      );
+  it('nie rysuje nic, gdy czas się skończył', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={0} />);
+    expect(screen.queryByTestId(czasIds.discSector)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(czasIds.discFull)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(czasIds.discPointer)).not.toBeInTheDocument();
+  });
 
-      const disc = screen.getByRole('progressbar');
-      fireEvent.click(disc);
-      expect(onDiscClick).toHaveBeenCalledTimes(1);
-    });
+  it('ma sześćdziesiąt kresek podziałki, w tym dwanaście głównych', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={300} />);
+    const ticks = screen.getAllByTestId(czasIds.discTick);
+    expect(ticks).toHaveLength(60);
+    expect(ticks.filter((t) => t.getAttribute('data-major') === 'true')).toHaveLength(12);
+  });
 
-    it('triggers onDiscClick on Enter or Space keyboard keypress', () => {
-      const onDiscClick = vi.fn();
-      render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-          onDiscClick={onDiscClick}
-        />
-      );
+  it('pokazuje cyfry serii Time Timera i pozwala je wyłączyć', () => {
+    const { rerender } = render(
+      <TimeTimerDisc totalSeconds={600} secondsRemaining={300} showNumbers />
+    );
+    for (const value of NUMBERS_SERIES) {
+      expect(screen.getByText(String(value))).toBeInTheDocument();
+    }
 
-      const disc = screen.getByRole('progressbar');
-      fireEvent.keyDown(disc, { key: 'Enter', code: 'Enter' });
-      expect(onDiscClick).toHaveBeenCalledTimes(1);
+    rerender(<TimeTimerDisc totalSeconds={600} secondsRemaining={300} showNumbers={false} />);
+    expect(screen.queryByTestId(czasIds.discNumbers)).not.toBeInTheDocument();
+  });
 
-      fireEvent.keyDown(disc, { key: ' ', code: 'Space' });
-      expect(onDiscClick).toHaveBeenCalledTimes(2);
-    });
+  it('pokazuje odczyt środkowy', () => {
+    render(
+      <TimeTimerDisc
+        totalSeconds={600}
+        secondsRemaining={300}
+        centerLabel="Do wyjścia"
+        centerTimeText="05:00"
+        centerSublabel="Trening"
+      />
+    );
+    expect(screen.getByTestId(czasIds.discValue)).toHaveTextContent('05:00');
+    expect(screen.getByTestId(czasIds.discLabel)).toHaveTextContent('Do wyjścia');
+    expect(screen.getByText('Trening')).toBeInTheDocument();
+  });
 
-    it('has tabindex 0 when onDiscClick is provided, and undefined / not focusable when not interactive', () => {
-      const { rerender } = render(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-          onDiscClick={() => {}}
-        />
-      );
+  it('niesie wybraną paletę jako atrybut danych, a nie jako klasę', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={300} color="amber" />);
+    expect(screen.getByTestId(czasIds.disc)).toHaveAttribute('data-accent', 'amber');
+  });
 
-      expect(screen.getByRole('progressbar')).toHaveAttribute('tabindex', '0');
+  it('bez procedury obsługi nie jest elementem interaktywnym', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={300} />);
+    expect(screen.getByRole('progressbar')).not.toHaveAttribute('tabindex');
+  });
 
-      rerender(
-        <TimeTimerDisc
-          totalSeconds={3600}
-          secondsRemaining={1800}
-        />
-      );
+  it('reaguje na kliknięcie oraz na Enter i spację', async () => {
+    const user = userEvent.setup();
+    const onDiscClick = vi.fn();
+    render(
+      <TimeTimerDisc totalSeconds={600} secondsRemaining={300} onDiscClick={onDiscClick} />
+    );
 
-      expect(screen.getByRole('progressbar')).not.toHaveAttribute('tabindex');
-    });
+    const disc = screen.getByRole('progressbar');
+    expect(disc).toHaveAttribute('tabindex', '0');
+
+    await user.click(disc);
+    expect(onDiscClick).toHaveBeenCalledTimes(1);
+
+    disc.focus();
+    await user.keyboard('{Enter}');
+    expect(onDiscClick).toHaveBeenCalledTimes(2);
+
+    await user.keyboard(' ');
+    expect(onDiscClick).toHaveBeenCalledTimes(3);
+  });
+
+  it('pokazuje pierścień aktywności tylko podczas pracy', () => {
+    const { container, rerender } = render(
+      <TimeTimerDisc totalSeconds={600} secondsRemaining={300} isActive={false} />
+    );
+    const circlesIdle = container.querySelectorAll('circle').length;
+
+    rerender(<TimeTimerDisc totalSeconds={600} secondsRemaining={300} isActive />);
+    expect(container.querySelectorAll('circle').length).toBeGreaterThan(circlesIdle);
+  });
+
+  it('skaluje się do kontenera zamiast mieć sztywny rozmiar w pikselach', () => {
+    render(<TimeTimerDisc totalSeconds={600} secondsRemaining={300} />);
+    // wcześniej komponent dostawał size={280} i wypisywał je jako style w px,
+    // przez co nie mieścił się na wąskim telefonie
+    expect(screen.getByTestId(czasIds.disc).getAttribute('style')).toBeNull();
+    // geometria jest w viewBox, więc SVG skaluje się bez zmiany proporcji
+    const svg = screen.getByTestId(czasIds.disc).querySelector('svg');
+    expect(svg).toHaveAttribute('viewBox', '0 0 300 300');
   });
 });

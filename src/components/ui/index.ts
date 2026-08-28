@@ -3,7 +3,7 @@
 export { Button, type ButtonProps, type ButtonTone, type ButtonVariant, type ButtonSize } from './Button';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { Card, CardHeader, CardBody, CardFooter, type CardProps } from './Card';
-export { Heading, Text, LabelText, type TextTone } from './Text';
+export { Heading, Text, LabelText, type TextTone, type HeadingSize } from './Text';
 export { NumberDisplay, type NumberDisplayProps } from './NumberDisplay';
 export { Badge, type BadgeProps, type BadgeTone } from './Badge';
 export { Stack, Section, Divider, EmptyState, type SectionProps, type EmptyStateProps } from './Layout';

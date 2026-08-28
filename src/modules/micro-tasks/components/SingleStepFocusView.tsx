@@ -1,234 +1,368 @@
-import React, { useState, useEffect } from 'react';
-import { Check, ChevronRight, LayoutList, Play, Pause, RotateCcw, Plus, Star } from '../../../lib/icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, ChevronRight, LayoutList, Pause, Play, Plus, RotateCcw, Star } from '../../../lib/icons';
 import { cn } from '../../../lib/cn';
+import {
+  Badge,
+  Button,
+  Field,
+  Heading,
+  IconButton,
+  Input,
+  LabelText,
+  NumberDisplay,
+  Text,
+} from '../../../components/ui';
+import { start, common } from '../../../copy';
+import { useMicroTasksStore } from '../store';
+import { startIds } from '../testIds';
+import type { MicroTask } from '../types';
 
-interface SingleStepFocusViewProps {
-  taskTitle: string;
-  stepTitle: string;
-  stepNumber: number;
-  totalSteps: number;
-  onComplete: () => void;
-  onSkip?: () => void;
-  onViewList: () => void;
-  onAddInFlightStep?: (title: string) => void;
-  onSaveTemplate?: () => void;
+export interface SingleStepFocusViewProps {
+  task: MicroTask;
+  onShowList: () => void;
+  /** Wywoływane, gdy właśnie zamknięty krok był ostatni. */
+  onFinished: () => void;
 }
 
+const RING = 2 * Math.PI * 46;
+
+function formatSeconds(total: number): string {
+  const safe = Math.max(0, total);
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Jeden krok na całym ekranie.
+ *
+ * Pomysł zostaje bez zmian — wielki krok, koraliki postępu, pierścień oporu.
+ * Zmieniło się źródło: krok, postęp i licznik czyta store, więc zamknięcie
+ * karty w połowie zadania nic już nie kasuje.
+ */
 export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
-  taskTitle,
-  stepTitle,
-  stepNumber,
-  totalSteps,
-  onComplete,
-  onSkip,
-  onViewList,
-  onAddInFlightStep,
-  onSaveTemplate,
+  task,
+  onShowList,
+  onFinished,
 }) => {
-  const [resistanceTimeLeft, setResistanceTimeLeft] = useState<number>(120); // 2 minutes
-  const [isResistanceActive, setIsResistanceActive] = useState<boolean>(false);
-  const [showAddStep, setShowAddStep] = useState(false);
+  const currentStepId = useMicroTasksStore((s) => s.currentStepId);
+  const userTemplates = useMicroTasksStore((s) => s.userTemplates);
+  const timerState = useMicroTasksStore((s) => s.timerState);
+  const timeRemainingSeconds = useMicroTasksStore((s) => s.timeRemainingSeconds);
+  const nextStep = useMicroTasksStore((s) => s.nextStep);
+  const setStepStatus = useMicroTasksStore((s) => s.setStepStatus);
+  const addStepToActiveTask = useMicroTasksStore((s) => s.addStepToActiveTask);
+  const saveCustomTemplate = useMicroTasksStore((s) => s.saveCustomTemplate);
+  const setTimerState = useMicroTasksStore((s) => s.setTimerState);
+  const tick = useMicroTasksStore((s) => s.tick);
+  const resetTimer = useMicroTasksStore((s) => s.resetTimer);
+
+  const [addingStep, setAddingStep] = useState(false);
   const [newStepTitle, setNewStepTitle] = useState('');
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isResistanceActive && resistanceTimeLeft > 0) {
-      interval = setInterval(() => {
-        setResistanceTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (resistanceTimeLeft === 0) {
-      setIsResistanceActive(false);
-    }
-    return () => clearInterval(interval);
-  }, [isResistanceActive, resistanceTimeLeft]);
+  /**
+   * Ten sam zestaw zapisany drugi raz to śmieć na liście „Moje zestawy",
+   * z której nie ma jak go potem wyrzucić z widoku skupienia. Porównujemy więc
+   * tytuł i treść kroków, a przycisk gaśnie, gdy taki zestaw już jest.
+   */
+  const alreadySaved = useMemo(() => {
+    const signature = (title: string, steps: { title: string }[]) =>
+      [title, ...steps.map((s) => s.title)].join('\u0000');
+    const current = signature(task.title, task.steps);
+    return userTemplates.some((t) => signature(t.title, t.steps) === current);
+  }, [userTemplates, task]);
 
-  // Reset timer when step changes
+  const stepIndex = task.steps.findIndex((s) => s.id === currentStepId);
+  const step = stepIndex === -1 ? undefined : task.steps[stepIndex];
+  const totalSteps = task.steps.length;
+  const isLast = stepIndex === totalSteps - 1;
+  const stepSeconds = (step?.estimatedMinutes ?? 2) * 60;
+
+  const running = timerState === 'running';
+  const over = timeRemainingSeconds === 0;
+  const elapsedPct = stepSeconds > 0 ? ((stepSeconds - timeRemainingSeconds) / stepSeconds) * 100 : 0;
+
+  // Odliczanie tyka w store, więc przeżywa przejście na inny ekran modułu.
   useEffect(() => {
-    setResistanceTimeLeft(120);
-    setIsResistanceActive(false);
-    setShowAddStep(false);
+    if (!running) return;
+    const id = setInterval(() => tick(), 1000);
+    return () => clearInterval(id);
+  }, [running, tick]);
+
+  // Nowy krok — schowaj otwarty formularz dopisywania.
+  useEffect(() => {
+    setAddingStep(false);
     setNewStepTitle('');
-  }, [stepNumber]);
+  }, [currentStepId]);
 
-  const toggleResistanceTimer = () => {
-    if (resistanceTimeLeft === 0) {
-      setResistanceTimeLeft(120);
+  useEffect(() => () => {
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+  }, []);
+
+  if (!step) return null;
+
+  const toggleTimer = () => {
+    if (over) {
+      resetTimer(stepSeconds);
+      setTimerState('running');
+      return;
     }
-    setIsResistanceActive(!isResistanceActive);
+    setTimerState(running ? 'paused' : 'running');
   };
 
-  const handleAddStepSubmit = (e: React.FormEvent) => {
+  const complete = () => {
+    nextStep();
+    if (isLast) onFinished();
+  };
+
+  /**
+   * Pominięty krok zostaje pominięty — store nie wpisze takiego zadania do
+   * „Ukończonych zadań", bo historia liczy kroki zrobione, nie przeklikane.
+   * Samo domknięcie zadania nadal wypada świętować: pominięcie jednego kroku
+   * z ośmiu to wciąż wieczór, w którym coś ruszyło.
+   */
+  const skip = () => {
+    setStepStatus(step.id, 'skipped');
+    nextStep();
+    if (isLast) onFinished();
+  };
+
+  const submitNewStep = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newStepTitle.trim() && onAddInFlightStep) {
-      onAddInFlightStep(newStepTitle);
-      setNewStepTitle('');
-      setShowAddStep(false);
-    }
+    const value = newStepTitle.trim();
+    if (!value) return;
+    addStepToActiveTask(value);
+    setNewStepTitle('');
+    setAddingStep(false);
   };
 
-  const progressPct = resistanceTimeLeft > 0 ? ((120 - resistanceTimeLeft) / 120) * 100 : 100;
-  
+  const saveAsTemplate = () => {
+    if (alreadySaved) return;
+    const stamp = Date.now();
+    saveCustomTemplate({
+      id: `t-custom-${stamp}`,
+      title: task.title,
+      description: start.focus.savedDescription,
+      category: task.category ?? 'home',
+      isCustomTemplate: true,
+      createdAt: new Date(stamp).toISOString(),
+      steps: task.steps.map((s, i) => ({
+        id: `s-custom-${stamp}-${i}`,
+        title: s.title,
+        status: 'pending',
+        estimatedMinutes: s.estimatedMinutes ?? 2,
+      })),
+    });
+    setSaved(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSaved(false), 4000);
+  };
+
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto px-4 py-8 sm:py-12 duration-700 ease-out relative">
-      {/* Top Header - Zen & Minimal */}
-      <div className="flex items-center justify-between mb-8 sm:mb-12">
-        <div className="flex flex-col">
-          <span className="text-xs font-semibold uppercase tracking-widest text-sage-500 dark:text-sage-400 mb-1.5 opacity-80">
-            Zen Focus
-          </span>
-          <h2 className="text-lg font-medium text-warmgray-500 dark:text-warmgray-400 truncate max-w-[200px] sm:max-w-md">
-            {taskTitle}
-          </h2>
+    <div className="flex flex-col gap-6 py-2" data-testid={startIds.focus}>
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1 min-w-0">
+          <LabelText>{start.focus.heading}</LabelText>
+          <Text as="p" size="sm" tone="muted" className="truncate" data-testid={startIds.focusTask}>
+            {task.title}
+          </Text>
         </div>
-        <div className="flex items-center gap-2">
-          {onSaveTemplate && (
-            <button
-              onClick={onSaveTemplate}
-              className="flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-2xl text-sm font-medium text-yellow-600 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50 transition-all focus:outline-none"
-              title="Zapisz ten zestaw kroków jako szablon ⭐"
-            >
-              <Star className="w-4 h-4" />
-              <span className="hidden sm:inline">Zapisz szablon</span>
-            </button>
-          )}
-          <button
-            onClick={onViewList}
-            className="flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-2xl text-sm font-medium text-warmgray-600 bg-warmgray-100/50 hover:bg-warmgray-200 dark:bg-warmgray-800/50 dark:text-warmgray-300 dark:hover:bg-warmgray-700 transition-all focus:outline-none active:scale-95"
+
+        <div className="flex items-center gap-1 shrink-0">
+          <IconButton
+            label={alreadySaved ? start.focus.saveTemplateDone : start.focus.saveTemplate}
+            variant="ghost"
+            tone="neutral"
+            onClick={saveAsTemplate}
+            disabled={alreadySaved}
+            data-testid={startIds.focusSaveTemplate}
           >
-            <LayoutList className="w-4 h-4" />
-            <span className="hidden sm:inline">Pełna lista</span>
-          </button>
+            <Star className={cn('w-5 h-5', alreadySaved && 'fill-current')} aria-hidden />
+          </IconButton>
+          <IconButton
+            label={start.focus.showList}
+            variant="ghost"
+            tone="neutral"
+            onClick={onShowList}
+            data-testid={startIds.focusShowList}
+          >
+            <LayoutList className="w-5 h-5" aria-hidden />
+          </IconButton>
         </div>
+      </header>
+
+      {/*
+        Region ogłaszający wisi w drzewie od początku i zmienia się tylko jego
+        treść — czytniki ekranu ogłaszają zmiany w regionach, które już były,
+        a węzeł wstawiony w komplecie razem z tekstem bywa pomijany. Nie może
+        też chować się przez display:none, bo wtedy wypada z drzewa dostępności;
+        stąd sr-only, które zostawia go widocznym dla czytnika.
+      */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {saved ? start.focus.saved : ''}
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center py-4 text-center">
-        {/* Step Beads Indicator */}
-        <div className="flex items-center gap-2 mb-10" aria-label={`Krok ${stepNumber} z ${totalSteps}`}>
-          {Array.from({ length: totalSteps }).map((_, i) => {
-            const isCompleted = i + 1 < stepNumber;
-            const isCurrent = i + 1 === stepNumber;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  "h-2.5 rounded-full transition-all duration-500 ease-out",
-                  isCurrent ? "w-8 bg-sage-500 shadow-[0_0_8px_rgba(139,168,154,0.6)]" : 
-                  isCompleted ? "w-2.5 bg-sage-300 dark:bg-sage-700" : "w-2.5 bg-warmgray-200 dark:bg-warmgray-800"
-                )}
-              />
-            );
-          })}
+      {saved ? (
+        <div data-testid={startIds.focusSavedNotice}>
+          <Badge tone="positive">{start.focus.saved}</Badge>
         </div>
-        
-        {/* Zen Focus Text */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-warmgray-900 dark:text-white mb-8 leading-[1.2] max-w-2xl text-balance tracking-tight">
-          {stepTitle}
-        </h1>
+      ) : null}
 
-        {/* 2-Minute Resistance Countdown Ring */}
-        <div className="mb-14 flex flex-col items-center">
-          <div className="relative w-24 h-24 mb-4 flex items-center justify-center group cursor-pointer" onClick={toggleResistanceTimer}>
-            <svg className="absolute inset-0 w-full h-full -rotate-90 transform transition-transform" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="46" className="fill-none stroke-warmgray-100 dark:stroke-warmgray-800" strokeWidth="6" />
+      <div className="flex flex-col items-center gap-6 text-center">
+        <div
+          role="progressbar"
+          aria-label={start.focus.progress}
+          aria-valuemin={1}
+          aria-valuemax={totalSteps}
+          aria-valuenow={stepIndex + 1}
+          aria-valuetext={start.focus.stepOf(stepIndex + 1, totalSteps)}
+          className="flex items-center justify-center gap-1.5 flex-wrap"
+          data-testid={startIds.focusBeads}
+        >
+          {task.steps.map((s, i) => (
+            <span
+              key={s.id}
+              className={cn(
+                'h-1.5 rounded-full transition-all duration-300',
+                i === stepIndex
+                  ? 'w-7 bg-module'
+                  : i < stepIndex
+                  ? 'w-1.5 bg-module-soft'
+                  : 'w-1.5 bg-line'
+              )}
+            />
+          ))}
+        </div>
+
+        <Heading
+          level={2}
+          size="display"
+          className="text-balance max-w-xl"
+          data-testid={startIds.focusStep}
+        >
+          {step.title}
+        </Heading>
+
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="relative w-40 h-40 flex items-center justify-center"
+            role="group"
+            aria-label={start.timer.label}
+          >
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100" aria-hidden>
+              <circle cx="50" cy="50" r="46" className="fill-none stroke-line" strokeWidth="4" />
               <circle
-                cx="50" cy="50" r="46"
-                className="fill-none stroke-sage-400 dark:stroke-sage-500 transition-all duration-1000 ease-linear"
-                strokeWidth="6"
+                cx="50"
+                cy="50"
+                r="46"
+                className="fill-none stroke-module transition-[stroke-dashoffset] duration-1000 ease-linear"
+                strokeWidth="4"
                 strokeLinecap="round"
-                strokeDasharray="289.02" // 2 * pi * 46
-                strokeDashoffset={289.02 - (289.02 * progressPct) / 100}
+                strokeDasharray={RING}
+                strokeDashoffset={RING - (RING * Math.min(100, elapsedPct)) / 100}
               />
             </svg>
-            <button 
-              className="relative z-10 w-16 h-16 rounded-full bg-white dark:bg-warmgray-850 shadow-sm border border-warmgray-100 dark:border-warmgray-800 flex items-center justify-center text-sage-600 dark:text-sage-400 group-hover:scale-105 group-active:scale-95 transition-all"
-              aria-label="Toggle 2-minute resistance timer"
-            >
-              {resistanceTimeLeft === 0 ? <RotateCcw className="w-6 h-6" /> : isResistanceActive ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-1" />}
-            </button>
+            <NumberDisplay
+              value={formatSeconds(timeRemainingSeconds)}
+              size="sm"
+              data-testid={startIds.timerValue}
+            />
           </div>
-          <div className="text-sm font-medium text-warmgray-500 dark:text-warmgray-400">
-            {resistanceTimeLeft > 0 ? (
-              <>
-                <span className="font-mono text-sage-600 dark:text-sage-400 font-bold">{Math.floor(resistanceTimeLeft / 60)}:{(resistanceTimeLeft % 60).toString().padStart(2, '0')}</span> - Zacznij na 2 minuty
-              </>
+
+          <Button
+            variant="secondary"
+            tone="module"
+            onClick={toggleTimer}
+            data-testid={startIds.timerToggle}
+          >
+            {over ? (
+              <RotateCcw className="w-4 h-4" aria-hidden />
+            ) : running ? (
+              <Pause className="w-4 h-4" aria-hidden />
             ) : (
-              <span className="text-sage-600 dark:text-sage-400">Opór pokonany! Kontynuuj.</span>
+              <Play className="w-4 h-4" aria-hidden />
             )}
-          </div>
-        </div>
+            {over ? start.timer.again : running ? start.timer.pause : start.timer.play}
+          </Button>
 
-        {/* Large Satisfying Action Buttons */}
-        <div className="flex flex-col items-center gap-4 w-full max-w-md mb-8">
-          <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-            <button
-              onClick={onComplete}
-              className={cn(
-                  'flex-1 w-full flex items-center justify-center gap-3 px-8 py-4 min-h-[64px] rounded-3xl text-lg font-bold text-white',
-                  'bg-sage-600 hover:bg-sage-500 active:bg-sage-700 shadow-xl shadow-sage-600/20 active:scale-[0.98]',
-                  'transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-sage-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-warmgray-900'
-                )
-              }
-            >
-              <Check className="w-6 h-6" />
-              Zrobione! Następny krok ✨
-            </button>
-            
-            {onSkip && (
-              <button
-                onClick={onSkip}
-                className="px-6 py-4 min-h-[64px] min-w-[64px] rounded-3xl text-warmgray-500 bg-white dark:bg-warmgray-850 border border-warmgray-200 dark:border-warmgray-800 hover:bg-warmgray-50 dark:hover:bg-warmgray-800 dark:text-warmgray-400 shadow-sm hover:shadow active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 flex items-center justify-center"
-                aria-label="Pomiń krok"
-                title="Pomiń krok"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            )}
-          </div>
-
-          {onAddInFlightStep && (
-            <div className="w-full mt-4">
-              {!showAddStep ? (
-                <button
-                  onClick={() => setShowAddStep(true)}
-                  className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  + Dodaj kolejny krok w locie
-                </button>
-              ) : (
-                <form onSubmit={handleAddStepSubmit} className="flex gap-2 w-full duration-300">
-                  <input
-                    type="text"
-                    value={newStepTitle}
-                    onChange={(e) => setNewStepTitle(e.target.value)}
-                    placeholder="Wpisz nowy krok..."
-                    autoFocus
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newStepTitle.trim()}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    Dodaj
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddStep(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600"
-                  >
-                    Anuluj
-                  </button>
-                </form>
-              )}
-            </div>
-          )}
+          <Text size="sm" tone="faint" className="max-w-xs" data-testid={startIds.timerNote}>
+            {over ? start.timer.over : start.timer.hint}
+          </Text>
         </div>
       </div>
-      {/* Overall Progress for screen readers and tests */}
-      <div className="sr-only">
-        <span>Overall Progress</span>
-        <span>{Math.round((stepNumber / totalSteps) * 100)}%</span>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-stretch gap-2">
+          <Button
+            variant="primary"
+            tone="module"
+            size="lg"
+            onClick={complete}
+            data-testid={startIds.focusDone}
+            className="flex-1 w-auto min-w-0"
+          >
+            <Check className="w-5 h-5" aria-hidden />
+            {isLast ? start.focus.last : start.focus.done}
+          </Button>
+          <IconButton
+            label={start.focus.skip}
+            variant="quiet"
+            tone="neutral"
+            size="lg"
+            onClick={skip}
+            data-testid={startIds.focusSkip}
+          >
+            <ChevronRight className="w-5 h-5" aria-hidden />
+          </IconButton>
+        </div>
+
+        {addingStep ? (
+          <form className="flex flex-col gap-3" onSubmit={submitNewStep}>
+            <Field label={start.focus.addStepLabel} hint={start.focus.addStepHint}>
+              {(props) => (
+                <Input
+                  {...props}
+                  value={newStepTitle}
+                  onChange={(e) => setNewStepTitle(e.target.value)}
+                  autoFocus
+                  autoComplete="off"
+                  data-testid={startIds.focusAddInput}
+                />
+              )}
+            </Field>
+            <div className="flex items-center gap-2">
+              <Button
+                type="submit"
+                variant="secondary"
+                tone="module"
+                disabled={!newStepTitle.trim()}
+                data-testid={startIds.focusAddSubmit}
+              >
+                {common.action.add}
+              </Button>
+              <Button
+                variant="ghost"
+                tone="neutral"
+                onClick={() => setAddingStep(false)}
+                data-testid={startIds.focusAddCancel}
+              >
+                {common.action.cancel}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <Button
+            variant="ghost"
+            tone="neutral"
+            onClick={() => setAddingStep(true)}
+            data-testid={startIds.focusAddStep}
+          >
+            <Plus className="w-4 h-4" aria-hidden />
+            {start.focus.addStep}
+          </Button>
+        )}
       </div>
     </div>
   );

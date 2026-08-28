@@ -1,189 +1,243 @@
-import React, { useState } from 'react';
-import { Plus, Sparkles, Filter } from '../../../lib/icons';
-import * as Icons from '../../../lib/icons';
-import { CategorySection } from './CategorySection';
-import { DopamineCard } from './DopamineCard';
-import { DopamineRouletteModal } from './DopamineRouletteModal';
-import { AddDopamineItemModal } from './AddDopamineItemModal';
-import { DopamineBankWidget } from './DopamineBankWidget';
-import { DopamineSOSModal } from './DopamineSOSModal';
-import { EditDopamineItemModal } from './EditDopamineItemModal';
+import React, { useMemo, useState } from 'react';
+import { Plus, Sparkles } from '../../../lib/icons';
+import {
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Section,
+  Stack,
+} from '../../../components/ui';
+import { common, energia } from '../../../copy';
 import { useDopamineMenuStore } from '../store';
-import { DopamineCategory, DopamineItem } from '../types';
+import { energiaIds as ids } from '../testIds';
+import { DopamineCategory, DopamineItem, EnergyLevel } from '../types';
+import { DopamineBankWidget } from './DopamineBankWidget';
+import { DopamineCard } from './DopamineCard';
+import { DopamineDetailSheet } from './DopamineDetailSheet';
+import { DopamineItemFormSheet } from './DopamineItemFormSheet';
+import { DopamineRouletteSheet } from './DopamineRouletteSheet';
+import { DopamineSosSheet } from './DopamineSosSheet';
 
-const CATEGORY_LABELS: Record<DopamineCategory, string> = {
-  appetizer: 'Przystawki (1–5 min)',
-  entree: 'Dania Główne (20–60 min)',
-  side: 'Dodatki (w tle)',
-  dessert: 'Desery (uważne nagrody)',
-  special: 'Dania Specjalne'
-};
+/** Kolejność karty dań: od najtańszego wejścia do najdroższego. */
+const CATEGORIES: DopamineCategory[] = ['appetizer', 'entree', 'side', 'dessert', 'special'];
+
+const FILTERS: (EnergyLevel | 'all')[] = ['all', 'low', 'medium', 'high'];
+
+function filterLabel(level: EnergyLevel | 'all'): string {
+  return level === 'all' ? energia.filter.all : energia.energy[level].label;
+}
+
+/** Ulubione idą na górę swojej kategorii — reszta zachowuje kolejność menu. */
+function byFavorite(a: DopamineItem, b: DopamineItem): number {
+  return Number(!!b.isFavorite) - Number(!!a.isFavorite);
+}
 
 export const DopamineDashboard: React.FC = () => {
-  const [isRouletteOpen, setIsRouletteOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isSOSModalOpen, setIsSOSModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<DopamineItem | null>(null);
-  
   const items = useDopamineMenuStore((state) => state.items);
-  const addItem = useDopamineMenuStore((state) => state.addItem);
   const energyFilter = useDopamineMenuStore((state) => state.energyFilter);
   const setEnergyFilter = useDopamineMenuStore((state) => state.setEnergyFilter);
   const completeItem = useDopamineMenuStore((state) => state.completeItem);
   const toggleFavorite = useDopamineMenuStore((state) => state.toggleFavorite);
   const deleteItem = useDopamineMenuStore((state) => state.deleteItem);
 
-  const handleAddItem = (newItem: { title: string; description: string; energyLevel: 'low' | 'medium' | 'high' }) => {
-    addItem({
-      id: Math.random().toString(36).substr(2, 9),
-      title: newItem.title,
-      description: newItem.description,
-      energyRequired: newItem.energyLevel,
-      category: 'special',
-    });
+  const [sosOpen, setSosOpen] = useState(false);
+  const [rouletteOpen, setRouletteOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formItem, setFormItem] = useState<DopamineItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<DopamineItem | null>(null);
+
+  const filtered = useMemo(
+    () =>
+      energyFilter === 'all'
+        ? items
+        : items.filter((item) => item.energyRequired === energyFilter),
+    [items, energyFilter]
+  );
+
+  const sections = useMemo(
+    () =>
+      CATEGORIES.map((category) => ({
+        category,
+        entries: filtered.filter((item) => item.category === category).sort(byFavorite),
+      })).filter((section) => section.entries.length > 0),
+    [filtered]
+  );
+
+  // Szczegóły czytamy ze store'u po identyfikatorze, żeby licznik wykonań
+  // w arkuszu odświeżał się razem z „Gotowe".
+  const detailItem = detailId ? items.find((item) => item.id === detailId) ?? null : null;
+
+  const openDetail = (item: DopamineItem) => {
+    setDetailId(item.id);
+    setDetailOpen(true);
   };
 
-  const getIcon = (iconName?: string) => {
-    if (!iconName) return <Sparkles className="w-6 h-6" />;
-    const IconComponent = (Icons as any)[iconName];
-    return IconComponent ? <IconComponent className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />;
-  };
-
-  const filteredItems = energyFilter === 'all' 
-    ? items 
-    : items.filter(item => item.energyRequired === energyFilter);
-
-  const categories: DopamineCategory[] = ['appetizer', 'entree', 'side', 'dessert', 'special'];
-
-  const filterLabels: Record<string, string> = {
-    all: 'Wszystkie',
-    low: 'Niska energia ⚡',
-    medium: 'Średnia ⚡⚡',
-    high: 'Wysoka ⚡⚡⚡'
+  const openForm = (item: DopamineItem | null) => {
+    setFormItem(item);
+    setFormOpen(true);
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-8 duration-500">
+    <div className="py-6 flex flex-col gap-section" data-testid={ids.root}>
       <DopamineBankWidget />
-      
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-warmgray-900 dark:text-warmgray-50 tracking-tight">
-            Menu Dopaminowe
-          </h1>
-          <p className="text-warmgray-500 dark:text-warmgray-400 mt-1">
-            Wybierz aktywność lub wylosuj mikronagrodę, aby podnieść poziom energii bez presji.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setIsSOSModalOpen(true)}
-            data-testid="sos-btn"
-            aria-label="SOS Paraliż"
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-bold text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-          >
-            <span className="text-lg leading-none">🚨</span>
-            <span>SOS</span>
-          </button>
-          <button
-            onClick={() => setIsRouletteOpen(true)}
-            data-testid="roulette-btn"
-            aria-label="Zakręć kołem dopaminy"
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-semibold text-sage-800 bg-sage-100 hover:bg-sage-200 dark:bg-sage-900/40 dark:text-sage-200 dark:hover:bg-sage-900/60 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-          >
-            <Sparkles className="w-4 h-4 text-sage-600 dark:text-sage-400" />
-            <span className="hidden sm:inline">Zakręć!</span>
-          </button>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            data-testid="add-item-btn"
-            aria-label="Dodaj nową aktywność"
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-semibold text-white bg-sage-600 hover:bg-sage-700 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Dodaj</span>
-          </button>
-        </div>
-      </header>
 
-      <div className="flex gap-2 items-center flex-wrap" data-testid="energy-filters">
-        <Filter className="w-4 h-4 text-warmgray-500 mr-1" />
-        {(['all', 'low', 'medium', 'high'] as const).map(level => (
-          <button
-            key={level}
-            data-testid={`filter-${level}`}
-            onClick={() => setEnergyFilter(level)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm ${
-              energyFilter === level 
-                ? 'bg-sage-600 text-white shadow-sage-600/20' 
-                : 'bg-white/80 dark:bg-warmgray-800/80 text-warmgray-700 dark:text-warmgray-300 hover:bg-warmgray-100 dark:hover:bg-warmgray-700 border border-warmgray-200/60 dark:border-warmgray-700/60'
-            }`}
+      {/* Dwa równe rzędy zamiast zawijania: przy trzech przyciskach o różnej
+          długości `flex-wrap` układał je w poszarpaną drabinkę. */}
+      <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            variant="primary"
+            tone="module"
+            data-testid={ids.actionRoulette}
+            onClick={() => setRouletteOpen(true)}
           >
-            {filterLabels[level]}
-          </button>
+            <Sparkles className="w-4 h-4" aria-hidden />
+            {energia.action.roll}
+          </Button>
+          <Button
+            variant="secondary"
+            tone="attention"
+            data-testid={ids.actionSos}
+            onClick={() => setSosOpen(true)}
+          >
+            {energia.action.sos}
+          </Button>
+        </div>
+        <Button
+          variant="quiet"
+          tone="neutral"
+          data-testid={ids.actionAdd}
+          onClick={() => openForm(null)}
+        >
+          <Plus className="w-4 h-4" aria-hidden />
+          {energia.action.addItem}
+        </Button>
+      </div>
+
+      <div
+        role="group"
+        aria-label={energia.filter.label}
+        data-testid={ids.filters}
+        className="grid grid-cols-4 gap-1.5"
+      >
+        {FILTERS.map((level) => (
+          <Button
+            key={level}
+            variant={energyFilter === level ? 'primary' : 'quiet'}
+            tone="module"
+            aria-pressed={energyFilter === level}
+            data-testid={ids.filter(level)}
+            onClick={() => setEnergyFilter(level)}
+          >
+            {filterLabel(level)}
+          </Button>
         ))}
       </div>
 
-      <div className="space-y-6">
-        {categories.map(category => {
-          const categoryItems = filteredItems
-            .filter(item => item.category === category)
-            .sort((a, b) => {
-              if (a.isFavorite && !b.isFavorite) return -1;
-              if (!a.isFavorite && b.isFavorite) return 1;
-              return 0;
-            });
-            
-          if (categoryItems.length === 0) return null;
-          return (
-            <CategorySection key={category} title={CATEGORY_LABELS[category]}>
-              {categoryItems.map(item => (
-                <DopamineCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  description={item.description}
-                  duration={item.durationMinutes ? `${item.durationMinutes} min` : undefined}
-                  energyLevel={item.energyRequired}
-                  icon={getIcon(item.icon)}
-                  isFavorite={item.isFavorite}
-                  onClick={(id) => console.log('Clicked', id)}
-                  onDone={(id) => completeItem(id)}
-                  onToggleFavorite={(id) => toggleFavorite(id)}
-                  onEdit={() => setEditingItem(item)}
-                  onDelete={(id) => deleteItem(id)}
-                />
-              ))}
-            </CategorySection>
-          );
-        })}
-      </div>
+      {items.length === 0 ? (
+        <div data-testid={ids.menuEmpty}>
+          <EmptyState
+            title={energia.empty.menuTitle}
+            description={energia.empty.menuBody}
+            className="py-6"
+            action={
+              <Button variant="secondary" tone="module" onClick={() => openForm(null)}>
+                {energia.action.addItem}
+              </Button>
+            }
+          />
+        </div>
+      ) : sections.length === 0 ? (
+        <div data-testid={ids.filterEmpty}>
+          <EmptyState
+            title={energia.filter.emptyTitle}
+            description={energia.filter.emptyBody}
+            className="py-6"
+            action={
+              <Button
+                variant="secondary"
+                tone="module"
+                data-testid={ids.filterReset}
+                onClick={() => setEnergyFilter('all')}
+              >
+                {common.action.showAll}
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <Stack gap="lg">
+          {sections.map(({ category, entries }) => (
+            <Section
+              key={category}
+              title={energia.category[category].title}
+              description={energia.category[category].hint}
+              data-testid={ids.section(category)}
+            >
+              <div className="flex flex-col gap-3">
+                {entries.map((item) => (
+                  <DopamineCard
+                    key={item.id}
+                    item={item}
+                    onOpen={openDetail}
+                    onDone={(target) => completeItem(target.id)}
+                    onToggleFavorite={(target) => toggleFavorite(target.id)}
+                    onEdit={openForm}
+                    onRemove={setRemoving}
+                  />
+                ))}
+              </div>
+            </Section>
+          ))}
+        </Stack>
+      )}
 
-      <DopamineSOSModal 
-        isOpen={isSOSModalOpen}
-        onClose={() => setIsSOSModalOpen(false)}
+      <DopamineDetailSheet
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        item={detailItem}
+        onDone={(item) => {
+          completeItem(item.id);
+          setDetailOpen(false);
+        }}
       />
 
-      <EditDopamineItemModal
-        isOpen={!!editingItem}
-        onClose={() => setEditingItem(null)}
-        item={editingItem}
+      {/*
+        Koło pokazuje szczegóły wylosowanej pozycji u siebie i samo dopisuje
+        iskierkę. Zamykanie koła i otwieranie arkusza szczegółów w jednym ticku
+        znaczyło `pushState()` i `back()` obok siebie — cofnięcie zdejmowało wpis
+        świeżo otwartego arkusza i zamykało go, zanim ktokolwiek go zobaczył.
+      */}
+      <DopamineRouletteSheet
+        open={rouletteOpen}
+        onOpenChange={setRouletteOpen}
+        items={filtered}
+        onResetFilter={() => setEnergyFilter('all')}
+        onDone={(item) => {
+          completeItem(item.id);
+          setRouletteOpen(false);
+        }}
       />
 
-      <DopamineRouletteModal
-        isOpen={isRouletteOpen}
-        onClose={() => setIsRouletteOpen(false)}
-        items={filteredItems.map(item => ({
-          id: item.id,
-          title: item.title,
-          icon: getIcon(item.icon)
-        }))}
-      />
-      
-      <AddDopamineItemModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddItem}
+      <DopamineSosSheet open={sosOpen} onOpenChange={setSosOpen} />
+
+      <DopamineItemFormSheet open={formOpen} onOpenChange={setFormOpen} item={formItem} />
+
+      <ConfirmDialog
+        open={removing !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoving(null);
+        }}
+        title={energia.remove.title}
+        description={removing ? energia.remove.body(removing.title) : undefined}
+        confirmLabel={energia.remove.confirm}
+        cancelLabel={common.action.cancel}
+        onConfirm={() => {
+          if (removing) deleteItem(removing.id);
+          setRemoving(null);
+        }}
       />
     </div>
   );

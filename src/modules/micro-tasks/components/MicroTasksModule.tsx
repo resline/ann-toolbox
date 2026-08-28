@@ -1,298 +1,376 @@
-import React, { useState } from 'react';
-import { ListTodo, Sparkles, ArrowRight, Plus, FolderHeart, Trophy } from '../../../lib/icons';
-import { TaskDecomposerModal } from './TaskDecomposerModal';
-import { StepProgressCard } from './StepProgressCard';
-import { SingleStepFocusView } from './SingleStepFocusView';
-import { CelebrationOverlay } from './CelebrationOverlay';
-import { TemplatesHubModal } from './TemplatesHubModal';
-import { TaskHistoryModal } from './TaskHistoryModal';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowRight, FolderHeart, Plus, Trash2, Trophy } from '../../../lib/icons';
+import { cn } from '../../../lib/cn';
+import {
+  Button,
+  ConfirmDialog,
+  Heading,
+  IconButton,
+  Section,
+  Text,
+} from '../../../components/ui';
+import { start, common } from '../../../copy';
 import { useMicroTasksStore } from '../store';
-import { MicroTask } from '../types';
+import { startIds } from '../testIds';
+import type { MicroTask } from '../types';
+import { CelebrationOverlay } from './CelebrationOverlay';
+import { SingleStepFocusView } from './SingleStepFocusView';
+import { StepProgressCard } from './StepProgressCard';
+import { TaskDecomposerSheet } from './TaskDecomposerSheet';
+import { TaskHistorySheet } from './TaskHistorySheet';
+import { TemplatesHubSheet } from './TemplatesHubSheet';
 
+type View = 'focus' | 'list';
+
+/** Co znika po potwierdzeniu: odłożone zadanie doraźne albo zapisany zestaw. */
+interface Removal {
+  kind: 'parked' | 'template';
+  id: string;
+}
+
+/**
+ * Moduł Start.
+ *
+ * Cały stan zadania — które zadanie, który krok, ile zostało na liczniku —
+ * mieszka w store z persystencją na kluczu `ann_micro_tasks`. Wcześniej trzymał
+ * go useState tego pliku, więc zamknięcie karty w połowie ośmiokrokowego
+ * zadania kasowało wszystko. Tutaj widok tylko czyta i woła akcje.
+ */
 export const MicroTasksModule: React.FC = () => {
-  const [activeTaskLocal, setActiveTaskLocal] = useState<any | null>(null);
-  const [isDecomposerOpen, setIsDecomposerOpen] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-  
-  const [isTemplatesHubOpen, setIsTemplatesHubOpen] = useState(false);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const tasks = useMicroTasksStore((s) => s.tasks);
+  const userTemplates = useMicroTasksStore((s) => s.userTemplates);
+  const activeTaskId = useMicroTasksStore((s) => s.activeTaskId);
+  const currentStepId = useMicroTasksStore((s) => s.currentStepId);
+  const startTask = useMicroTasksStore((s) => s.startTask);
+  const startAdHocTask = useMicroTasksStore((s) => s.startAdHocTask);
+  const abandonTask = useMicroTasksStore((s) => s.abandonTask);
+  const discardTask = useMicroTasksStore((s) => s.discardTask);
+  const deleteCustomTemplate = useMicroTasksStore((s) => s.deleteCustomTemplate);
+  const nextStep = useMicroTasksStore((s) => s.nextStep);
 
-  const { tasks, userTemplates, saveCustomTemplate, recordTaskCompletion } = useMicroTasksStore();
+  const [view, setView] = useState<View>('focus');
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [decomposerOpen, setDecomposerOpen] = useState(false);
+  const [abandonOpen, setAbandonOpen] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
+  /** Jedno pytanie na dwa usunięcia — różni się tylko tym, co znika. */
+  const [pendingRemoval, setPendingRemoval] = useState<Removal | null>(null);
 
-  const handleStartTemplate = (template: any) => {
-    setActiveTaskLocal({
-      id: template.id,
-      title: template.title,
-      isCustomTemplate: template.isCustomTemplate,
-      category: template.category,
-      steps: template.steps.map((s: any, i: number) => ({
-        id: `step-${i}-${Date.now()}`,
-        title: s.title,
-        isCompleted: false,
-      })),
-    });
-    setFocusMode(true);
+  const activeTask: MicroTask | null = useMemo(
+    () => tasks.find((t) => t.id === activeTaskId) ?? null,
+    [tasks, activeTaskId]
+  );
+
+  // Nowe zadanie zawsze otwiera się w skupieniu, nie na liście.
+  // Świętowanie poprzedniego zadania schodzi z ekranu razem z tym przejściem —
+  // rozmyta warstwa nad świeżo zaczętym krokiem nie miałaby czego świętować.
+  useEffect(() => {
+    if (!activeTaskId) return;
+    setView('focus');
+    setCelebrating(false);
+  }, [activeTaskId]);
+
+  const stopCelebrating = useCallback(() => setCelebrating(false), []);
+
+  const starters = useMemo(() => tasks.filter((t) => !t.isAdHoc && !t.isCustomTemplate).slice(0, 4), [tasks]);
+
+  /**
+   * Zadanie doraźne odłożone w połowie.
+   *
+   * Odłożenie już go nie kasuje, więc musi mieć drogę powrotną: w katalogu go
+   * nie ma (to jednorazówka), a bez tego wiersza kroki wpisane ręcznie byłyby
+   * nie do odzyskania. „Odłożone" znaczy: został choć jeden krok do zrobienia.
+   */
+  const parkedTasks = useMemo(
+    () =>
+      tasks.filter(
+        (t) => t.isAdHoc && t.id !== activeTaskId && t.steps.some((s) => s.status === 'pending')
+      ),
+    [tasks, activeTaskId]
+  );
+
+  const doneCount = activeTask
+    ? activeTask.steps.filter((s) => s.status === 'completed' || s.status === 'skipped').length
+    : 0;
+  const stepIndex = activeTask ? activeTask.steps.findIndex((s) => s.id === currentStepId) : -1;
+  // Zapis sprzed zmiany struktury kroków mógłby zostawić zadanie bez bieżącego
+  // kroku — wtedy lista jest jedynym ekranem, z którego da się wyjść.
+  const activeView: View = stepIndex === -1 ? 'list' : view;
+
+  const handleAdHoc = (title: string, steps: string[]) => {
+    // Pusty identyfikator znaczy, że nie zostało ani jednego kroku —
+    // zamknięcie arkusza zgubiłoby wtedy wpisany tytuł.
+    if (startAdHocTask(title, steps)) setDecomposerOpen(false);
   };
 
-  const handleSaveTask = (data: { title: string; steps: string[] }) => {
-    setActiveTaskLocal({
-      id: Math.random().toString(36).substr(2, 9),
-      title: data.title,
-      isCustomTemplate: true,
-      category: 'home', // default
-      steps: data.steps.map((title, i) => ({
-        id: `step-${i}-${Date.now()}`,
-        title,
-        isCompleted: false,
-      })),
-    });
-    setFocusMode(true);
+  const confirmRemoval = () => {
+    if (!pendingRemoval) return;
+    if (pendingRemoval.kind === 'template') deleteCustomTemplate(pendingRemoval.id);
+    else discardTask(pendingRemoval.id);
+    setPendingRemoval(null);
   };
 
-  const handleStepComplete = (stepId: string) => {
-    if (!activeTaskLocal) return;
-    
-    const updatedSteps = activeTaskLocal.steps.map((step: any) => 
-      step.id === stepId ? { ...step, isCompleted: true } : step
-    );
-    
-    setActiveTaskLocal({ ...activeTaskLocal, steps: updatedSteps });
-    
-    // Check if all done
-    if (updatedSteps.every((s: any) => s.isCompleted)) {
-      setShowCelebration(true);
-      
-      const completedTaskForHistory = {
-        id: activeTaskLocal.id,
-        title: activeTaskLocal.title,
-        category: activeTaskLocal.category,
-        steps: updatedSteps
-      } as MicroTask;
-      
-      recordTaskCompletion(completedTaskForHistory);
-    }
+  const handleListDone = () => {
+    const last = stepIndex === (activeTask?.steps.length ?? 0) - 1;
+    nextStep();
+    if (last) setCelebrating(true);
   };
-
-  const handleAddInFlightStep = (title: string) => {
-    if (!activeTaskLocal) return;
-    const currentStepIndex = activeTaskLocal.steps.findIndex((s: any) => !s.isCompleted);
-    if (currentStepIndex === -1) return;
-    
-    const newStep = {
-      id: `step-inflight-${Date.now()}`,
-      title,
-      isCompleted: false,
-    };
-    
-    const updatedSteps = [...activeTaskLocal.steps];
-    updatedSteps.splice(currentStepIndex + 1, 0, newStep);
-    
-    setActiveTaskLocal({ ...activeTaskLocal, steps: updatedSteps });
-  };
-
-  const handleSaveTemplate = () => {
-    if (!activeTaskLocal) return;
-    
-    const newTemplate = {
-      id: `t-custom-${Date.now()}`,
-      title: activeTaskLocal.title,
-      isCustomTemplate: true,
-      category: 'home' as any,
-      description: 'Zapisane z aktywnego zadania',
-      steps: activeTaskLocal.steps.map((s: any) => ({
-        id: `s-${Date.now()}-${Math.random()}`,
-        title: s.title,
-        status: 'pending',
-        estimatedMinutes: 2
-      }))
-    };
-    
-    saveCustomTemplate(newTemplate as any);
-    alert('Zapisano zestaw kroków jako Twój szablon ⭐!');
-  };
-
-  const currentStepIndex = activeTaskLocal?.steps.findIndex((s: any) => !s.isCompleted) ?? -1;
-  const starterTemplates = tasks.slice(0, 4);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {!activeTaskLocal ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 duration-500 max-w-xl mx-auto space-y-6">
-          <div className="text-center w-full relative">
-            <div className="absolute right-0 top-0 flex gap-2">
-               <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-yellow-600 bg-yellow-50 rounded-full hover:bg-yellow-100" title="Historia Sukcesów 🏆">
-                 <Trophy className="w-5 h-5" />
-               </button>
-            </div>
-            
-            <div className="w-16 h-16 bg-sage-100 dark:bg-sage-900/40 rounded-3xl flex items-center justify-center text-sage-600 dark:text-sage-300 mx-auto mb-4 shadow-sm">
-              <ListTodo className="w-8 h-8" />
-            </div>
-            <h1 className="text-2xl font-bold text-warmgray-900 dark:text-white mb-1.5 tracking-tight">
-              Mikro-Zadania
-            </h1>
-            <p className="text-sm text-warmgray-500 dark:text-warmgray-400 max-w-md mx-auto">
-              Czujesz paraliż zadaniowy? Rozbij duże zadanie na maleńkie mikrokroki poniżej 2 minut.
-            </p>
-          </div>
-
-          <div className="w-full flex gap-3">
-             <button
-              onClick={() => setIsTemplatesHubOpen(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 min-h-[48px] rounded-2xl text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+    <div className="flex flex-col gap-section py-2">
+      {!activeTask ? (
+        <div className="flex flex-col gap-section" data-testid={startIds.home}>
+          <div className="flex items-start justify-between gap-3">
+            <Text size="base" tone="muted" className="max-w-sm">
+              {start.lead}
+            </Text>
+            <IconButton
+              label={start.home.history}
+              variant="ghost"
+              tone="neutral"
+              onClick={() => setHistoryOpen(true)}
+              data-testid={startIds.historyButton}
             >
-              <FolderHeart className="w-4 h-4" />
-              <span>Katalog Szablonów (15+)</span>
-            </button>
+              <Trophy className="w-5 h-5" aria-hidden />
+            </IconButton>
           </div>
 
-          {/* User Custom Templates */}
-          {userTemplates.length > 0 && (
-            <div className="w-full space-y-3">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-yellow-600 dark:text-yellow-500 uppercase tracking-wider px-1">
-                <span>Moje Szablony ⭐</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {userTemplates.slice(0, 2).map((tmpl) => (
-                  <button
-                    key={tmpl.id}
-                    type="button"
-                    onClick={() => handleStartTemplate(tmpl)}
-                    className="p-3.5 text-left rounded-2xl bg-white/80 dark:bg-warmgray-800/80 hover:bg-yellow-50/80 border border-yellow-200 shadow-sm transition-all hover:scale-[1.01] active:scale-[0.98] focus:outline-none group"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-semibold text-sm text-warmgray-900 dark:text-warmgray-100 group-hover:text-yellow-800">
-                        {tmpl.title}
-                      </span>
-                      <ArrowRight className="w-4 h-4 text-yellow-400 group-hover:text-yellow-600 transition-transform group-hover:translate-x-0.5" />
-                    </div>
-                  </button>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="primary"
+              tone="module"
+              size="lg"
+              onClick={() => setDecomposerOpen(true)}
+              data-testid={startIds.ownTaskButton}
+            >
+              <Plus className="w-5 h-5" aria-hidden />
+              {start.home.own}
+            </Button>
+
+            <Button
+              variant="quiet"
+              tone="neutral"
+              size="lg"
+              onClick={() => setCatalogOpen(true)}
+              data-testid={startIds.catalogButton}
+            >
+              <FolderHeart className="w-5 h-5" aria-hidden />
+              {start.home.catalog}
+            </Button>
+          </div>
+
+          {parkedTasks.length > 0 ? (
+            <Section
+              title={start.home.parked}
+              description={start.home.parkedHint}
+              data-testid={startIds.parked}
+            >
+              <ul className="flex flex-col">
+                {parkedTasks.map((parked, i) => (
+                  <TemplateRow
+                    key={parked.id}
+                    task={parked}
+                    divided={i > 0}
+                    onStart={() => startTask(parked.id)}
+                    removeLabel={start.home.parkedDiscard(parked.title)}
+                    removeTestId={startIds.parkedDiscard(parked.id)}
+                    onRemove={() => setPendingRemoval({ kind: 'parked', id: parked.id })}
+                  />
                 ))}
-              </div>
-            </div>
-          )}
+              </ul>
+            </Section>
+          ) : null}
 
-          {/* Quick 1-tap templates */}
-          <div className="w-full space-y-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-warmgray-500 dark:text-warmgray-400 uppercase tracking-wider px-1">
-              <Sparkles className="w-3.5 h-3.5 text-sage-600 dark:text-sage-400" />
-              <span>Szybkie Szablony na start</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {starterTemplates.map((tmpl) => (
-                <button
-                  key={tmpl.id}
-                  type="button"
-                  onClick={() => handleStartTemplate(tmpl)}
-                  className="p-3.5 text-left rounded-2xl bg-white/80 dark:bg-warmgray-800/80 hover:bg-sage-50/80 dark:hover:bg-sage-900/30 border border-warmgray-200/80 dark:border-warmgray-700/80 shadow-sm transition-all hover:scale-[1.01] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 group"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-sm text-warmgray-900 dark:text-warmgray-100 group-hover:text-sage-800 dark:group-hover:text-sage-200">
-                      {tmpl.title}
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-warmgray-400 group-hover:text-sage-600 transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                  <p className="text-xs text-warmgray-500 dark:text-warmgray-400 mt-1 line-clamp-1">
-                    {tmpl.description}
-                  </p>
-                </button>
+          {userTemplates.length > 0 ? (
+            <Section title={start.home.mine}>
+              <ul className="flex flex-col">
+                {userTemplates.map((template, i) => (
+                  <TemplateRow
+                    key={template.id}
+                    task={template}
+                    divided={i > 0}
+                    onStart={() => startTask(template.id)}
+                    removeLabel={start.home.templateDelete(template.title)}
+                    removeTestId={startIds.templateDelete(template.id)}
+                    onRemove={() => setPendingRemoval({ kind: 'template', id: template.id })}
+                  />
+                ))}
+              </ul>
+            </Section>
+          ) : null}
+
+          <Section title={start.home.quick} description={start.home.quickHint}>
+            <ul className="flex flex-col">
+              {starters.map((template, i) => (
+                <TemplateRow
+                  key={template.id}
+                  task={template}
+                  divided={i > 0}
+                  onStart={() => startTask(template.id)}
+                />
               ))}
-            </div>
-          </div>
-
-          <div className="w-full pt-2">
-            <button
-              onClick={() => setIsDecomposerOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 min-h-[52px] rounded-2xl text-base font-bold text-white bg-sage-600 hover:bg-sage-700 active:bg-sage-800 shadow-md hover:shadow-lg active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Własne Mikro-Zadanie</span>
-            </button>
-          </div>
+            </ul>
+          </Section>
         </div>
-      ) : focusMode && currentStepIndex !== -1 ? (
-        <div className="flex-1 overflow-y-auto">
-          <SingleStepFocusView
-            taskTitle={activeTaskLocal.title}
-            stepTitle={activeTaskLocal.steps[currentStepIndex].title}
-            stepNumber={currentStepIndex + 1}
-            totalSteps={activeTaskLocal.steps.length}
-            onComplete={() => handleStepComplete(activeTaskLocal.steps[currentStepIndex].id)}
-            onViewList={() => setFocusMode(false)}
-            onAddInFlightStep={handleAddInFlightStep}
-            onSaveTemplate={handleSaveTemplate}
-          />
-        </div>
+      ) : activeView === 'focus' ? (
+        <SingleStepFocusView
+          task={activeTask}
+          onShowList={() => setView('list')}
+          onFinished={() => setCelebrating(true)}
+        />
       ) : (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full max-w-2xl mx-auto duration-300">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-warmgray-900 dark:text-white mb-1">
-                {activeTaskLocal.title}
-              </h2>
-              <p className="text-sm text-warmgray-500 dark:text-warmgray-400">
-                {activeTaskLocal.steps.filter((s: any) => s.isCompleted).length} of {activeTaskLocal.steps.length} steps completed
-              </p>
+        <div className="flex flex-col gap-4" data-testid={startIds.list}>
+          <header className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-1 min-w-0">
+              <Heading level={2} className="truncate">
+                {activeTask.title}
+              </Heading>
+              <Text size="sm" tone="muted" data-testid={startIds.listProgress}>
+                {start.list.progress(doneCount, activeTask.steps.length)}
+              </Text>
             </div>
-            {currentStepIndex !== -1 && (
-              <button
-                onClick={() => setFocusMode(true)}
-                className="px-4 py-2 min-h-[48px] rounded-xl text-sm font-medium text-sage-700 bg-sage-100 hover:bg-sage-200 dark:bg-sage-900/30 dark:text-sage-300 dark:hover:bg-sage-900/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-              >
-                Focus Mode
-              </button>
-            )}
-          </div>
-          
-          <div className="space-y-3 pb-24">
-            {activeTaskLocal.steps.map((step: any, index: number) => (
+            <Button
+              variant="secondary"
+              tone="module"
+              onClick={() => setView('focus')}
+              data-testid={startIds.listFocusView}
+              className="shrink-0"
+            >
+              {start.list.focusView}
+            </Button>
+          </header>
+
+          <ol className="flex flex-col gap-2">
+            {activeTask.steps.map((step, index) => (
               <StepProgressCard
                 key={step.id}
-                id={step.id}
+                stepId={step.id}
+                index={index}
                 title={step.title}
-                isCompleted={step.isCompleted}
-                isActive={index === currentStepIndex}
-                onClick={() => {
-                  if (!step.isCompleted) {
-                    handleStepComplete(step.id);
-                  }
-                }}
+                status={step.status}
+                isCurrent={step.id === currentStepId}
+                onDone={handleListDone}
               />
             ))}
-          </div>
-          
-          {currentStepIndex === -1 && (
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={() => setActiveTaskLocal(null)}
-                className="px-6 py-3 min-h-[48px] rounded-xl font-medium text-white bg-warmgray-900 dark:bg-white dark:text-warmgray-900 transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-              >
-                Start Another Task
-              </button>
-            </div>
-          )}
+          </ol>
+
+          <Button
+            variant="ghost"
+            tone="neutral"
+            onClick={() => setAbandonOpen(true)}
+            data-testid={startIds.listAbandon}
+          >
+            {start.list.abandon}
+          </Button>
         </div>
       )}
 
-      <TaskDecomposerModal
-        isOpen={isDecomposerOpen}
-        onClose={() => setIsDecomposerOpen(false)}
-        onSave={handleSaveTask}
+      <TaskDecomposerSheet
+        open={decomposerOpen}
+        onOpenChange={setDecomposerOpen}
+        onStart={handleAdHoc}
       />
-      
-      {isTemplatesHubOpen && (
-        <TemplatesHubModal onClose={() => setIsTemplatesHubOpen(false)} />
-      )}
-      
-      {isHistoryOpen && (
-        <TaskHistoryModal onClose={() => setIsHistoryOpen(false)} />
-      )}
-      
-      <CelebrationOverlay
-        isVisible={showCelebration}
-        onComplete={() => setShowCelebration(false)}
+
+      <TemplatesHubSheet
+        open={catalogOpen}
+        onOpenChange={setCatalogOpen}
+        onStarted={() => setCatalogOpen(false)}
       />
+
+      <TaskHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
+
+      <ConfirmDialog
+        open={abandonOpen}
+        onOpenChange={setAbandonOpen}
+        title={start.list.abandonTitle}
+        description={start.list.abandonBody}
+        confirmLabel={start.list.abandonConfirm}
+        cancelLabel={common.action.cancel}
+        onConfirm={abandonTask}
+        tone="accent"
+      />
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        onOpenChange={(next) => {
+          if (!next) setPendingRemoval(null);
+        }}
+        title={
+          pendingRemoval?.kind === 'template'
+            ? start.home.templateDeleteTitle
+            : start.home.parkedDiscardTitle
+        }
+        description={
+          pendingRemoval?.kind === 'template'
+            ? start.home.templateDeleteBody
+            : start.home.parkedDiscardBody
+        }
+        confirmLabel={common.action.remove}
+        cancelLabel={common.action.cancel}
+        onConfirm={confirmRemoval}
+      />
+
+      <CelebrationOverlay isVisible={celebrating} onComplete={stopCelebrating} />
     </div>
   );
 };
+
+interface TemplateRowProps {
+  task: MicroTask;
+  divided: boolean;
+  onStart: () => void;
+  /** Kosz obok wiersza — tylko tam, gdzie usuwanie ma sens (zestawy, odłożone). */
+  onRemove?: () => void;
+  removeLabel?: string;
+  removeTestId?: string;
+}
+
+/** Wiersz szablonu — jedna linia i jedna cienka kreska zamiast kolorowego kafla. */
+const TemplateRow: React.FC<TemplateRowProps> = ({
+  task,
+  divided,
+  onStart,
+  onRemove,
+  removeLabel,
+  removeTestId,
+}) => (
+  <li
+    className={cn(
+      'flex items-center gap-1',
+      divided && 'shadow-[0_-1px_0_0_rgb(var(--line-faint))]'
+    )}
+  >
+    <button
+      type="button"
+      onClick={onStart}
+      data-testid={startIds.templateCard(task.id)}
+      className={cn(
+        'group flex-1 min-w-0 text-left flex items-center gap-3 py-4 min-h-tap rounded-control',
+        'transition-colors hover:bg-surface-hover',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--focus-ring))]'
+      )}
+    >
+      <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <span className="text-base text-ink leading-snug">{task.title}</span>
+        <span className="text-xs text-ink-faint">{start.count.steps(task.steps.length)}</span>
+      </span>
+      <ArrowRight
+        className="w-4 h-4 shrink-0 text-ink-faint transition-transform group-hover:translate-x-0.5"
+        aria-hidden
+      />
+    </button>
+
+    {onRemove && removeLabel ? (
+      <IconButton
+        label={removeLabel}
+        variant="ghost"
+        tone="neutral"
+        onClick={onRemove}
+        data-testid={removeTestId}
+      >
+        <Trash2 className="w-5 h-5" aria-hidden />
+      </IconButton>
+    ) : null}
+  </li>
+);

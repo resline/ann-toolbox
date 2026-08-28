@@ -1,67 +1,117 @@
 import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, Trash2 } from '../../../lib/icons';
+import {
+  Card,
+  ConfirmDialog,
+  Divider,
+  IconButton,
+  LabelText,
+  Text,
+} from '../../../components/ui';
+import { common, energia } from '../../../copy';
 import { useDopamineMenuStore } from '../store';
-import { Sparkles, ChevronDown, ChevronUp, Trash2 } from '../../../lib/icons';
+import { energiaIds as ids } from '../testIds';
 
+function formatTime(timestamp: string): string {
+  try {
+    return new Date(timestamp).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Bank iskierek — jedyne miejsce w module z dużą liczbą.
+ *
+ * Odmianę prowadzi `plCount`/`plWith`; wcześniejsze doraźne wyrażenie dawało
+ * „5 iskierk" i „22 iskierk".
+ */
 export const DopamineBankWidget: React.FC = () => {
   const completedToday = useDopamineMenuStore((state) => state.completedToday) || [];
   const resetCompletedToday = useDopamineMenuStore((state) => state.resetCompletedToday);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const count = completedToday.length;
-  
-  const formatTime = (timestamp: string) => {
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return '';
-    }
-  };
 
   return (
-    <div className="w-full bg-white dark:bg-warmgray-800 rounded-3xl p-5 shadow-sm border border-warmgray-200 dark:border-warmgray-700 duration-500 mb-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-warmgray-900 dark:text-warmgray-100">
-              {count > 0 ? `Dzisiaj zebrałaś ${count} iskierk${count === 1 ? 'ę' : count > 1 && count < 5 ? 'i' : ''} dopaminy ✨` : 'Zbierz swoją pierwszą iskierkę dopaminy na dziś 🌟'}
-            </h2>
+    <Card as="section" aria-label={energia.bank.summary(count)} data-testid={ids.bank}>
+      <div className="flex items-center justify-between gap-3 px-card py-card">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <LabelText>{energia.bank.label}</LabelText>
+          <div className="flex items-baseline gap-2 min-w-0">
+            <span
+              className="numeric text-display-1 font-medium text-ink leading-none"
+              data-testid={ids.bankCount}
+            >
+              {count}
+            </span>
+            <Text tone="muted" className="truncate">
+              {count === 0 ? energia.bank.first : energia.bank.unit(count)}
+            </Text>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {count > 0 && (
-            <button
-              onClick={() => resetCompletedToday()}
-              className="p-2 text-warmgray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-              aria-label="Wyczyść dzisiejsze iskierki"
+
+        <div className="flex items-center gap-1 shrink-0">
+          {count > 0 ? (
+            <IconButton
+              variant="ghost"
+              tone="neutral"
+              label={energia.bank.clear}
+              data-testid={ids.bankClear}
+              onClick={() => setConfirmClear(true)}
             >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          )}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-2 text-warmgray-500 hover:bg-warmgray-100 dark:hover:bg-warmgray-700 rounded-xl transition-colors"
-            aria-label={isExpanded ? 'Zwiń listę' : 'Rozwiń listę'}
+              <Trash2 className="w-5 h-5" aria-hidden />
+            </IconButton>
+          ) : null}
+          <IconButton
+            variant="ghost"
+            tone="neutral"
+            label={expanded ? energia.bank.collapse : energia.bank.expand}
+            aria-expanded={expanded}
             disabled={count === 0}
+            data-testid={ids.bankToggle}
+            onClick={() => setExpanded((v) => !v)}
           >
-            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </button>
+            {expanded ? (
+              <ChevronUp className="w-5 h-5" aria-hidden />
+            ) : (
+              <ChevronDown className="w-5 h-5" aria-hidden />
+            )}
+          </IconButton>
         </div>
       </div>
-      
-      {isExpanded && count > 0 && (
-        <div className="mt-4 pt-4 border-t border-warmgray-100 dark:border-warmgray-700 space-y-2">
-          {completedToday.map((item) => (
-            <div key={item.id} className="flex justify-between items-center text-sm py-1">
-              <span className="text-warmgray-700 dark:text-warmgray-200">{item.title}</span>
-              <span className="text-warmgray-400 font-mono text-xs">{formatTime(item.timestamp)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+
+      {expanded && count > 0 ? (
+        <>
+          <Divider />
+          <ul className="px-card py-2" data-testid={ids.bankList}>
+            {completedToday.map((entry) => (
+              <li key={entry.id} className="flex items-baseline justify-between gap-3 py-1.5">
+                <Text size="sm" as="span" className="min-w-0 truncate">
+                  {entry.title}
+                </Text>
+                <Text size="xs" tone="faint" as="span" className="numeric shrink-0">
+                  {formatTime(entry.timestamp)}
+                </Text>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      <ConfirmDialog
+        open={confirmClear}
+        onOpenChange={setConfirmClear}
+        title={energia.bank.clearTitle}
+        description={energia.bank.clearBody}
+        confirmLabel={common.action.remove}
+        cancelLabel={common.action.cancel}
+        onConfirm={() => {
+          resetCompletedToday();
+          setExpanded(false);
+        }}
+      />
+    </Card>
   );
 };

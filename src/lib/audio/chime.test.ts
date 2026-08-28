@@ -7,7 +7,7 @@ import {
   CHIME_TONES,
   type ChimeOptions,
   type ChimeTone,
-} from './chimeSynthesizer';
+} from './chime';
 
 // Mock Web Audio API classes
 interface MockGainParam {
@@ -92,7 +92,7 @@ class MockAudioContext {
   });
 }
 
-describe('chimeSynthesizer', () => {
+describe('syntezator gongu', () => {
   let mockCtx: MockAudioContext;
   const originalAudioContext = (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
 

@@ -18,9 +18,46 @@ import {
 } from '../types';
 import { BackgroundTimerEngine } from '../services/backgroundTimerEngine';
 import { getPolishVoices } from '../services/speechService';
-import { playChime } from '../services/chimeSynthesizer';
+import { playChime } from '../../../lib/audio/chime';
 
 export const SPEAKING_CLOCK_STORAGE_KEY = 'ann_speaking_clock_settings';
+
+/**
+ * Tłumaczy zapis sprzed ujednolicenia nazw.
+ *
+ * Do tej pory ten sam parametr istniał pod dwiema nazwami naraz
+ * (speechRate/rate, playChimeBefore/chimeEnabled, wakeLockEnabled/keepAwake),
+ * a silnik czytał wariant „legacy". Bez tego kroku usunięcie duplikatów
+ * zresetowałoby zapisane ustawienia głosu do domyślnych.
+ *
+ * Wartość „legacy" wygrywa tylko wtedy, gdy kanonicznej nie ma — tak wygląda
+ * zapis zrobiony przez starą wersję modalu.
+ */
+export function migrateStoredSettings(raw: unknown): Partial<SpeakingClockSettings> {
+  if (!raw || typeof raw !== 'object') return {};
+  const parsed = raw as Record<string, unknown>;
+
+  const LEGACY_TO_CANONICAL: Record<string, keyof SpeakingClockSettings> = {
+    speechRate: 'rate',
+    speechPitch: 'pitch',
+    speechVolume: 'volume',
+    playChimeBefore: 'chimeEnabled',
+    wakeLockEnabled: 'keepAwake',
+  };
+
+  const migrated: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    if (key in LEGACY_TO_CANONICAL) continue;
+    migrated[key] = value;
+  }
+  for (const [legacy, canonical] of Object.entries(LEGACY_TO_CANONICAL)) {
+    if (parsed[canonical] === undefined && parsed[legacy] !== undefined) {
+      migrated[canonical] = parsed[legacy];
+    }
+  }
+
+  return migrated as Partial<SpeakingClockSettings>;
+}
 
 /**
  * Safely loads saved settings from localStorage.
@@ -32,7 +69,7 @@ function loadStoredSettings(): SpeakingClockSettings {
   try {
     const raw = localStorage.getItem(SPEAKING_CLOCK_STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
+      const parsed = migrateStoredSettings(JSON.parse(raw)) as Record<string, unknown>;
       return {
         ...DEFAULT_SPEAKING_CLOCK_SETTINGS,
         ...parsed,

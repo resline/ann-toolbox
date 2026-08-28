@@ -21,7 +21,7 @@ import {
   formatPolishTime,
   formatDepartureAnnouncement,
 } from './polishTimeFormatter';
-import { playChime } from './chimeSynthesizer';
+import { playChime } from '../../../lib/audio/chime';
 import { speakText, stopSpeaking } from './speechService';
 import { WakeLockService } from './wakeLockService';
 import { SilentAudioLoop } from './silentAudioLoop';
@@ -387,7 +387,7 @@ export class BackgroundTimerEngine {
 
     // Background keep-alive & screen wake lock
     await this.silentAudioLoop.start();
-    if (this.settings.wakeLockEnabled) {
+    if (this.settings.keepAwake) {
       await this.wakeLockService.request();
     }
 
@@ -434,7 +434,7 @@ export class BackgroundTimerEngine {
     this.setState('running');
 
     await this.silentAudioLoop.start();
-    if (this.settings.wakeLockEnabled) {
+    if (this.settings.keepAwake) {
       await this.wakeLockService.request();
     }
 
@@ -482,7 +482,7 @@ export class BackgroundTimerEngine {
    * Updates partial settings dynamically.
    */
   updateSettings(settings: Partial<SpeakingClockSettings>): void {
-    const prevWakeLock = this.settings.wakeLockEnabled;
+    const prevWakeLock = this.settings.keepAwake;
     const prevMode = this.settings.mode;
     const prevTarget = this.settings.departure?.targetTime;
 
@@ -544,9 +544,9 @@ export class BackgroundTimerEngine {
         );
       }
 
-      if (this.settings.wakeLockEnabled && !prevWakeLock) {
+      if (this.settings.keepAwake && !prevWakeLock) {
         this.wakeLockService.request().catch(() => {});
-      } else if (!this.settings.wakeLockEnabled && prevWakeLock) {
+      } else if (!this.settings.keepAwake && prevWakeLock) {
         this.wakeLockService.release().catch(() => {});
       }
 
@@ -851,7 +851,7 @@ export class BackgroundTimerEngine {
   private async executeAudioSequence(text: string): Promise<void> {
     this.isAnnouncing = true;
     try {
-      if (this.settings.playChimeBefore) {
+      if (this.settings.chimeEnabled) {
         await playChime({
           volume: this.settings.chimeVolume,
           tone: this.settings.chimeTone,
@@ -860,9 +860,9 @@ export class BackgroundTimerEngine {
 
       await speakText(text, {
         voiceURI: this.settings.voiceURI,
-        rate: this.settings.speechRate,
-        pitch: this.settings.speechPitch,
-        volume: this.settings.speechVolume,
+        rate: this.settings.rate,
+        pitch: this.settings.pitch,
+        volume: this.settings.volume,
       });
     } catch (err) {
       this.callbacks.onError?.(err as Error);

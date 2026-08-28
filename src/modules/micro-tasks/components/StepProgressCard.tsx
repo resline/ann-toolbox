@@ -1,59 +1,94 @@
 import React from 'react';
-import { CheckCircle2, Circle } from '../../../lib/icons';
+import { Check, CheckCircle2, Circle, CircleDot } from '../../../lib/icons';
 import { cn } from '../../../lib/cn';
+import { Badge, Card, IconButton, Text } from '../../../components/ui';
+import { start } from '../../../copy';
+import { startIds } from '../testIds';
+import type { StepStatus } from '../types';
 
-interface StepProgressCardProps {
-  id: string;
+export interface StepProgressCardProps {
+  stepId: string;
+  index: number;
   title: string;
-  isCompleted: boolean;
-  isActive: boolean;
-  onClick: (id: string) => void;
+  status: StepStatus;
+  isCurrent: boolean;
+  onDone?: () => void;
 }
 
+/**
+ * Wiersz listy kroków.
+ *
+ * Odhaczyć da się tylko krok bieżący — lista jest mapą, nie pilotem. Wcześniej
+ * klikalny był każdy wiersz, więc łatwo było zaznaczyć nie ten, o który chodziło.
+ */
 export const StepProgressCard: React.FC<StepProgressCardProps> = ({
-  id,
+  stepId,
+  index,
   title,
-  isCompleted,
-  isActive,
-  onClick,
+  status,
+  isCurrent,
+  onDone,
 }) => {
+  const done = status === 'completed';
+  const skipped = status === 'skipped';
+
   return (
-    <button
-      type="button"
-      onClick={() => onClick(id)}
-      className={cn(
-          'w-full text-left flex items-center gap-4 p-4 min-h-[56px] rounded-2xl transition-all duration-200',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500',
-          isActive
-            ? 'bg-sage-50 dark:bg-sage-900/20 border-2 border-sage-500 dark:border-sage-500/50 shadow-sm'
-            : isCompleted
-            ? 'bg-warmgray-50/50 dark:bg-warmgray-800/30 border border-warmgray-200 dark:border-warmgray-700 opacity-60'
-            : 'bg-white dark:bg-warmgray-800 border border-warmgray-200 dark:border-warmgray-700 hover:border-sage-300 dark:hover:border-sage-700'
-        )
-      }
-      aria-current={isActive ? 'step' : undefined}
+    <Card
+      as="li"
+      variant={isCurrent ? 'paper' : 'outline'}
+      className="flex items-center gap-3 px-card py-3 min-h-tap"
+      data-testid={startIds.step(stepId)}
+      aria-current={isCurrent ? 'step' : undefined}
     >
-      <div className={cn(
-        "shrink-0 flex items-center justify-center transition-colors",
-        isCompleted ? 'text-sage-500' : isActive ? 'text-sage-600 dark:text-sage-400' : 'text-warmgray-300 dark:text-warmgray-600'
-      )}>
-        {isCompleted ? (
-          <CheckCircle2 className="w-6 h-6" />
-        ) : (
-          <Circle className="w-6 h-6" />
+      <span
+        className={cn(
+          'shrink-0',
+          done ? 'text-module' : isCurrent ? 'text-module-ink' : 'text-ink-faint'
         )}
-      </div>
-      
-      <span className={cn(
-        "flex-1 text-base font-medium transition-colors",
-        isCompleted 
-          ? 'text-warmgray-400 dark:text-warmgray-500 line-through'
-          : isActive
-          ? 'text-sage-900 dark:text-sage-50'
-          : 'text-warmgray-700 dark:text-warmgray-200'
-      )}>
-        {title}
+        aria-hidden
+      >
+        {done ? (
+          <CheckCircle2 className="w-5 h-5" strokeWidth={1.75} />
+        ) : isCurrent ? (
+          <CircleDot className="w-5 h-5" strokeWidth={1.75} />
+        ) : (
+          <Circle className="w-5 h-5" strokeWidth={1.75} />
+        )}
       </span>
-    </button>
+
+      <span className="flex-1 min-w-0 flex flex-col gap-1">
+        <Text
+          as="span"
+          size="base"
+          tone={done || skipped ? 'faint' : 'default'}
+          className={cn('leading-snug', done && 'line-through')}
+        >
+          {title}
+        </Text>
+        {isCurrent ? (
+          <Badge tone="module" className="self-start">
+            {start.list.statusNow}
+          </Badge>
+        ) : skipped ? (
+          <Badge tone="neutral" className="self-start">
+            {start.list.statusSkipped}
+          </Badge>
+        ) : null}
+      </span>
+
+      <span className="shrink-0 numeric text-sm text-ink-faint">{index + 1}</span>
+
+      {isCurrent && onDone ? (
+        <IconButton
+          label={start.list.markDone}
+          variant="secondary"
+          tone="module"
+          onClick={onDone}
+          data-testid={startIds.stepDone(stepId)}
+        >
+          <Check className="w-5 h-5" aria-hidden />
+        </IconButton>
+      ) : null}
+    </Card>
   );
 };

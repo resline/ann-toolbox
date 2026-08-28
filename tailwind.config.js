@@ -5,8 +5,8 @@
  * kanałowym, dzięki czemu działają modyfikatory przezroczystości (bg-surface/70).
  * Motyw przełącza atrybut [data-theme] na <html>.
  *
- * Palety `sage` / `warmgray` / `calm` zostają do czasu, aż wszystkie moduły
- * przejdą na tokeny — dziś opiera się na nich 672 wariantów `dark:`.
+ * Palet `sage` / `warmgray` / `calm` już nie ma — wszystkie moduły czytają
+ * tokeny. Pilnuje tego src/design/noLegacyStyles.test.ts.
  */
 const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
 
@@ -15,7 +15,6 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -66,45 +65,6 @@ export default {
           DEFAULT: token('attention'),
           soft: token('attention-soft'),
           ink: token('attention-ink'),
-        },
-
-        /* ---- palety zastane, do usunięcia w fazie domykającej ---- */
-        sage: {
-          50: '#F4F7F5',
-          100: '#EAF0EC',
-          200: '#D5E2D9',
-          300: '#B4CBB9',
-          400: '#8BAF94',
-          500: '#628F70',
-          600: '#4A6B5D',
-          700: '#395348',
-          800: '#2C4037',
-          900: '#1F2D27',
-          950: '#121C18',
-        },
-        warmgray: {
-          50: '#FAF8F5',
-          100: '#F8FAF8',
-          200: '#E8ECE8',
-          300: '#D2D8D2',
-          400: '#A0AEC0',
-          500: '#718096',
-          600: '#4A5568',
-          700: '#2D3748',
-          750: '#242C3A',
-          800: '#1A202C',
-          850: '#161B27',
-          900: '#111722',
-          950: '#0A0E14',
-        },
-        calm: {
-          cream: '#F8FAF8',
-          mint: '#81E6D9',
-          lavender: '#BEE3F8',
-          sage: '#4A6B5D',
-          graphite: '#2D3748',
-          darkbg: '#1A202C',
-          oled: '#000000',
         },
       },
 

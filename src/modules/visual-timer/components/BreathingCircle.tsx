@@ -1,190 +1,202 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '../../../lib/cn';
+import { skupienie } from '../../../copy';
+import { Button, LabelText, Text } from '../../../components/ui';
+import { useMotionPreference } from '../../../lib/motion';
+import { skupienieIds as ids } from '../testIds';
 
-interface BreathingCircleProps {
-  isActive?: boolean;
+/*
+ * Trzy techniki oddechu. Rytmy i kolejność faz zostają dokładnie takie, jakie
+ * były — zmieniły się tylko kolory (tokeny zamiast emerald/indigo/cyan),
+ * nazwy technik wyjechały do warstwy tekstów, a przy ograniczonym ruchu
+ * okręgi się nie skalują.
+ */
+type BreathAction = 'expand' | 'hold-expanded' | 'contract' | 'hold-contracted';
+
+interface BreathPhase {
+  key: string;
+  name: string;
+  duration: number;
+  action: BreathAction;
 }
 
-const TECHNIQUES = {
+interface Technique {
+  id: string;
+  name: string;
+  rhythm: string;
+  phases: BreathPhase[];
+}
+
+const copy = skupienie.breathing;
+
+const TECHNIQUES: Record<string, Technique> = {
   box: {
     id: 'box',
-    name: 'Box Breathing',
+    name: copy.technique.box.name,
+    rhythm: copy.technique.box.rhythm,
     phases: [
-      { name: 'Wdech', duration: 4, action: 'expand', color: 'bg-emerald-400', glow: 'shadow-emerald-400/50' },
-      { name: 'Zatrzymaj', duration: 4, action: 'hold-expanded', color: 'bg-emerald-600', glow: 'shadow-emerald-600/50' },
-      { name: 'Wydech', duration: 4, action: 'contract', color: 'bg-sage-400', glow: 'shadow-sage-400/50' },
-      { name: 'Spokój', duration: 4, action: 'hold-contracted', color: 'bg-sage-600', glow: 'shadow-sage-600/50' },
-    ]
+      { key: 'inhale', name: copy.phase.inhale, duration: 4, action: 'expand' },
+      { key: 'hold', name: copy.phase.hold, duration: 4, action: 'hold-expanded' },
+      { key: 'exhale', name: copy.phase.exhale, duration: 4, action: 'contract' },
+      { key: 'rest', name: copy.phase.rest, duration: 4, action: 'hold-contracted' },
+    ],
   },
   relax: {
     id: 'relax',
-    name: 'Relaxing (4-7-8)',
+    name: copy.technique.relax.name,
+    rhythm: copy.technique.relax.rhythm,
     phases: [
-      { name: 'Wdech', duration: 4, action: 'expand', color: 'bg-indigo-400', glow: 'shadow-indigo-400/50' },
-      { name: 'Zatrzymaj', duration: 7, action: 'hold-expanded', color: 'bg-indigo-600', glow: 'shadow-indigo-600/50' },
-      { name: 'Wydech', duration: 8, action: 'contract', color: 'bg-violet-400', glow: 'shadow-violet-400/50' },
-    ]
+      { key: 'inhale', name: copy.phase.inhale, duration: 4, action: 'expand' },
+      { key: 'hold', name: copy.phase.hold, duration: 7, action: 'hold-expanded' },
+      { key: 'exhale', name: copy.phase.exhale, duration: 8, action: 'contract' },
+    ],
   },
   flow: {
     id: 'flow',
-    name: 'Calm Flow',
+    name: copy.technique.flow.name,
+    rhythm: copy.technique.flow.rhythm,
     phases: [
-      { name: 'Wdech', duration: 4, action: 'expand', color: 'bg-cyan-400', glow: 'shadow-cyan-400/50' },
-      { name: 'Wydech', duration: 6, action: 'contract', color: 'bg-sky-400', glow: 'shadow-sky-400/50' },
-    ]
-  }
+      { key: 'inhale', name: copy.phase.inhale, duration: 4, action: 'expand' },
+      { key: 'exhale', name: copy.phase.exhale, duration: 6, action: 'contract' },
+    ],
+  },
 };
 
-type TechniqueKey = keyof typeof TECHNIQUES;
+const TECHNIQUE_KEYS = ['box', 'relax', 'flow'] as const;
+type TechniqueKey = (typeof TECHNIQUE_KEYS)[number];
 
-export const BreathingCircle: React.FC<BreathingCircleProps> = () => {
+export const BreathingCircle: React.FC = () => {
+  const { reduced } = useMotionPreference();
   const [activeTechKey, setActiveTechKey] = useState<TechniqueKey>('box');
   const [isRunning, setIsRunning] = useState(false);
-  const [phaseIndex, setPhaseIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(TECHNIQUES['box'].phases[0].duration);
+  const [step, setStep] = useState({
+    phaseIndex: 0,
+    timeLeft: TECHNIQUES.box.phases[0].duration,
+  });
 
   const technique = TECHNIQUES[activeTechKey];
-  const currentPhase = technique.phases[phaseIndex];
+  const currentPhase = technique.phases[step.phaseIndex];
 
+  /*
+   * Faza i pozostałe sekundy siedzą w jednym stanie, aktualizowanym funkcyjnie.
+   * To nie ozdoba: przy dwóch osobnych stanach tik, który wypada między
+   * renderami, liczyłby od nieaktualnej wartości. Po ostatniej sekundzie fazy
+   * od razu wchodzi kolejna, więc licznik nigdy nie pokazuje zera — dokładnie
+   * jak wcześniej.
+   */
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isRunning) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            // Move to next phase
-            const nextIndex = (phaseIndex + 1) % technique.phases.length;
-            setPhaseIndex(nextIndex);
-            return technique.phases[nextIndex].duration;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    if (!isRunning) return;
+    const interval = setInterval(() => {
+      setStep((prev) => {
+        if (prev.timeLeft > 1) return { ...prev, timeLeft: prev.timeLeft - 1 };
+        const nextIndex = (prev.phaseIndex + 1) % technique.phases.length;
+        return { phaseIndex: nextIndex, timeLeft: technique.phases[nextIndex].duration };
+      });
+    }, 1000);
     return () => clearInterval(interval);
-  }, [isRunning, phaseIndex, technique]);
+  }, [isRunning, technique]);
 
   const handleTechniqueChange = (key: TechniqueKey) => {
     setActiveTechKey(key);
     setIsRunning(false);
-    setPhaseIndex(0);
-    setTimeLeft(TECHNIQUES[key].phases[0].duration);
+    setStep({ phaseIndex: 0, timeLeft: TECHNIQUES[key].phases[0].duration });
   };
 
-  const toggleRun = () => setIsRunning(!isRunning);
+  const expanded =
+    isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'hold-expanded');
+  const moving =
+    isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract');
 
-  // Determine scale based on action
-  let scaleClass = 'scale-100';
-  if (isRunning) {
-    if (currentPhase.action === 'expand') scaleClass = 'scale-[1.5]';
-    else if (currentPhase.action === 'hold-expanded') scaleClass = 'scale-[1.5]';
-    else if (currentPhase.action === 'contract') scaleClass = 'scale-100';
-    else if (currentPhase.action === 'hold-contracted') scaleClass = 'scale-100';
-  }
-
-  // Animation duration matching phase duration
-  const transitionDuration = isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract') 
-    ? `duration-[${currentPhase.duration * 1000}ms]`
-    : 'duration-1000'; // Default fallback transition
+  // Przy ograniczonym ruchu okręgi stoją — informację niesie nazwa fazy i licznik.
+  const ringStyle: React.CSSProperties = reduced
+    ? {}
+    : {
+        transform: expanded ? 'scale(1.35)' : 'scale(1)',
+        transitionDuration: moving ? `${currentPhase.duration}s` : '1s',
+      };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 sm:p-8 min-h-[400px]">
-      
-      {/* Technique Selector */}
-      <div className="flex gap-2 mb-12 bg-warmgray-100 dark:bg-warmgray-800 p-1 rounded-full">
-        {(Object.keys(TECHNIQUES) as TechniqueKey[]).map(key => (
-          <button
-            key={key}
-            onClick={() => handleTechniqueChange(key)}
-            className={cn(
-                'px-4 py-2 rounded-full text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500',
-                activeTechKey === key 
-                  ? 'bg-white dark:bg-warmgray-700 text-warmgray-900 dark:text-white shadow-sm' 
-                  : 'text-warmgray-500 hover:text-warmgray-700 dark:text-warmgray-400 dark:hover:text-warmgray-200'
-              )
-            }
-          >
-            {TECHNIQUES[key].name}
-          </button>
-        ))}
+    <div data-testid={ids.breathing} className="flex flex-col items-center gap-8">
+      <div
+        role="group"
+        aria-label={copy.techniqueLabel}
+        className="grid grid-cols-3 gap-2 w-full"
+      >
+        {TECHNIQUE_KEYS.map((key) => {
+          const isActive = activeTechKey === key;
+          return (
+            <Button
+              key={key}
+              data-testid={ids.breathingTechnique(key)}
+              variant={isActive ? 'secondary' : 'quiet'}
+              tone={isActive ? 'module' : 'neutral'}
+              aria-pressed={isActive}
+              onClick={() => handleTechniqueChange(key)}
+              className="h-auto flex-col gap-1 py-3 px-2 min-h-tap"
+            >
+              <span className="text-sm font-medium leading-tight">{TECHNIQUES[key].name}</span>
+              <span className="numeric text-xs font-normal text-ink-faint">
+                {TECHNIQUES[key].rhythm}
+              </span>
+            </Button>
+          );
+        })}
       </div>
 
-      {/* Breathing Ring */}
-      <button 
-        onClick={toggleRun}
-        className="relative w-64 h-64 flex items-center justify-center mb-12 focus:outline-none focus-visible:ring-4 focus-visible:ring-sage-500 rounded-full group"
-        aria-label={isRunning ? 'Pause breathing' : 'Start breathing'}
+      <button
+        type="button"
+        data-testid={ids.breathingToggle}
+        aria-label={isRunning ? copy.pause : copy.start}
+        aria-pressed={isRunning}
+        onClick={() => setIsRunning((prev) => !prev)}
+        className={cn(
+          'relative block w-full max-w-[16rem] aspect-square rounded-full',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgb(var(--surface))]'
+        )}
       >
-        {/* Outer Aura */}
-        <div 
-          className={cn(
-              'absolute inset-0 rounded-full opacity-30 transition-all ease-in-out',
-              isRunning ? 'animate-pulse' : '',
-              currentPhase.color,
-              scaleClass,
-              transitionDuration
-            )
-          }
-          style={{ 
-            transitionDuration: isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract') ? `${currentPhase.duration}s` : '1s'
-          }}
+        <span
+          aria-hidden
+          style={ringStyle}
+          className="absolute inset-0 rounded-full bg-module/10 transition-transform ease-in-out"
         />
-        
-        {/* Middle Ring */}
-        <div 
-          className={cn(
-              'absolute inset-4 rounded-full opacity-50 backdrop-blur-sm transition-all ease-in-out',
-              currentPhase.color,
-              scaleClass
-            )
-          }
-          style={{ 
-            transitionDuration: isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract') ? `${currentPhase.duration}s` : '1s'
-          }}
+        <span
+          aria-hidden
+          style={ringStyle}
+          className="absolute inset-8 rounded-full bg-module/20 transition-transform ease-in-out"
+        />
+        <span
+          aria-hidden
+          style={ringStyle}
+          className="absolute inset-[30%] rounded-full bg-module-soft shadow-hairline transition-transform ease-in-out"
         />
 
-        {/* Center Circle */}
-        <div 
-          className={cn(
-              'relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all ease-in-out',
-              currentPhase.color,
-              currentPhase.glow,
-              scaleClass
-            )
-          }
-          style={{ 
-            transitionDuration: isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract') ? `${currentPhase.duration}s` : '1s'
-          }}
-        >
+        <span className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+          <LabelText tone="module" data-testid={ids.breathingPhase}>
+            {isRunning ? currentPhase.name : technique.name}
+          </LabelText>
           {isRunning ? (
             <>
-              <span className="text-4xl font-bold text-white tabular-nums tracking-tighter">
-                {timeLeft}
+              <span
+                data-testid={ids.breathingCount}
+                className="numeric text-display-1 font-medium text-ink leading-none"
+              >
+                {step.timeLeft}
               </span>
-              <span className="text-xs font-medium text-white/80 mt-1 uppercase tracking-widest">
-                sek
-              </span>
+              <LabelText>{copy.seconds}</LabelText>
             </>
           ) : (
-            <span className="text-white font-medium group-hover:scale-110 transition-transform">
-              Start
-            </span>
+            <span className="text-base font-medium text-ink">{skupienie.action.start}</span>
           )}
-        </div>
+        </span>
       </button>
 
-      {/* Synchronized Text */}
-      <div className="h-12 flex items-center justify-center">
-        <p className={cn(
-            "text-xl sm:text-2xl font-light transition-all duration-500 text-center",
-            isRunning ? "text-warmgray-900 dark:text-white" : "text-warmgray-400"
-          )
-        }>
-          {isRunning 
-            ? `${currentPhase.name} (${currentPhase.duration}s)...` 
-            : "Wybierz technikę i naciśnij Start"}
-        </p>
-      </div>
+      <span className="sr-only" aria-live="polite">
+        {isRunning ? copy.countLabel(currentPhase.name) : ''}
+      </span>
+
+      <Text size="sm" tone="faint" className="text-center max-w-xs">
+        {isRunning ? technique.rhythm : copy.idle}
+      </Text>
     </div>
   );
 };

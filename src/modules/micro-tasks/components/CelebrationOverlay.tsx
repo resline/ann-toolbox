@@ -1,16 +1,26 @@
-import React, { useEffect } from 'react';
-import { PartyPopper, Star } from '../../../lib/icons';
-import { cn } from '../../../lib/cn';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { PartyPopper, Sparkles, Star } from '../../../lib/icons';
+import { dur, ease, useMotionPreference } from '../../../lib/motion';
+import { Heading, Text } from '../../../components/ui';
+import { start } from '../../../copy';
+import { startIds } from '../testIds';
 
-interface CelebrationOverlayProps {
+export interface CelebrationOverlayProps {
   isVisible: boolean;
   onComplete: () => void;
   message?: string;
 }
 
+interface WebkitWindow extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
+/** Arpeggio C-E-G-C. Jedyne miejsce w aplikacji, któremu wolno się cieszyć. */
 const playVictoryChime = () => {
   try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const scoped = window as WebkitWindow;
+    const AudioContextClass = window.AudioContext || scoped.webkitAudioContext;
     if (!AudioContextClass) return;
     const ctx = new AudioContextClass();
 
@@ -19,107 +29,152 @@ const playVictoryChime = () => {
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(frequency, ctx.currentTime + startTime);
-      
+
       gain.gain.setValueAtTime(0, ctx.currentTime + startTime);
       gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + startTime + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + startTime + duration);
-      
+
       osc.connect(gain);
       gain.connect(ctx.destination);
-      
+
       osc.start(ctx.currentTime + startTime);
       osc.stop(ctx.currentTime + startTime + duration);
     };
 
-    // Simple victory arpeggio: C5, E5, G5, C6
     playNote(523.25, 0, 0.4);
     playNote(659.25, 0.15, 0.4);
     playNote(783.99, 0.3, 0.4);
-    playNote(1046.50, 0.5, 0.8);
-  } catch (e) {
-    console.error('Audio playback failed', e);
+    playNote(1046.5, 0.5, 0.8);
+  } catch {
+    /* przeglądarka bez Web Audio albo zablokowany dźwięk — świętujemy w ciszy */
   }
 };
 
+interface Floater {
+  left: number;
+  top: number;
+  delay: number;
+  duration: number;
+}
+
+function scatter(count: number, seedOffset: number): Floater[] {
+  return Array.from({ length: count }, (_, i) => ({
+    left: ((i * 37 + seedOffset * 13) % 92) + 4,
+    top: ((i * 53 + seedOffset * 29) % 84) + 8,
+    delay: (i % 5) * 0.18,
+    duration: 3 + (i % 4) * 0.7,
+  }));
+}
+
+/**
+ * Świętowanie po ostatnim kroku.
+ *
+ * Ruch idzie przez framer-motion, a nie przez wstrzykiwany <style> — tamta
+ * wersja dokładała @keyframes do <head> przy każdym renderze. Przy ograniczonym
+ * ruchu zostaje samo potwierdzenie: karta, dźwięk, zero latających rzeczy.
+ *
+ * Warstwa jest niemodalna (pointer-events-none), więc świadomie nie idzie przez
+ * Sheet — pułapka fokusu odcięłaby ekran na cztery sekundy. Stąd jedyne w module
+ * ręczne `fixed inset-0`. Bez szkła i bez rozmycia: tło zostaje widoczne, a całą
+ * radość niesie karta i garść gwiazdek.
+ */
 export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
   isVisible,
   onComplete,
-  message = "Wspaniale, Aniu! Pokonałaś opór i zrobiłaś to krok po kroku ✨",
+  message = start.celebration.message,
 }) => {
-  useEffect(() => {
-    if (isVisible) {
-      playVictoryChime();
-      const timer = setTimeout(() => {
-        onComplete();
-      }, 4500);
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, onComplete]);
+  const { reduced } = useMotionPreference();
 
-  if (!isVisible) return null;
+  // Rozrzut liczony raz — inaczej każdy render przestawiałby gwiazdki.
+  const stars = useMemo(() => scatter(10, 1), []);
+  const sparks = useMemo(() => scatter(5, 2), []);
+
+  /**
+   * Wywołanie zwrotne trzymane w ref, a nie w zależnościach efektu.
+   *
+   * Moduł podaje tu funkcję tworzoną przy każdym renderze. Gdyby siedziała
+   * w zależnościach, dowolne kliknięcie w trakcie świętowania (warstwa jest
+   * przepuszczalna, więc ekran startowy pod nią żyje) sprzątałoby odliczanie
+   * i puszczało fanfarę drugi raz.
+   */
+  const completeRef = useRef(onComplete);
+  useEffect(() => {
+    completeRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    playVictoryChime();
+    const timer = setTimeout(() => completeRef.current(), reduced ? 2600 : 4500);
+    return () => clearTimeout(timer);
+  }, [isVisible, reduced]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden">
-      <div className="absolute inset-0 bg-sage-500/20 dark:bg-sage-400/20 backdrop-blur-[4px] duration-500" />
-      
-      {/* Floating Stars and Butterflies Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-bounce opacity-70"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDuration: `${2 + Math.random() * 3}s`,
-              animationDelay: `${Math.random() * 1}s`,
-            }}
-          >
-            <Star className={cn("w-6 h-6 text-yellow-400 fill-yellow-400", i % 2 === 0 ? "scale-75" : "scale-100")} />
-          </div>
-        ))}
-        {/* Simple CSS butterflies using unicode or SVG */}
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={`bf-${i}`}
-            className="absolute opacity-80 text-3xl"
-            style={{
-              left: `${Math.random() * 100}%`,
-              bottom: `-10%`,
-              animation: `flyUp ${4 + Math.random() * 3}s ease-in-out forwards`,
-              animationDelay: `${Math.random() * 1}s`,
-            }}
-          >
-            🦋
-          </div>
-        ))}
-      </div>
+    <AnimatePresence>
+      {isVisible ? (
+        <motion.div
+          key="celebration"
+          data-testid={startIds.celebration}
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden pointer-events-none px-gutter"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: dur.base, ease: ease.out }}
+        >
+          {!reduced ? (
+            <div className="absolute inset-0 overflow-hidden" aria-hidden>
+              {stars.map((s, i) => (
+                <motion.span
+                  key={`star-${i}`}
+                  className="absolute text-caution"
+                  style={{ left: `${s.left}%`, top: `${s.top}%` }}
+                  initial={{ opacity: 0, scale: 0.6 }}
+                  animate={{ opacity: [0, 0.9, 0.9, 0], scale: [0.6, 1, 1, 0.8] }}
+                  transition={{ duration: s.duration, delay: s.delay, ease: ease.inOut }}
+                >
+                  <Star className="w-5 h-5 fill-current" />
+                </motion.span>
+              ))}
 
-      <style>{`
-        @keyframes flyUp {
-          0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-          10% { opacity: 1; }
-          50% { transform: translateY(-50vh) rotate(15deg) translateX(20px); }
-          100% { transform: translateY(-120vh) rotate(-15deg) translateX(-20px); opacity: 0; }
-        }
-      `}</style>
+              {sparks.map((b, i) => (
+                <motion.span
+                  key={`spark-${i}`}
+                  className="absolute bottom-0 text-module-ink"
+                  style={{ left: `${b.left}%` }}
+                  initial={{ y: '10vh', x: 0, rotate: 0, opacity: 0 }}
+                  animate={{
+                    y: ['10vh', '-55vh', '-120vh'],
+                    x: [0, 24, -24],
+                    rotate: [0, 14, -14],
+                    opacity: [0, 0.8, 0],
+                  }}
+                  transition={{ duration: b.duration + 1.4, delay: b.delay, ease: ease.inOut }}
+                >
+                  <Sparkles className="w-6 h-6" strokeWidth={1.5} aria-hidden />
+                </motion.span>
+              ))}
+            </div>
+          ) : null}
 
-      <div 
-        className={cn(
-          "bg-white/90 dark:bg-warmgray-800/90 backdrop-blur-md p-10 rounded-3xl shadow-2xl border border-sage-200 dark:border-sage-700 flex flex-col items-center text-center max-w-md w-full mx-4",
-          "duration-700 ease-out"
-        )}
-      >
-        <div className="w-24 h-24 bg-gradient-to-tr from-sage-200 to-sage-100 dark:from-sage-800 dark:to-sage-900 rounded-full flex items-center justify-center text-sage-600 dark:text-sage-300 mb-6 shadow-inner animate-bounce">
-          <PartyPopper className="w-12 h-12" />
-        </div>
-        <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sage-600 to-sage-400 dark:from-sage-400 dark:to-sage-200 mb-4">
-          Gratulacje!
-        </h2>
-        <p className="text-xl font-medium text-warmgray-700 dark:text-warmgray-200 leading-relaxed">
-          {message}
-        </p>
-      </div>
-    </div>
+          <motion.div
+            className="relative flex flex-col items-center text-center gap-4 w-full max-w-sm rounded-sheet bg-surface shadow-sheet px-gutter py-10"
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: dur.slow, ease: ease.out }}
+          >
+            <span className="w-16 h-16 rounded-full bg-module-soft text-module-ink flex items-center justify-center">
+              <PartyPopper className="w-8 h-8" strokeWidth={1.5} aria-hidden />
+            </span>
+            <Heading level={2}>{start.celebration.title}</Heading>
+            <Text size="lg" tone="muted">
+              {message}
+            </Text>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 };
