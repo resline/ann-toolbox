@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, ListTodo } from 'lucide-react';
+import { Plus, ListTodo, Sparkles, ArrowRight } from 'lucide-react';
 import { TaskDecomposerModal } from './TaskDecomposerModal';
 import { StepProgressCard } from './StepProgressCard';
 import { SingleStepFocusView } from './SingleStepFocusView';
 import { CelebrationOverlay } from './CelebrationOverlay';
+import { MICRO_TASK_TEMPLATES } from '../templates';
 
 interface Step {
   id: string;
@@ -22,6 +23,19 @@ export const MicroTasksModule: React.FC = () => {
   const [isDecomposerOpen, setIsDecomposerOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+
+  const handleStartTemplate = (template: typeof MICRO_TASK_TEMPLATES[0]) => {
+    setActiveTask({
+      id: template.id,
+      title: template.title,
+      steps: template.steps.map((s, i) => ({
+        id: `step-${i}`,
+        title: s.title,
+        isCompleted: false,
+      })),
+    });
+    setFocusMode(true);
+  };
 
   const handleSaveTask = (data: { title: string; steps: string[] }) => {
     setActiveTask({
@@ -56,23 +70,56 @@ export const MicroTasksModule: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col">
       {!activeTask ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500 max-w-md mx-auto">
-          <div className="w-20 h-20 bg-sage-100 dark:bg-sage-900/30 rounded-3xl flex items-center justify-center text-sage-600 dark:text-sage-400 mb-6 shadow-sm">
-            <ListTodo className="w-10 h-10" />
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in duration-500 max-w-xl mx-auto space-y-6">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-sage-100 dark:bg-sage-900/40 rounded-3xl flex items-center justify-center text-sage-600 dark:text-sage-300 mx-auto mb-4 shadow-sm">
+              <ListTodo className="w-8 h-8" />
+            </div>
+            <h1 className="text-2xl font-bold text-warmgray-900 dark:text-white mb-1.5 tracking-tight">
+              Mikro-Zadania
+            </h1>
+            <p className="text-sm text-warmgray-500 dark:text-warmgray-400 max-w-md mx-auto">
+              Czujesz paraliż zadaniowy? Rozbij duże zadanie na maleńkie mikrokroki poniżej 2 minut.
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-warmgray-900 dark:text-white mb-2 tracking-tight">
-            Micro-Tasks
-          </h1>
-          <p className="text-warmgray-500 dark:text-warmgray-400 mb-8">
-            Overwhelmed by a big task? Break it down into tiny, doable steps.
-          </p>
-          <button
-            onClick={() => setIsDecomposerOpen(true)}
-            className="flex items-center gap-2 px-8 py-4 min-h-[64px] rounded-2xl text-lg font-bold text-white bg-sage-600 hover:bg-sage-700 active:bg-sage-800 shadow-md hover:shadow-lg active:scale-95 transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-sage-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-warmgray-900"
-          >
-            <Plus className="w-6 h-6" />
-            New Task
-          </button>
+
+          {/* Quick 1-tap templates */}
+          <div className="w-full space-y-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-warmgray-500 dark:text-warmgray-400 uppercase tracking-wider px-1">
+              <Sparkles className="w-3.5 h-3.5 text-sage-600 dark:text-sage-400" />
+              <span>Szybkie Szablony na start</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {MICRO_TASK_TEMPLATES.map((tmpl) => (
+                <button
+                  key={tmpl.id}
+                  type="button"
+                  onClick={() => handleStartTemplate(tmpl)}
+                  className="p-3.5 text-left rounded-2xl bg-white/80 dark:bg-warmgray-800/80 hover:bg-sage-50/80 dark:hover:bg-sage-900/30 border border-warmgray-200/80 dark:border-warmgray-700/80 shadow-sm transition-all hover:scale-[1.01] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 group"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm text-warmgray-900 dark:text-warmgray-100 group-hover:text-sage-800 dark:group-hover:text-sage-200">
+                      {tmpl.title}
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-warmgray-400 group-hover:text-sage-600 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                  <p className="text-xs text-warmgray-500 dark:text-warmgray-400 mt-1 line-clamp-1">
+                    {tmpl.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="w-full pt-2">
+            <button
+              onClick={() => setIsDecomposerOpen(true)}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 min-h-[52px] rounded-2xl text-base font-bold text-white bg-sage-600 hover:bg-sage-700 active:bg-sage-800 shadow-md hover:shadow-lg active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Własne Mikro-Zadanie</span>
+            </button>
+          </div>
         </div>
       ) : focusMode && currentStepIndex !== -1 ? (
         <div className="flex-1 overflow-y-auto">

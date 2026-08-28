@@ -7,36 +7,36 @@ describe('MicroTasksModule', () => {
     render(<MicroTasksModule />);
     
     // Check initial state
-    expect(screen.getByText('Micro-Tasks')).toBeInTheDocument();
+    expect(screen.getByText('Mikro-Zadania')).toBeInTheDocument();
     
     // Open decomposer
-    const newBtn = screen.getByRole('button', { name: /New Task/i });
+    const newBtn = screen.getByRole('button', { name: /Własne Mikro-Zadanie/i });
     fireEvent.click(newBtn);
     
     // Check if modal opens
-    expect(screen.getByText('New Micro-Task')).toBeInTheDocument();
+    expect(screen.getByText('Nowe Mikro-Zadanie')).toBeInTheDocument();
     
     // Enter task details
-    const titleInput = screen.getByPlaceholderText('e.g., Clean the kitchen');
+    const titleInput = screen.getByPlaceholderText('np. Posprzątać kuchnię');
     fireEvent.change(titleInput, { target: { value: 'My Custom Task' } });
     
-    const stepInput = screen.getByPlaceholderText('Next step...');
+    const stepInput = screen.getByPlaceholderText('Następny prosty krok...');
     fireEvent.change(stepInput, { target: { value: 'First step' } });
     
     // Add another step
-    const addStepBtn = screen.getByRole('button', { name: /Add another step/i });
+    const addStepBtn = screen.getByRole('button', { name: /Dodaj kolejny krok/i });
     fireEvent.click(addStepBtn);
     
-    const stepInputs = screen.getAllByPlaceholderText('Next step...');
+    const stepInputs = screen.getAllByPlaceholderText('Następny prosty krok...');
     fireEvent.change(stepInputs[1], { target: { value: 'Second step' } });
     
     // Save
-    const startBtn = screen.getByRole('button', { name: /Start Task/i });
+    const startBtn = screen.getByRole('button', { name: /Rozpocznij Zadanie/i });
     fireEvent.click(startBtn);
     
     // Wait for modal to close and focus mode to open
     await waitFor(() => {
-      expect(screen.queryByText('New Micro-Task')).not.toBeInTheDocument();
+      expect(screen.queryByText('Nowe Mikro-Zadanie')).not.toBeInTheDocument();
     });
     
     // Check if SingleStepFocusView is rendered
@@ -48,10 +48,10 @@ describe('MicroTasksModule', () => {
     render(<MicroTasksModule />);
     
     // Create a task
-    fireEvent.click(screen.getByRole('button', { name: /New Task/i }));
-    fireEvent.change(screen.getByPlaceholderText('e.g., Clean the kitchen'), { target: { value: 'Task 1' } });
-    fireEvent.change(screen.getByPlaceholderText('Next step...'), { target: { value: 'Step A' } });
-    fireEvent.click(screen.getByRole('button', { name: /Start Task/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Własne Mikro-Zadanie/i }));
+    fireEvent.change(screen.getByPlaceholderText('np. Posprzątać kuchnię'), { target: { value: 'Task 1' } });
+    fireEvent.change(screen.getByPlaceholderText('Następny prosty krok...'), { target: { value: 'Step A' } });
+    fireEvent.click(screen.getByRole('button', { name: /Rozpocznij Zadanie/i }));
     
     // Check if only one step is focused
     await waitFor(() => {
@@ -65,12 +65,12 @@ describe('MicroTasksModule', () => {
     render(<MicroTasksModule />);
     
     // Create a task with 2 steps
-    fireEvent.click(screen.getByRole('button', { name: /New Task/i }));
-    fireEvent.change(screen.getByPlaceholderText('e.g., Clean the kitchen'), { target: { value: 'Task 2' } });
-    fireEvent.change(screen.getByPlaceholderText('Next step...'), { target: { value: 'Step 1' } });
-    fireEvent.click(screen.getByRole('button', { name: /Add another step/i }));
-    fireEvent.change(screen.getAllByPlaceholderText('Next step...')[1], { target: { value: 'Step 2' } });
-    fireEvent.click(screen.getByRole('button', { name: /Start Task/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Własne Mikro-Zadanie/i }));
+    fireEvent.change(screen.getByPlaceholderText('np. Posprzątać kuchnię'), { target: { value: 'Task 2' } });
+    fireEvent.change(screen.getByPlaceholderText('Następny prosty krok...'), { target: { value: 'Step 1' } });
+    fireEvent.click(screen.getByRole('button', { name: /Dodaj kolejny krok/i }));
+    fireEvent.change(screen.getAllByPlaceholderText('Następny prosty krok...')[1], { target: { value: 'Step 2' } });
+    fireEvent.click(screen.getByRole('button', { name: /Rozpocznij Zadanie/i }));
     
     await waitFor(() => {
       expect(screen.getByText('Step 1')).toBeInTheDocument();
@@ -90,10 +90,10 @@ describe('MicroTasksModule', () => {
     render(<MicroTasksModule />);
     
     // Create a task with 1 step
-    fireEvent.click(screen.getByRole('button', { name: /New Task/i }));
-    fireEvent.change(screen.getByPlaceholderText('e.g., Clean the kitchen'), { target: { value: 'Task 3' } });
-    fireEvent.change(screen.getByPlaceholderText('Next step...'), { target: { value: 'Only Step' } });
-    fireEvent.click(screen.getByRole('button', { name: /Start Task/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Własne Mikro-Zadanie/i }));
+    fireEvent.change(screen.getByPlaceholderText('np. Posprzątać kuchnię'), { target: { value: 'Task 3' } });
+    fireEvent.change(screen.getByPlaceholderText('Następny prosty krok...'), { target: { value: 'Only Step' } });
+    fireEvent.click(screen.getByRole('button', { name: /Rozpocznij Zadanie/i }));
     
     await waitFor(() => {
       expect(screen.getByText('Only Step')).toBeInTheDocument();
@@ -105,7 +105,7 @@ describe('MicroTasksModule', () => {
     // Check for celebration overlay
     await waitFor(() => {
       expect(screen.getByText('Gratulacje!')).toBeInTheDocument();
-      expect(screen.getByText('Start Another Task')).toBeInTheDocument();
+      expect(screen.getByText(/Wspaniale, Aniu!/i)).toBeInTheDocument();
     });
   });
 });

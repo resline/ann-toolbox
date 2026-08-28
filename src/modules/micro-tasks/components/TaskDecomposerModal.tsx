@@ -29,12 +29,12 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
 
   const handleMagicDecompose = () => {
     if (!title.trim()) return;
-    // Mock magic decompose
+    // Mock magic decompose with Polish steps
     setSteps([
-      'Gather necessary materials',
-      'Set up environment',
-      'Complete first phase',
-      'Review and finish'
+      'Przygotuj miejsce i materiały',
+      'Ustaw stoper na 2 minuty',
+      'Wykonaj pierwszy mały krok',
+      'Oceń rezultat i dokończ'
     ]);
   };
 
@@ -62,15 +62,16 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 border-b border-warmgray-100 dark:border-warmgray-700 gap-4">
           <div>
             <h2 className="text-xl font-bold text-warmgray-900 dark:text-warmgray-50">
-              New Micro-Task
+              Nowe Mikro-Zadanie
             </h2>
             <p className="text-sm text-warmgray-500 dark:text-warmgray-400 mt-1">
-              Break a big task into tiny, manageable steps.
+              Rozbij duże zadanie na proste, 2-minutowe mikrokroki.
             </p>
           </div>
           <button
             onClick={onClose}
             className="absolute top-4 right-4 sm:static p-2 rounded-full text-warmgray-500 hover:bg-warmgray-100 dark:hover:bg-warmgray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 min-h-[48px] min-w-[48px] flex items-center justify-center"
+            aria-label="Zamknij"
           >
             <X className="w-5 h-5" />
           </button>
@@ -79,7 +80,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
         <form id="task-decomposer-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-warmgray-700 dark:text-warmgray-300 mb-1.5">
-              What do you need to do?
+              Co masz do zrobienia?
             </label>
             <div className="flex gap-2">
               <input
@@ -87,14 +88,14 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="flex-1 px-4 py-3 min-h-[48px] rounded-xl border border-warmgray-300 dark:border-warmgray-600 bg-white dark:bg-warmgray-900 text-warmgray-900 dark:text-white placeholder-warmgray-400 focus:outline-none focus:ring-2 focus:ring-sage-500 dark:focus:ring-sage-400"
-                placeholder="e.g., Clean the kitchen"
+                placeholder="np. Posprzątać kuchnię"
                 required
               />
               <button
                 type="button"
                 onClick={handleMagicDecompose}
                 disabled={!title.trim()}
-                title="Auto-decompose"
+                title="Automatyczne rozbicie na kroki"
                 className="px-4 min-h-[48px] flex items-center justify-center rounded-xl bg-sage-100 text-sage-600 hover:bg-sage-200 dark:bg-sage-900/30 dark:text-sage-400 dark:hover:bg-sage-900/50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
               >
                 <Sparkles className="w-5 h-5" />
@@ -104,7 +105,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
           
           <div>
             <label className="block text-sm font-medium text-warmgray-700 dark:text-warmgray-300 mb-3">
-              Steps
+              Mikrokroki (po kolei)
             </label>
             <div className="space-y-3">
               {steps.map((step, index) => (
@@ -118,7 +119,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
                       value={step}
                       onChange={(e) => handleStepChange(index, e.target.value)}
                       className="w-full pl-10 pr-4 py-3 min-h-[48px] rounded-xl border border-warmgray-300 dark:border-warmgray-600 bg-white dark:bg-warmgray-900 text-warmgray-900 dark:text-white placeholder-warmgray-400 focus:outline-none focus:ring-2 focus:ring-sage-500 dark:focus:ring-sage-400"
-                      placeholder="Next step..."
+                      placeholder="Następny prosty krok..."
                     />
                   </div>
                   <button
@@ -126,6 +127,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
                     onClick={() => handleRemoveStep(index)}
                     disabled={steps.length === 1}
                     className="p-3 min-h-[48px] min-w-[48px] rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 disabled:hover:bg-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 flex items-center justify-center"
+                    aria-label="Usuń krok"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -139,7 +141,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
               className="mt-4 flex items-center gap-2 text-sm font-medium text-sage-600 dark:text-sage-400 hover:text-sage-700 dark:hover:text-sage-300 min-h-[44px] px-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
             >
               <Plus className="w-4 h-4" />
-              Add another step
+              Dodaj kolejny krok
             </button>
           </div>
         </form>
@@ -150,7 +152,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
             onClick={onClose}
             className="px-5 py-2.5 min-h-[48px] rounded-xl text-sm font-medium text-warmgray-700 bg-white border border-warmgray-300 hover:bg-warmgray-50 dark:bg-warmgray-800 dark:text-warmgray-300 dark:border-warmgray-600 dark:hover:bg-warmgray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
           >
-            Cancel
+            Anuluj
           </button>
           <button
             type="submit"
@@ -158,7 +160,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
             disabled={!title.trim() || !steps.some(s => s.trim())}
             className="px-6 py-2.5 min-h-[48px] rounded-xl text-sm font-medium text-white bg-sage-600 hover:bg-sage-700 active:bg-sage-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-warmgray-800 shadow-sm"
           >
-            Start Task
+            Rozpocznij Zadanie
           </button>
         </div>
       </div>
