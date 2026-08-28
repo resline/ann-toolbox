@@ -247,6 +247,7 @@ export const DopamineRouletteModal: React.FC<DopamineRouletteModalProps> = ({
             <div className="w-full mt-4">
               <button
                 onClick={spin}
+                data-testid="spin-wheel-btn"
                 disabled={isSpinning || items.length === 0}
                 className={twMerge(
                   clsx(

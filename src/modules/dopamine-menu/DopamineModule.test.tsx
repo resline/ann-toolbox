@@ -9,14 +9,14 @@ describe('Dopamine Module', () => {
     useDopamineMenuStore.getState().resetToDefaults();
   });
 
-  it('renders categories (Appetizers, Entrees, Sides, Desserts, Specials)', () => {
+  it('renders categories (Przystawki, Dania Główne, Dodatki, Desery, Dania Specjalne)', () => {
     render(<DopamineDashboard />);
     
-    expect(screen.getByText('Appetizers')).toBeInTheDocument();
-    expect(screen.getByText('Entrees')).toBeInTheDocument();
-    expect(screen.getByText('Sides')).toBeInTheDocument();
-    expect(screen.getByText('Desserts')).toBeInTheDocument();
-    expect(screen.getByText('Specials')).toBeInTheDocument();
+    expect(screen.getByText(/Przystawki/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dania Główne/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dodatki/i)).toBeInTheDocument();
+    expect(screen.getByText(/Desery/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dania Specjalne/i)).toBeInTheDocument();
   });
 
   it('filters by energy level buttons', () => {
@@ -47,7 +47,7 @@ describe('Dopamine Module', () => {
     
     expect(screen.getByText('Dopamine Roulette')).toBeInTheDocument();
     
-    const spinBtn = screen.getByText('Zakręć kołem!');
+    const spinBtn = screen.getByTestId('spin-wheel-btn');
     fireEvent.click(spinBtn);
     
     expect(screen.getByText('Losowanie...')).toBeInTheDocument();

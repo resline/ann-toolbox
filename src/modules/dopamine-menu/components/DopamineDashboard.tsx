@@ -9,11 +9,11 @@ import { useDopamineMenuStore } from '../store';
 import { DopamineCategory } from '../types';
 
 const CATEGORY_LABELS: Record<DopamineCategory, string> = {
-  appetizer: 'Appetizers',
-  entree: 'Entrees',
-  side: 'Sides',
-  dessert: 'Desserts',
-  special: 'Specials'
+  appetizer: 'Przystawki (1–5 min)',
+  entree: 'Dania Główne (20–60 min)',
+  side: 'Dodatki (w tle)',
+  dessert: 'Desery (uważne nagrody)',
+  special: 'Dania Specjalne'
 };
 
 export const DopamineDashboard: React.FC = () => {
@@ -31,7 +31,7 @@ export const DopamineDashboard: React.FC = () => {
       title: newItem.title,
       description: newItem.description,
       energyRequired: newItem.energyLevel,
-      category: 'special', // default to special or let them pick
+      category: 'special',
     });
   };
 
@@ -47,51 +47,60 @@ export const DopamineDashboard: React.FC = () => {
 
   const categories: DopamineCategory[] = ['appetizer', 'entree', 'side', 'dessert', 'special'];
 
+  const filterLabels: Record<string, string> = {
+    all: 'Wszystkie',
+    low: 'Niska energia ⚡',
+    medium: 'Średnia ⚡⚡',
+    high: 'Wysoka ⚡⚡⚡'
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-warmgray-900 dark:text-warmgray-50 tracking-tight">
-            Dopamine Menu
+            Menu Dopaminowe
           </h1>
           <p className="text-warmgray-500 dark:text-warmgray-400 mt-1">
-            Pick a quick activity to boost your mood and energy.
+            Wybierz aktywność lub wylosuj mikronagrodę, aby podnieść poziom energii bez presji.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsRouletteOpen(true)}
             data-testid="roulette-btn"
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-xl font-medium text-sage-700 bg-sage-100 hover:bg-sage-200 dark:bg-sage-900/30 dark:text-sage-300 dark:hover:bg-sage-900/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
+            aria-label="Zakręć kołem dopaminy"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-semibold text-sage-800 bg-sage-100 hover:bg-sage-200 dark:bg-sage-900/40 dark:text-sage-200 dark:hover:bg-sage-900/60 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
           >
-            <Sparkles className="w-4 h-4" />
-            Pick for Me
+            <Sparkles className="w-4 h-4 text-sage-600 dark:text-sage-400 animate-spin-slow" />
+            <span>Zakręć kołem!</span>
           </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
             data-testid="add-item-btn"
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-xl font-medium text-white bg-sage-600 hover:bg-sage-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-warmgray-900"
+            aria-label="Dodaj nową aktywność"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-semibold text-white bg-sage-600 hover:bg-sage-700 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
           >
             <Plus className="w-4 h-4" />
-            Add Activity
+            <span>Dodaj aktywność</span>
           </button>
         </div>
       </header>
 
       <div className="flex gap-2 items-center flex-wrap" data-testid="energy-filters">
-        <Filter className="w-5 h-5 text-warmgray-500" />
+        <Filter className="w-4 h-4 text-warmgray-500 mr-1" />
         {(['all', 'low', 'medium', 'high'] as const).map(level => (
           <button
             key={level}
             data-testid={`filter-${level}`}
             onClick={() => setEnergyFilter(level)}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm ${
               energyFilter === level 
-                ? 'bg-sage-600 text-white' 
-                : 'bg-warmgray-100 text-warmgray-700 hover:bg-warmgray-200 dark:bg-warmgray-800 dark:text-warmgray-300 dark:hover:bg-warmgray-700'
+                ? 'bg-sage-600 text-white shadow-sage-600/20' 
+                : 'bg-white/80 dark:bg-warmgray-800/80 text-warmgray-700 dark:text-warmgray-300 hover:bg-warmgray-100 dark:hover:bg-warmgray-700 border border-warmgray-200/60 dark:border-warmgray-700/60'
             }`}
           >
-            {level.charAt(0).toUpperCase() + level.slice(1)}
+            {filterLabels[level]}
           </button>
         ))}
       </div>
