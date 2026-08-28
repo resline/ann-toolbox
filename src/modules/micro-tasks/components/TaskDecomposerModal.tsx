@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Sparkles, Plus, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { ResistanceSlider } from './ResistanceSlider';
 
 interface TaskDecomposerModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [steps, setSteps] = useState<string[]>(['']);
+  const [resistance, setResistance] = useState<number>(3);
 
   if (!isOpen) return null;
 
@@ -29,13 +31,32 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
 
   const handleMagicDecompose = () => {
     if (!title.trim()) return;
-    // Mock magic decompose with Polish steps
-    setSteps([
-      'Przygotuj miejsce i materiały',
-      'Ustaw stoper na 2 minuty',
-      'Wykonaj pierwszy mały krok',
-      'Oceń rezultat i dokończ'
-    ]);
+    
+    // Simulate generation based on resistance level
+    if (resistance === 5) {
+      setSteps([
+        'Wstań i stań przed zadaniem',
+        'Dotknij pierwszego przedmiotu związanego z zadaniem',
+        'Zrób 15 sekund pracy i odpocznij',
+        'Zrób kolejne 15 sekund',
+        'Podejmij decyzję czy robisz dalej'
+      ]);
+    } else if (resistance >= 3) {
+      setSteps([
+        'Przygotuj miejsce pracy',
+        'Włącz stoper na 2 minuty',
+        'Zrób pierwszą, najprostszą rzecz',
+        'Oceń postęp',
+        'Dokończ mały fragment'
+      ]);
+    } else {
+      setSteps([
+        'Zaplanuj pracę',
+        'Wykonaj pierwszy etap (5-10 min)',
+        'Wykonaj drugi etap (5-10 min)',
+        'Sprawdź i zakończ'
+      ]);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -45,6 +66,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
       onSave({ title, steps: validSteps });
       setTitle('');
       setSteps(['']);
+      setResistance(3);
       onClose();
     }
   };
@@ -65,7 +87,7 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
               Nowe Mikro-Zadanie
             </h2>
             <p className="text-sm text-warmgray-500 dark:text-warmgray-400 mt-1">
-              Rozbij duże zadanie na proste, 2-minutowe mikrokroki.
+              Rozbij duże zadanie na proste mikrokroki.
             </p>
           </div>
           <button
@@ -91,16 +113,22 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
                 placeholder="np. Posprzątać kuchnię"
                 required
               />
-              <button
-                type="button"
-                onClick={handleMagicDecompose}
-                disabled={!title.trim()}
-                title="Automatyczne rozbicie na kroki"
-                className="px-4 min-h-[48px] flex items-center justify-center rounded-xl bg-sage-100 text-sage-600 hover:bg-sage-200 dark:bg-sage-900/30 dark:text-sage-400 dark:hover:bg-sage-900/50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-              >
-                <Sparkles className="w-5 h-5" />
-              </button>
             </div>
+          </div>
+
+          <ResistanceSlider level={resistance} onChange={setResistance} />
+          
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleMagicDecompose}
+              disabled={!title.trim()}
+              title="Automatyczne rozbicie na kroki"
+              className="px-4 py-2 flex items-center justify-center gap-2 rounded-xl bg-sage-100 text-sage-600 hover:bg-sage-200 dark:bg-sage-900/30 dark:text-sage-400 dark:hover:bg-sage-900/50 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
+            >
+              <Sparkles className="w-5 h-5" />
+              Magicznie rozbij zadanie
+            </button>
           </div>
           
           <div>

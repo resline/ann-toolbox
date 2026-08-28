@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronRight, LayoutList, Play, Pause, RotateCcw } from 'lucide-react';
+import { Check, ChevronRight, LayoutList, Play, Pause, RotateCcw, Plus, Star } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,6 +11,8 @@ interface SingleStepFocusViewProps {
   onComplete: () => void;
   onSkip?: () => void;
   onViewList: () => void;
+  onAddInFlightStep?: (title: string) => void;
+  onSaveTemplate?: () => void;
 }
 
 export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
@@ -21,9 +23,13 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
   onComplete,
   onSkip,
   onViewList,
+  onAddInFlightStep,
+  onSaveTemplate,
 }) => {
   const [resistanceTimeLeft, setResistanceTimeLeft] = useState<number>(120); // 2 minutes
   const [isResistanceActive, setIsResistanceActive] = useState<boolean>(false);
+  const [showAddStep, setShowAddStep] = useState(false);
+  const [newStepTitle, setNewStepTitle] = useState('');
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -41,6 +47,8 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
   useEffect(() => {
     setResistanceTimeLeft(120);
     setIsResistanceActive(false);
+    setShowAddStep(false);
+    setNewStepTitle('');
   }, [stepNumber]);
 
   const toggleResistanceTimer = () => {
@@ -50,10 +58,19 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
     setIsResistanceActive(!isResistanceActive);
   };
 
+  const handleAddStepSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newStepTitle.trim() && onAddInFlightStep) {
+      onAddInFlightStep(newStepTitle);
+      setNewStepTitle('');
+      setShowAddStep(false);
+    }
+  };
+
   const progressPct = resistanceTimeLeft > 0 ? ((120 - resistanceTimeLeft) / 120) * 100 : 100;
   
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto px-4 py-8 sm:py-12 animate-in fade-in zoom-in-95 duration-700 ease-out">
+    <div className="flex flex-col h-full max-w-3xl mx-auto px-4 py-8 sm:py-12 animate-in fade-in zoom-in-95 duration-700 ease-out relative">
       {/* Top Header - Zen & Minimal */}
       <div className="flex items-center justify-between mb-8 sm:mb-12">
         <div className="flex flex-col">
@@ -64,13 +81,25 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
             {taskTitle}
           </h2>
         </div>
-        <button
-          onClick={onViewList}
-          className="flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-2xl text-sm font-medium text-warmgray-600 bg-warmgray-100/50 hover:bg-warmgray-200 dark:bg-warmgray-800/50 dark:text-warmgray-300 dark:hover:bg-warmgray-700 transition-all focus:outline-none active:scale-95"
-        >
-          <LayoutList className="w-4 h-4" />
-          <span className="hidden sm:inline">Pełna lista</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {onSaveTemplate && (
+            <button
+              onClick={onSaveTemplate}
+              className="flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-2xl text-sm font-medium text-yellow-600 bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50 transition-all focus:outline-none"
+              title="Zapisz ten zestaw kroków jako szablon ⭐"
+            >
+              <Star className="w-4 h-4" />
+              <span className="hidden sm:inline">Zapisz szablon</span>
+            </button>
+          )}
+          <button
+            onClick={onViewList}
+            className="flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-2xl text-sm font-medium text-warmgray-600 bg-warmgray-100/50 hover:bg-warmgray-200 dark:bg-warmgray-800/50 dark:text-warmgray-300 dark:hover:bg-warmgray-700 transition-all focus:outline-none active:scale-95"
+          >
+            <LayoutList className="w-4 h-4" />
+            <span className="hidden sm:inline">Pełna lista</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center py-4 text-center">
@@ -93,7 +122,7 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
         </div>
         
         {/* Zen Focus Text */}
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-warmgray-900 dark:text-white mb-16 leading-[1.2] max-w-2xl text-balance tracking-tight">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold text-warmgray-900 dark:text-white mb-8 leading-[1.2] max-w-2xl text-balance tracking-tight">
           {stepTitle}
         </h1>
 
@@ -130,30 +159,71 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
         </div>
 
         {/* Large Satisfying Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md">
-          <button
-            onClick={onComplete}
-            className={twMerge(
-              clsx(
-                'flex-1 w-full flex items-center justify-center gap-3 px-8 py-4 min-h-[64px] rounded-3xl text-lg font-bold text-white',
-                'bg-sage-600 hover:bg-sage-500 active:bg-sage-700 shadow-xl shadow-sage-600/20 active:scale-[0.98]',
-                'transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-sage-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-warmgray-900'
-              )
-            )}
-          >
-            <Check className="w-6 h-6" />
-            Zrobione! Następny krok ✨
-          </button>
-          
-          {onSkip && (
+        <div className="flex flex-col items-center gap-4 w-full max-w-md mb-8">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
             <button
-              onClick={onSkip}
-              className="px-6 py-4 min-h-[64px] min-w-[64px] rounded-3xl text-warmgray-500 bg-white dark:bg-warmgray-850 border border-warmgray-200 dark:border-warmgray-800 hover:bg-warmgray-50 dark:hover:bg-warmgray-800 dark:text-warmgray-400 shadow-sm hover:shadow active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 flex items-center justify-center"
-              aria-label="Pomiń krok"
-              title="Pomiń krok"
+              onClick={onComplete}
+              className={twMerge(
+                clsx(
+                  'flex-1 w-full flex items-center justify-center gap-3 px-8 py-4 min-h-[64px] rounded-3xl text-lg font-bold text-white',
+                  'bg-sage-600 hover:bg-sage-500 active:bg-sage-700 shadow-xl shadow-sage-600/20 active:scale-[0.98]',
+                  'transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-sage-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-warmgray-900'
+                )
+              )}
             >
-              <ChevronRight className="w-6 h-6" />
+              <Check className="w-6 h-6" />
+              Zrobione! Następny krok ✨
             </button>
+            
+            {onSkip && (
+              <button
+                onClick={onSkip}
+                className="px-6 py-4 min-h-[64px] min-w-[64px] rounded-3xl text-warmgray-500 bg-white dark:bg-warmgray-850 border border-warmgray-200 dark:border-warmgray-800 hover:bg-warmgray-50 dark:hover:bg-warmgray-800 dark:text-warmgray-400 shadow-sm hover:shadow active:scale-95 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 flex items-center justify-center"
+                aria-label="Pomiń krok"
+                title="Pomiń krok"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {onAddInFlightStep && (
+            <div className="w-full mt-4">
+              {!showAddStep ? (
+                <button
+                  onClick={() => setShowAddStep(true)}
+                  className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  + Dodaj kolejny krok w locie
+                </button>
+              ) : (
+                <form onSubmit={handleAddStepSubmit} className="flex gap-2 w-full animate-in fade-in slide-in-from-top-4 duration-300">
+                  <input
+                    type="text"
+                    value={newStepTitle}
+                    onChange={(e) => setNewStepTitle(e.target.value)}
+                    placeholder="Wpisz nowy krok..."
+                    autoFocus
+                    className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newStepTitle.trim()}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    Dodaj
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddStep(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600"
+                  >
+                    Anuluj
+                  </button>
+                </form>
+              )}
+            </div>
           )}
         </div>
       </div>

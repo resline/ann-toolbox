@@ -1,35 +1,33 @@
 import React, { useState } from 'react';
-import { Plus, ListTodo, Sparkles, ArrowRight } from 'lucide-react';
+import { ListTodo, Sparkles, ArrowRight, Plus, FolderHeart, Trophy } from 'lucide-react';
 import { TaskDecomposerModal } from './TaskDecomposerModal';
 import { StepProgressCard } from './StepProgressCard';
 import { SingleStepFocusView } from './SingleStepFocusView';
 import { CelebrationOverlay } from './CelebrationOverlay';
-import { MICRO_TASK_TEMPLATES } from '../templates';
-
-interface Step {
-  id: string;
-  title: string;
-  isCompleted: boolean;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  steps: Step[];
-}
+import { TemplatesHubModal } from './TemplatesHubModal';
+import { TaskHistoryModal } from './TaskHistoryModal';
+import { useMicroTasksStore } from '../store';
+import { MicroTask } from '../types';
 
 export const MicroTasksModule: React.FC = () => {
-  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [activeTaskLocal, setActiveTaskLocal] = useState<any | null>(null);
   const [isDecomposerOpen, setIsDecomposerOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  
+  const [isTemplatesHubOpen, setIsTemplatesHubOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  const handleStartTemplate = (template: typeof MICRO_TASK_TEMPLATES[0]) => {
-    setActiveTask({
+  const { tasks, userTemplates, saveCustomTemplate, recordTaskCompletion } = useMicroTasksStore();
+
+  const handleStartTemplate = (template: any) => {
+    setActiveTaskLocal({
       id: template.id,
       title: template.title,
-      steps: template.steps.map((s, i) => ({
-        id: `step-${i}`,
+      isCustomTemplate: template.isCustomTemplate,
+      category: template.category,
+      steps: template.steps.map((s: any, i: number) => ({
+        id: `step-${i}-${Date.now()}`,
         title: s.title,
         isCompleted: false,
       })),
@@ -38,11 +36,13 @@ export const MicroTasksModule: React.FC = () => {
   };
 
   const handleSaveTask = (data: { title: string; steps: string[] }) => {
-    setActiveTask({
+    setActiveTaskLocal({
       id: Math.random().toString(36).substr(2, 9),
       title: data.title,
+      isCustomTemplate: true,
+      category: 'home', // default
       steps: data.steps.map((title, i) => ({
-        id: `step-${i}`,
+        id: `step-${i}-${Date.now()}`,
         title,
         isCompleted: false,
       })),
@@ -51,27 +51,81 @@ export const MicroTasksModule: React.FC = () => {
   };
 
   const handleStepComplete = (stepId: string) => {
-    if (!activeTask) return;
+    if (!activeTaskLocal) return;
     
-    const updatedSteps = activeTask.steps.map(step => 
+    const updatedSteps = activeTaskLocal.steps.map((step: any) => 
       step.id === stepId ? { ...step, isCompleted: true } : step
     );
     
-    setActiveTask({ ...activeTask, steps: updatedSteps });
+    setActiveTaskLocal({ ...activeTaskLocal, steps: updatedSteps });
     
     // Check if all done
-    if (updatedSteps.every(s => s.isCompleted)) {
+    if (updatedSteps.every((s: any) => s.isCompleted)) {
       setShowCelebration(true);
+      
+      const completedTaskForHistory = {
+        id: activeTaskLocal.id,
+        title: activeTaskLocal.title,
+        category: activeTaskLocal.category,
+        steps: updatedSteps
+      } as MicroTask;
+      
+      recordTaskCompletion(completedTaskForHistory);
     }
   };
 
-  const currentStepIndex = activeTask?.steps.findIndex(s => !s.isCompleted) ?? -1;
+  const handleAddInFlightStep = (title: string) => {
+    if (!activeTaskLocal) return;
+    const currentStepIndex = activeTaskLocal.steps.findIndex((s: any) => !s.isCompleted);
+    if (currentStepIndex === -1) return;
+    
+    const newStep = {
+      id: `step-inflight-${Date.now()}`,
+      title,
+      isCompleted: false,
+    };
+    
+    const updatedSteps = [...activeTaskLocal.steps];
+    updatedSteps.splice(currentStepIndex + 1, 0, newStep);
+    
+    setActiveTaskLocal({ ...activeTaskLocal, steps: updatedSteps });
+  };
+
+  const handleSaveTemplate = () => {
+    if (!activeTaskLocal) return;
+    
+    const newTemplate = {
+      id: `t-custom-${Date.now()}`,
+      title: activeTaskLocal.title,
+      isCustomTemplate: true,
+      category: 'home' as any,
+      description: 'Zapisane z aktywnego zadania',
+      steps: activeTaskLocal.steps.map((s: any) => ({
+        id: `s-${Date.now()}-${Math.random()}`,
+        title: s.title,
+        status: 'pending',
+        estimatedMinutes: 2
+      }))
+    };
+    
+    saveCustomTemplate(newTemplate as any);
+    alert('Zapisano zestaw kroków jako Twój szablon ⭐!');
+  };
+
+  const currentStepIndex = activeTaskLocal?.steps.findIndex((s: any) => !s.isCompleted) ?? -1;
+  const starterTemplates = tasks.slice(0, 4);
 
   return (
     <div className="w-full h-full flex flex-col">
-      {!activeTask ? (
+      {!activeTaskLocal ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in duration-500 max-w-xl mx-auto space-y-6">
-          <div className="text-center">
+          <div className="text-center w-full relative">
+            <div className="absolute right-0 top-0 flex gap-2">
+               <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-yellow-600 bg-yellow-50 rounded-full hover:bg-yellow-100" title="Historia Sukcesów 🏆">
+                 <Trophy className="w-5 h-5" />
+               </button>
+            </div>
+            
             <div className="w-16 h-16 bg-sage-100 dark:bg-sage-900/40 rounded-3xl flex items-center justify-center text-sage-600 dark:text-sage-300 mx-auto mb-4 shadow-sm">
               <ListTodo className="w-8 h-8" />
             </div>
@@ -83,6 +137,42 @@ export const MicroTasksModule: React.FC = () => {
             </p>
           </div>
 
+          <div className="w-full flex gap-3">
+             <button
+              onClick={() => setIsTemplatesHubOpen(true)}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 min-h-[48px] rounded-2xl text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition-colors"
+            >
+              <FolderHeart className="w-4 h-4" />
+              <span>Katalog Szablonów (15+)</span>
+            </button>
+          </div>
+
+          {/* User Custom Templates */}
+          {userTemplates.length > 0 && (
+            <div className="w-full space-y-3">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-yellow-600 dark:text-yellow-500 uppercase tracking-wider px-1">
+                <span>Moje Szablony ⭐</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {userTemplates.slice(0, 2).map((tmpl) => (
+                  <button
+                    key={tmpl.id}
+                    type="button"
+                    onClick={() => handleStartTemplate(tmpl)}
+                    className="p-3.5 text-left rounded-2xl bg-white/80 dark:bg-warmgray-800/80 hover:bg-yellow-50/80 border border-yellow-200 shadow-sm transition-all hover:scale-[1.01] active:scale-[0.98] focus:outline-none group"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm text-warmgray-900 dark:text-warmgray-100 group-hover:text-yellow-800">
+                        {tmpl.title}
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-yellow-400 group-hover:text-yellow-600 transition-transform group-hover:translate-x-0.5" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quick 1-tap templates */}
           <div className="w-full space-y-3">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-warmgray-500 dark:text-warmgray-400 uppercase tracking-wider px-1">
@@ -90,7 +180,7 @@ export const MicroTasksModule: React.FC = () => {
               <span>Szybkie Szablony na start</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {MICRO_TASK_TEMPLATES.map((tmpl) => (
+              {starterTemplates.map((tmpl) => (
                 <button
                   key={tmpl.id}
                   type="button"
@@ -124,12 +214,14 @@ export const MicroTasksModule: React.FC = () => {
       ) : focusMode && currentStepIndex !== -1 ? (
         <div className="flex-1 overflow-y-auto">
           <SingleStepFocusView
-            taskTitle={activeTask.title}
-            stepTitle={activeTask.steps[currentStepIndex].title}
+            taskTitle={activeTaskLocal.title}
+            stepTitle={activeTaskLocal.steps[currentStepIndex].title}
             stepNumber={currentStepIndex + 1}
-            totalSteps={activeTask.steps.length}
-            onComplete={() => handleStepComplete(activeTask.steps[currentStepIndex].id)}
+            totalSteps={activeTaskLocal.steps.length}
+            onComplete={() => handleStepComplete(activeTaskLocal.steps[currentStepIndex].id)}
             onViewList={() => setFocusMode(false)}
+            onAddInFlightStep={handleAddInFlightStep}
+            onSaveTemplate={handleSaveTemplate}
           />
         </div>
       ) : (
@@ -137,10 +229,10 @@ export const MicroTasksModule: React.FC = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-2xl font-bold text-warmgray-900 dark:text-white mb-1">
-                {activeTask.title}
+                {activeTaskLocal.title}
               </h2>
               <p className="text-sm text-warmgray-500 dark:text-warmgray-400">
-                {activeTask.steps.filter(s => s.isCompleted).length} of {activeTask.steps.length} steps completed
+                {activeTaskLocal.steps.filter((s: any) => s.isCompleted).length} of {activeTaskLocal.steps.length} steps completed
               </p>
             </div>
             {currentStepIndex !== -1 && (
@@ -154,7 +246,7 @@ export const MicroTasksModule: React.FC = () => {
           </div>
           
           <div className="space-y-3 pb-24">
-            {activeTask.steps.map((step, index) => (
+            {activeTaskLocal.steps.map((step: any, index: number) => (
               <StepProgressCard
                 key={step.id}
                 id={step.id}
@@ -173,7 +265,7 @@ export const MicroTasksModule: React.FC = () => {
           {currentStepIndex === -1 && (
             <div className="mt-8 flex justify-center">
               <button
-                onClick={() => setActiveTask(null)}
+                onClick={() => setActiveTaskLocal(null)}
                 className="px-6 py-3 min-h-[48px] rounded-xl font-medium text-white bg-warmgray-900 dark:bg-white dark:text-warmgray-900 transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
               >
                 Start Another Task
@@ -188,6 +280,14 @@ export const MicroTasksModule: React.FC = () => {
         onClose={() => setIsDecomposerOpen(false)}
         onSave={handleSaveTask}
       />
+      
+      {isTemplatesHubOpen && (
+        <TemplatesHubModal onClose={() => setIsTemplatesHubOpen(false)} />
+      )}
+      
+      {isHistoryOpen && (
+        <TaskHistoryModal onClose={() => setIsHistoryOpen(false)} />
+      )}
       
       <CelebrationOverlay
         isVisible={showCelebration}

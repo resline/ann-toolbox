@@ -5,8 +5,11 @@ import { CategorySection } from './CategorySection';
 import { DopamineCard } from './DopamineCard';
 import { DopamineRouletteModal } from './DopamineRouletteModal';
 import { AddDopamineItemModal } from './AddDopamineItemModal';
+import { DopamineBankWidget } from './DopamineBankWidget';
+import { DopamineSOSModal } from './DopamineSOSModal';
+import { EditDopamineItemModal } from './EditDopamineItemModal';
 import { useDopamineMenuStore } from '../store';
-import { DopamineCategory } from '../types';
+import { DopamineCategory, DopamineItem } from '../types';
 
 const CATEGORY_LABELS: Record<DopamineCategory, string> = {
   appetizer: 'Przystawki (1–5 min)',
@@ -19,11 +22,16 @@ const CATEGORY_LABELS: Record<DopamineCategory, string> = {
 export const DopamineDashboard: React.FC = () => {
   const [isRouletteOpen, setIsRouletteOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSOSModalOpen, setIsSOSModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<DopamineItem | null>(null);
   
   const items = useDopamineMenuStore((state) => state.items);
   const addItem = useDopamineMenuStore((state) => state.addItem);
   const energyFilter = useDopamineMenuStore((state) => state.energyFilter);
   const setEnergyFilter = useDopamineMenuStore((state) => state.setEnergyFilter);
+  const completeItem = useDopamineMenuStore((state) => state.completeItem);
+  const toggleFavorite = useDopamineMenuStore((state) => state.toggleFavorite);
+  const deleteItem = useDopamineMenuStore((state) => state.deleteItem);
 
   const handleAddItem = (newItem: { title: string; description: string; energyLevel: 'low' | 'medium' | 'high' }) => {
     addItem({
@@ -56,6 +64,8 @@ export const DopamineDashboard: React.FC = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-8 animate-in fade-in duration-500">
+      <DopamineBankWidget />
+      
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-warmgray-900 dark:text-warmgray-50 tracking-tight">
@@ -65,7 +75,16 @@ export const DopamineDashboard: React.FC = () => {
             Wybierz aktywność lub wylosuj mikronagrodę, aby podnieść poziom energii bez presji.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsSOSModalOpen(true)}
+            data-testid="sos-btn"
+            aria-label="SOS Paraliż"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-bold text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            <span className="text-lg leading-none">🚨</span>
+            <span>SOS</span>
+          </button>
           <button
             onClick={() => setIsRouletteOpen(true)}
             data-testid="roulette-btn"
@@ -73,7 +92,7 @@ export const DopamineDashboard: React.FC = () => {
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-semibold text-sage-800 bg-sage-100 hover:bg-sage-200 dark:bg-sage-900/40 dark:text-sage-200 dark:hover:bg-sage-900/60 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
           >
             <Sparkles className="w-4 h-4 text-sage-600 dark:text-sage-400 animate-spin-slow" />
-            <span>Zakręć kołem!</span>
+            <span className="hidden sm:inline">Zakręć!</span>
           </button>
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -82,7 +101,7 @@ export const DopamineDashboard: React.FC = () => {
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-semibold text-white bg-sage-600 hover:bg-sage-700 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
           >
             <Plus className="w-4 h-4" />
-            <span>Dodaj aktywność</span>
+            <span className="hidden sm:inline">Dodaj</span>
           </button>
         </div>
       </header>
@@ -107,7 +126,14 @@ export const DopamineDashboard: React.FC = () => {
 
       <div className="space-y-6">
         {categories.map(category => {
-          const categoryItems = filteredItems.filter(item => item.category === category);
+          const categoryItems = filteredItems
+            .filter(item => item.category === category)
+            .sort((a, b) => {
+              if (a.isFavorite && !b.isFavorite) return -1;
+              if (!a.isFavorite && b.isFavorite) return 1;
+              return 0;
+            });
+            
           if (categoryItems.length === 0) return null;
           return (
             <CategorySection key={category} title={CATEGORY_LABELS[category]}>
@@ -120,13 +146,29 @@ export const DopamineDashboard: React.FC = () => {
                   duration={item.durationMinutes ? `${item.durationMinutes} min` : undefined}
                   energyLevel={item.energyRequired}
                   icon={getIcon(item.icon)}
+                  isFavorite={item.isFavorite}
                   onClick={(id) => console.log('Clicked', id)}
+                  onDone={(id) => completeItem(id)}
+                  onToggleFavorite={(id) => toggleFavorite(id)}
+                  onEdit={() => setEditingItem(item)}
+                  onDelete={(id) => deleteItem(id)}
                 />
               ))}
             </CategorySection>
           );
         })}
       </div>
+
+      <DopamineSOSModal 
+        isOpen={isSOSModalOpen}
+        onClose={() => setIsSOSModalOpen(false)}
+      />
+
+      <EditDopamineItemModal
+        isOpen={!!editingItem}
+        onClose={() => setEditingItem(null)}
+        item={editingItem}
+      />
 
       <DopamineRouletteModal
         isOpen={isRouletteOpen}

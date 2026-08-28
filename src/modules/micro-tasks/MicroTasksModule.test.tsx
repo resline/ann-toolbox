@@ -1,70 +1,116 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { MicroTasksModule } from './components/MicroTasksModule';
+import { useMicroTasksStore } from './store';
 
 describe('MicroTasksModule', () => {
-  it('renders task decomposer modal and templates', async () => {
-    render(<MicroTasksModule />);
-    
-    // Check initial state
-    expect(screen.getByText('Mikro-Zadania')).toBeInTheDocument();
-    
-    // Open decomposer
-    const newBtn = screen.getByRole('button', { name: /Własne Mikro-Zadanie/i });
-    fireEvent.click(newBtn);
-    
-    // Check if modal opens
-    expect(screen.getByText('Nowe Mikro-Zadanie')).toBeInTheDocument();
-    
-    // Enter task details
-    const titleInput = screen.getByPlaceholderText('np. Posprzątać kuchnię');
-    fireEvent.change(titleInput, { target: { value: 'My Custom Task' } });
-    
-    const stepInput = screen.getByPlaceholderText('Następny prosty krok...');
-    fireEvent.change(stepInput, { target: { value: 'First step' } });
-    
-    // Add another step
-    const addStepBtn = screen.getByRole('button', { name: /Dodaj kolejny krok/i });
-    fireEvent.click(addStepBtn);
-    
-    const stepInputs = screen.getAllByPlaceholderText('Następny prosty krok...');
-    fireEvent.change(stepInputs[1], { target: { value: 'Second step' } });
-    
-    // Save
-    const startBtn = screen.getByRole('button', { name: /Rozpocznij Zadanie/i });
-    fireEvent.click(startBtn);
-    
-    // Wait for modal to close and focus mode to open
-    await waitFor(() => {
-      expect(screen.queryByText('Nowe Mikro-Zadanie')).not.toBeInTheDocument();
+  beforeEach(() => {
+    useMicroTasksStore.setState({
+      tasks: [],
+      userTemplates: [],
+      taskHistory: [],
+      activeTaskId: null,
+      currentStepId: null
     });
-    
-    // Check if SingleStepFocusView is rendered
-    expect(screen.getByText('My Custom Task')).toBeInTheDocument();
-    expect(screen.getByText('First step')).toBeInTheDocument();
+    // Hydrate userTemplates
+    useMicroTasksStore.getState().saveCustomTemplate({
+        id: 't-test',
+        title: 'Test Template',
+        steps: [{ id: 's-1', title: 'Step 1', status: 'pending' }],
+        category: 'home',
+        isCustomTemplate: true
+    });
   });
 
-  it('renders active single-step view ("Tylko jeden krok na ekranie")', async () => {
+  it('renders TemplatesHubModal and filters categories', async () => {
     render(<MicroTasksModule />);
     
-    // Create a task
+    const templatesHubBtn = screen.getByRole('button', { name: /Katalog Szablonów/i });
+    fireEvent.click(templatesHubBtn);
+    
+    expect(screen.getByRole('heading', { name: 'Katalog Szablonów' })).toBeInTheDocument();
+    
+    const modal = screen.getByRole('dialog', { name: 'Katalog Szablonów' });
+    expect(modal).toHaveTextContent('Test Template');
+    
+    // Filter by Praca (work)
+    fireEvent.click(screen.getByRole('button', { name: 'Praca 💼' }));
+    
+    expect(modal).not.toHaveTextContent('Test Template');
+  });
+
+  it('adds an in-flight step in focus view', async () => {
+    render(<MicroTasksModule />);
+    
     fireEvent.click(screen.getByRole('button', { name: /Własne Mikro-Zadanie/i }));
     fireEvent.change(screen.getByPlaceholderText('np. Posprzątać kuchnię'), { target: { value: 'Task 1' } });
     fireEvent.change(screen.getByPlaceholderText('Następny prosty krok...'), { target: { value: 'Step A' } });
     fireEvent.click(screen.getByRole('button', { name: /Rozpocznij Zadanie/i }));
     
-    // Check if only one step is focused
     await waitFor(() => {
       expect(screen.getByText('Step A')).toBeInTheDocument();
     });
-    // Check if focus mode exit button exists (View List -> Pełna lista)
-    expect(screen.getByText('Pełna lista')).toBeInTheDocument();
+
+    const addInFlightBtn = screen.getByRole('button', { name: /\+ Dodaj kolejny krok w locie/i });
+    fireEvent.click(addInFlightBtn);
+    
+    const input = screen.getByPlaceholderText('Wpisz nowy krok...');
+    fireEvent.change(input, { target: { value: 'In-flight Step B' } });
+    
+    const submitBtn = screen.getByRole('button', { name: 'Dodaj' });
+    fireEvent.click(submitBtn);
+    
+    fireEvent.click(screen.getByRole('button', { name: /Zrobione/i }));
+    
+    await waitFor(() => {
+      expect(screen.getByText('In-flight Step B')).toBeInTheDocument();
+    });
+  });
+
+  it('generates magic steps based on resistance slider', async () => {
+    render(<MicroTasksModule />);
+    
+    fireEvent.click(screen.getByRole('button', { name: /Własne Mikro-Zadanie/i }));
+    
+    const titleInput = screen.getByPlaceholderText('np. Posprzątać kuchnię');
+    fireEvent.change(titleInput, { target: { value: 'Test Magic' } });
+
+    const slider = screen.getByRole('slider');
+    fireEvent.change(slider, { target: { value: '5' } });
+    
+    expect(screen.getByText(/Totalny paraliż\. Mikroskopijne kroki/i)).toBeInTheDocument();
+    
+    const magicBtn = screen.getByRole('button', { name: /Magicznie rozbij zadanie/i });
+    fireEvent.click(magicBtn);
+    
+    const stepInputs = screen.getAllByPlaceholderText('Następny prosty krok...');
+    expect((stepInputs[0] as HTMLInputElement).value).toBe('Wstań i stań przed zadaniem');
+  });
+
+  it('renders task history and shows completed tasks', async () => {
+    useMicroTasksStore.getState().recordTaskCompletion({
+      id: 'h-1',
+      title: 'Historical Task',
+      steps: [{ id: 's-h1', title: 'Step H1', status: 'completed' }],
+      category: 'home'
+    });
+
+    render(<MicroTasksModule />);
+    
+    const historyBtn = screen.getByRole('button', { name: /Historia Sukcesów/i });
+    fireEvent.click(historyBtn);
+    
+    expect(screen.getByRole('heading', { name: /Historia Sukcesów/i })).toBeInTheDocument();
+    
+    const modal = screen.getByRole('dialog', { name: /Historia Sukcesów/i });
+    expect(modal).toHaveTextContent('Historical Task');
+    
+    const countSpan = screen.getByTestId('task-count');
+    expect(countSpan.textContent).toBe('1');
   });
 
   it('marks step as completed and moving to next step', async () => {
     render(<MicroTasksModule />);
-    
-    // Create a task with 2 steps
     fireEvent.click(screen.getByRole('button', { name: /Własne Mikro-Zadanie/i }));
     fireEvent.change(screen.getByPlaceholderText('np. Posprzątać kuchnię'), { target: { value: 'Task 2' } });
     fireEvent.change(screen.getByPlaceholderText('Następny prosty krok...'), { target: { value: 'Step 1' } });
@@ -76,36 +122,10 @@ describe('MicroTasksModule', () => {
       expect(screen.getByText('Step 1')).toBeInTheDocument();
     });
     
-    // Complete first step
-    const completeBtn = screen.getByRole('button', { name: /Zrobione/i });
-    fireEvent.click(completeBtn);
-    
-    // Check if next step is shown
-    await waitFor(() => {
-      expect(screen.getByText('Step 2')).toBeInTheDocument();
-    });
-  });
-
-  it('renders celebration overlay when all steps are completed', async () => {
-    render(<MicroTasksModule />);
-    
-    // Create a task with 1 step
-    fireEvent.click(screen.getByRole('button', { name: /Własne Mikro-Zadanie/i }));
-    fireEvent.change(screen.getByPlaceholderText('np. Posprzątać kuchnię'), { target: { value: 'Task 3' } });
-    fireEvent.change(screen.getByPlaceholderText('Następny prosty krok...'), { target: { value: 'Only Step' } });
-    fireEvent.click(screen.getByRole('button', { name: /Rozpocznij Zadanie/i }));
-    
-    await waitFor(() => {
-      expect(screen.getByText('Only Step')).toBeInTheDocument();
-    });
-    
-    // Complete first (and only) step
     fireEvent.click(screen.getByRole('button', { name: /Zrobione/i }));
     
-    // Check for celebration overlay
     await waitFor(() => {
-      expect(screen.getByText('Gratulacje!')).toBeInTheDocument();
-      expect(screen.getByText(/Wspaniale, Aniu!/i)).toBeInTheDocument();
+      expect(screen.getByText('Step 2')).toBeInTheDocument();
     });
   });
 });

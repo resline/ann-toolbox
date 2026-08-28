@@ -9,6 +9,11 @@ interface DopamineMenuStore extends DopamineMenuState {
   removeItem: (id: string) => void;
   selectItem: (id: string | null) => void;
   togglePin: (id: string) => void;
+  toggleFavorite: (id: string) => void;
+  completeItem: (id: string) => void;
+  editItem: (id: string, updates: Partial<DopamineItem>) => void;
+  deleteItem: (id: string) => void;
+  resetCompletedToday: () => void;
   setEnergyFilter: (level: EnergyLevel | 'all') => void;
   rollRoulette: () => DopamineItem | null;
   resetToDefaults: () => void;
@@ -20,6 +25,7 @@ export const useDopamineMenuStore = create<DopamineMenuStore>()(
       items: DEFAULT_DOPAMINE_MENU,
       selectedItemId: null,
       energyFilter: 'all',
+      completedToday: [],
 
       addItem: (item) =>
         set((state) => ({ items: [...state.items, item] })),
@@ -61,7 +67,57 @@ export const useDopamineMenuStore = create<DopamineMenuStore>()(
         return selected;
       },
 
-      resetToDefaults: () => set({ items: DEFAULT_DOPAMINE_MENU, selectedItemId: null, energyFilter: 'all' }),
+      resetToDefaults: () => set({ items: DEFAULT_DOPAMINE_MENU, selectedItemId: null, energyFilter: 'all', completedToday: [] }),
+
+      toggleFavorite: (id) =>
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
+          ),
+        })),
+
+      completeItem: (id) =>
+        set((state) => {
+          const item = state.items.find((i) => i.id === id);
+          if (!item) return state;
+          
+          const newEntry = {
+            id: crypto.randomUUID(),
+            itemId: item.id,
+            title: item.title,
+            category: item.category,
+            timestamp: new Date().toISOString(),
+            energy: item.energyRequired,
+          };
+          
+          return {
+            completedToday: [...state.completedToday, newEntry],
+            items: state.items.map((i) =>
+              i.id === id
+                ? {
+                    ...i,
+                    completedCount: (i.completedCount || 0) + 1,
+                    lastCompletedAt: newEntry.timestamp,
+                  }
+                : i
+            ),
+          };
+        }),
+
+      editItem: (id, updates) =>
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.id === id ? { ...item, ...updates } : item
+          ),
+        })),
+
+      deleteItem: (id) =>
+        set((state) => ({
+          items: state.items.filter((item) => item.id !== id),
+          selectedItemId: state.selectedItemId === id ? null : state.selectedItemId,
+        })),
+
+      resetCompletedToday: () => set({ completedToday: [] }),
     }),
     {
       name: 'ann_dopamine_menu',
