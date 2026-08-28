@@ -24,16 +24,16 @@ describe('App Component', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Click Hub / back button in Header
-    const hubButton = screen.getByRole('button', { name: /wszystkie narzędzia|hub|wróć/i });
+    // Click Hub / back button in Bottom Nav
+    const hubButton = screen.getByRole('button', { name: /hub/i });
     await user.click(hubButton);
 
     // Should now be on HubDashboard
-    expect(screen.getByText(/Cześć Aniu/i)).toBeInTheDocument();
+    expect(screen.getByText(/Witaj w swojej spokojnej przestrzeni, Aniu/i)).toBeInTheDocument();
     expect(screen.getByText(/Menu Dopaminowe/i)).toBeInTheDocument();
 
-    // Click "Kotwica Czasu" card in Hub
-    const speakingClockCard = screen.getByRole('button', { name: /Kotwica Czasu|Głos Czasu/i });
+    // Click "Gubię poczucie czasu" quick action button in Hub
+    const speakingClockCard = screen.getByRole('button', { name: /Gubię poczucie czasu/i });
     await user.click(speakingClockCard);
 
     // Should return to SpeakingClock view

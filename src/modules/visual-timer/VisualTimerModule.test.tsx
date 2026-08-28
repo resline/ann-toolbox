@@ -29,7 +29,7 @@ describe('VisualTimerModule', () => {
     
     // Switch to Breathing
     fireEvent.click(toggleBtn);
-    expect(screen.getByText('Ready to breathe?')).toBeInTheDocument();
+    expect(screen.getByText('Wybierz technikę i naciśnij Start')).toBeInTheDocument();
     expect(screen.queryByText('focus')).not.toBeInTheDocument();
     
     // Button changed to Timer
@@ -43,9 +43,9 @@ describe('VisualTimerModule', () => {
   it('should test ambience controls toggle and sliders', () => {
     render(<VisualTimerModule />);
     
-    expect(screen.getByText('Background Ambience')).toBeInTheDocument();
+    expect(screen.getByText('Tło Dźwiękowe')).toBeInTheDocument();
     
-    const rainBtn = screen.getByRole('button', { name: /Rain/i });
+    const rainBtn = screen.getByRole('button', { name: /Deszcz/i });
     expect(rainBtn.getAttribute('aria-pressed')).toBe('false');
     
     fireEvent.click(rainBtn);

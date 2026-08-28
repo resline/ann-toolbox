@@ -45,19 +45,19 @@ describe('Dopamine Module', () => {
     const rouletteBtn = screen.getByTestId('roulette-btn');
     fireEvent.click(rouletteBtn);
     
-    expect(screen.getByText('Random Pick')).toBeInTheDocument();
+    expect(screen.getByText('Dopamine Roulette')).toBeInTheDocument();
     
-    const spinBtn = screen.getByText('Spin the Wheel');
+    const spinBtn = screen.getByText('Zakręć kołem!');
     fireEvent.click(spinBtn);
     
-    expect(screen.getByText('Choosing...')).toBeInTheDocument();
+    expect(screen.getByText('Losowanie...')).toBeInTheDocument();
     
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(4500);
     });
     
-    expect(screen.getByText('Go enjoy this activity!')).toBeInTheDocument();
-    expect(screen.getByText('Spin Again')).toBeInTheDocument();
+    expect(screen.getByText('Wybrana aktywność! Baw się dobrze.')).toBeInTheDocument();
+    expect(screen.getByText('Kręć znowu')).toBeInTheDocument();
     
     vi.useRealTimers();
   });

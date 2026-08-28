@@ -12,6 +12,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Download, X, Heart, ShieldCheck } from 'lucide-react';
 import { ThemeProvider } from './core/theme/ThemeContext';
 import { Header } from './components/Header';
+import { BottomNavBar } from './components/BottomNavBar';
 import { HubDashboard } from './components/HubDashboard';
 import { getToolById } from './core/registry';
 import { SpeakingClockModule } from './modules/speaking-clock/SpeakingClockModule';
@@ -68,9 +69,7 @@ export const AppContent: React.FC = () => {
     }
   }, [deferredPrompt]);
 
-  const handleNavigateToHub = useCallback(() => {
-    setActiveToolId('hub');
-  }, []);
+
 
   const handleSelectTool = useCallback((toolId: string) => {
     setActiveToolId(toolId);
@@ -126,14 +125,10 @@ export const AppContent: React.FC = () => {
       )}
 
       {/* Main Top Header */}
-      <Header
-        activeToolId={activeToolId}
-        onNavigateToHub={handleNavigateToHub}
-        isAudioActive={isAudioActive}
-      />
+      <Header isAudioActive={isAudioActive} />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-24 sm:pb-24">
         {activeToolId === 'hub' ? (
           <HubDashboard onSelectTool={handleSelectTool} />
         ) : (
@@ -142,7 +137,7 @@ export const AppContent: React.FC = () => {
       </main>
 
       {/* Calm Footer */}
-      <footer className="w-full border-t border-warmgray-200/60 dark:border-warmgray-800/80 bg-white/40 dark:bg-warmgray-900/40 backdrop-blur-sm py-4 px-4 text-center text-xs text-warmgray-500 dark:text-warmgray-400">
+      <footer className="w-full border-t border-warmgray-200/60 dark:border-warmgray-800/80 bg-white/40 dark:bg-warmgray-900/40 backdrop-blur-sm py-4 px-4 text-center text-xs text-warmgray-500 dark:text-warmgray-400 pb-28">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <span>Stworzone z</span>
@@ -159,6 +154,8 @@ export const AppContent: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      <BottomNavBar activeToolId={activeToolId} onSelectTool={handleSelectTool} />
     </div>
   );
 };

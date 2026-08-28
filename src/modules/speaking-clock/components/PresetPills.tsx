@@ -37,9 +37,9 @@ export const PresetPills: React.FC<PresetPillsProps> = ({
               disabled={disabled}
               aria-pressed={isActive}
               onClick={() => onSelectInterval(minutes)}
-              className={`min-h-[44px] min-w-[54px] px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-150 select-none flex items-center justify-center ${
+              className={`min-h-[44px] min-w-[54px] px-3.5 py-2 rounded-2xl text-sm font-medium transition-all duration-300 select-none flex items-center justify-center ${
                 isActive
-                  ? 'bg-sage-600 dark:bg-sage-500 text-white shadow-sm ring-2 ring-sage-400/50 scale-[1.02]'
+                  ? 'bg-sage-100 dark:bg-sage-900/60 text-sage-800 dark:text-sage-200 shadow-sm border border-sage-300/60 dark:border-sage-700/60 scale-[1.05]'
                   : 'bg-white dark:bg-warmgray-850 text-warmgray-700 dark:text-warmgray-300 hover:bg-sage-50 dark:hover:bg-warmgray-800 border border-warmgray-200/80 dark:border-warmgray-750 active:scale-95'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >

@@ -10,29 +10,17 @@ import React, { useId } from 'react';
 import { type TimeTimerColor } from '../types';
 
 export interface TimeTimerDiscProps {
-  /** Total duration in seconds (e.g. 3600 for 60 min, or session total) */
   totalSeconds: number;
-  /** Current seconds remaining (0 to totalSeconds) */
   secondsRemaining: number;
-  /** Color palette variant (sage, amber, lavender, rose, ocean) */
   color?: TimeTimerColor;
-  /** Whether to render 0, 5, 10, 15... minute numerals around the rim (default: true) */
   showNumbers?: boolean;
-  /** Direction of disk sweep (default: 'counter-clockwise' as in classic Time Timer) */
   direction?: 'clockwise' | 'counter-clockwise';
-  /** Primary center digital readout (e.g. "14:25" or "08:30") */
   centerTimeText?: string;
-  /** Center uppercase tracking label (e.g. "Pozostało" or "Do wyjścia") */
   centerLabel?: string;
-  /** Optional center sublabel (e.g. "Wyjście z domu") */
   centerSublabel?: string;
-  /** Subtle active pulse animation ring */
   isActive?: boolean;
-  /** Optional interactive click handler */
   onDiscClick?: () => void;
-  /** Target pixel size for the component container (default: 280) */
   size?: number;
-  /** Optional extra CSS classes */
   className?: string;
 }
 
@@ -102,11 +90,9 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
   const gradientId = useId();
   const palette = COLOR_PALETTES[color] || COLOR_PALETTES.sage;
 
-  // Clamped fraction (0.0 to 1.0)
   const clampedRemaining = Math.max(0, Math.min(totalSeconds, secondsRemaining));
   const fraction = totalSeconds > 0 ? clampedRemaining / totalSeconds : 0;
 
-  // Geometry constants (viewBox 300x300)
   const cx = 150;
   const cy = 150;
   const discRadius = 112;
@@ -115,28 +101,24 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
   const minorTickInnerRadius = 119;
   const numbersRadius = 137;
 
-  // SVG Arc Calculation
-  // 12 o'clock angle is -PI/2
   const isFull = fraction >= 0.9999;
   const isEmpty = fraction <= 0.0001;
 
   let pathD = '';
+  let endX = cx;
+  let endY = cy - discRadius;
   if (!isFull && !isEmpty) {
     const angleSpan = fraction * 2 * Math.PI;
     const startX = cx;
     const startY = cy - discRadius;
 
-    let endX: number;
-    let endY: number;
     let sweepFlag: number;
 
     if (direction === 'counter-clockwise') {
-      // Counter-clockwise sweep
       endX = cx - discRadius * Math.sin(angleSpan);
       endY = cy - discRadius * Math.cos(angleSpan);
       sweepFlag = 0;
     } else {
-      // Clockwise sweep
       endX = cx + discRadius * Math.sin(angleSpan);
       endY = cy - discRadius * Math.cos(angleSpan);
       sweepFlag = 1;
@@ -146,9 +128,11 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
     pathD = `M ${cx} ${cy} L ${startX} ${startY} A ${discRadius} ${discRadius} 0 ${largeArcFlag} ${sweepFlag} ${endX.toFixed(
       3
     )} ${endY.toFixed(3)} Z`;
+  } else if (isFull) {
+    endX = cx;
+    endY = cy - discRadius;
   }
 
-  // Generate 60 dial tick marks
   const ticks = Array.from({ length: 60 }, (_, i) => {
     const isMajor = i % 5 === 0;
     const angle = -Math.PI / 2 + (i / 60) * 2 * Math.PI;
@@ -166,6 +150,7 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
       y1,
       x2,
       y2,
+      angle,
     };
   });
 
@@ -200,6 +185,7 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
+          {/* Main linear gradient */}
           <linearGradient
             id={`tt-gradient-${color}-${gradientId}`}
             x1="0%"
@@ -210,6 +196,19 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
             <stop offset="0%" stopColor={palette.from} />
             <stop offset="100%" stopColor={palette.to} />
           </linearGradient>
+
+          {/* Inner radial gradient / soft shading overlay */}
+          <radialGradient
+            id={`tt-radial-${gradientId}`}
+            cx="50%"
+            cy="50%"
+            r="50%"
+            fx="50%"
+            fy="50%"
+          >
+            <stop offset="60%" stopColor="white" stopOpacity="0" />
+            <stop offset="100%" stopColor="black" stopOpacity="0.25" />
+          </radialGradient>
 
           <filter id={`shadow-${gradientId}`} x="-10%" y="-10%" width="120%" height="120%">
             <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.12" />
@@ -235,24 +234,28 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
         />
 
         {/* Filled Sector / Disc */}
-        {isFull ? (
-          <circle
-            cx={cx}
-            cy={cy}
-            r={discRadius}
-            fill={`url(#tt-gradient-${color}-${gradientId})`}
-            filter={`url(#shadow-${gradientId})`}
-            className="time-timer-full-disc transition-all duration-300 ease-out"
-          />
-        ) : (
-          !isEmpty && (
-            <path
-              d={pathD}
-              fill={`url(#tt-gradient-${color}-${gradientId})`}
-              filter={`url(#shadow-${gradientId})`}
-              className="time-timer-sector transition-all duration-300 ease-out"
-            />
-          )
+        <g filter={`url(#shadow-${gradientId})`} className="time-timer-sector-group transition-all duration-300 ease-out">
+          {isFull ? (
+            <>
+              <circle cx={cx} cy={cy} r={discRadius} fill={`url(#tt-gradient-${color}-${gradientId})`} className="time-timer-full-disc" />
+              <circle cx={cx} cy={cy} r={discRadius} fill={`url(#tt-radial-${gradientId})`} />
+            </>
+          ) : (
+            !isEmpty && (
+              <>
+                <path d={pathD} fill={`url(#tt-gradient-${color}-${gradientId})`} className="time-timer-sector" />
+                <path d={pathD} fill={`url(#tt-radial-${gradientId})`} />
+              </>
+            )
+          )}
+        </g>
+
+        {/* Smooth Velvet Pointer */}
+        {(!isEmpty || isFull) && (
+          <g style={{ transformOrigin: '150px 150px', transform: `rotate(${Math.atan2(endY - cy, endX - cx) * 180 / Math.PI + 90}deg)` }} className="transition-all duration-300 ease-out">
+            <line x1={cx} y1={cy} x2={cx} y2={cy - discRadius} stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" />
+            <circle cx={cx} cy={cy - discRadius + 6} r="4" fill="white" className="shadow-sm" />
+          </g>
         )}
 
         {/* Subtle Active Pulse Ring */}
@@ -269,24 +272,36 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
           />
         )}
 
-        {/* Dial Tick Marks */}
+        {/* Refined Dial Tick Marks (Hour/5-min dots) */}
         <g className="time-timer-ticks" pointerEvents="none">
-          {ticks.map((tick) => (
-            <line
-              key={tick.id}
-              x1={tick.x1}
-              y1={tick.y1}
-              x2={tick.x2}
-              y2={tick.y2}
-              className={
-                tick.isMajor
-                  ? 'time-timer-major-tick stroke-warmgray-400 dark:stroke-warmgray-500'
-                  : 'time-timer-minor-tick stroke-warmgray-300/80 dark:stroke-warmgray-700/80'
-              }
-              strokeWidth={tick.isMajor ? 2 : 1}
-              strokeLinecap="round"
-            />
-          ))}
+          {ticks.map((tick) => {
+            if (tick.isMajor) {
+              const dotR = 2.5;
+              const dotX = cx + ((majorTickInnerRadius + tickOuterRadius) / 2) * Math.cos(tick.angle);
+              const dotY = cy + ((majorTickInnerRadius + tickOuterRadius) / 2) * Math.sin(tick.angle);
+              return (
+                <circle
+                  key={tick.id}
+                  cx={dotX}
+                  cy={dotY}
+                  r={dotR}
+                  className="time-timer-major-tick fill-warmgray-400 dark:fill-warmgray-500"
+                />
+              );
+            }
+            return (
+              <line
+                key={tick.id}
+                x1={tick.x1}
+                y1={tick.y1}
+                x2={tick.x2}
+                y2={tick.y2}
+                className="time-timer-minor-tick stroke-warmgray-300/60 dark:stroke-warmgray-700/60"
+                strokeWidth={1}
+                strokeLinecap="round"
+              />
+            );
+          })}
         </g>
 
         {/* Dial Rim Numbers */}
@@ -308,7 +323,7 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
                   y={numY}
                   textAnchor="middle"
                   dominantBaseline="central"
-                  className="text-[10px] font-mono font-semibold fill-warmgray-500 dark:fill-warmgray-400 select-none"
+                  className="text-[11px] font-medium fill-warmgray-500 dark:fill-warmgray-400 select-none"
                 >
                   {num}
                 </text>
@@ -320,7 +335,7 @@ export const TimeTimerDisc: React.FC<TimeTimerDiscProps> = ({
 
       {/* Center Readout Card Overlay */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
-        <div className="flex flex-col items-center justify-center w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-white/90 dark:bg-warmgray-900/90 backdrop-blur-md border border-warmgray-200/80 dark:border-warmgray-800 shadow-md p-2 transition-all">
+        <div className={`flex flex-col items-center justify-center w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-white/90 dark:bg-warmgray-900/90 backdrop-blur-md border border-warmgray-200/80 dark:border-warmgray-800 shadow-md p-2 transition-all ${isActive ? 'scale-[1.02]' : ''}`}>
           {centerLabel && (
             <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-bold text-warmgray-500 dark:text-warmgray-400 truncate max-w-[105px]">
               {centerLabel}

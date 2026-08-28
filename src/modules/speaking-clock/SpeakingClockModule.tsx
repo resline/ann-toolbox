@@ -216,35 +216,45 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
       )}
 
       {/* Central Visual Display: Time Timer Disc OR Digital Clock & Progress Ring */}
-      {isTimeTimerEnabled ? (
-        <div className="flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-white/80 dark:bg-warmgray-850/70 backdrop-blur-sm border border-warmgray-200/80 dark:border-warmgray-800 shadow-sm transition-all">
-          <TimeTimerDisc
-            totalSeconds={totalSpanSeconds}
-            secondsRemaining={secondsRemaining}
-            color={settings.timeTimer?.color || 'sage'}
-            showNumbers={settings.timeTimer?.showNumbers ?? true}
-            direction={settings.timeTimer?.direction || 'counter-clockwise'}
-            isActive={isRunning}
-            centerLabel={discCenterLabel}
-            centerTimeText={discCenterTime}
-            centerSublabel={discCenterSublabel}
-            size={280}
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ClockDisplay currentTime={currentTime} clockState={clockState} />
-          <TimeProgressRing
-            secondsUntilNext={secondsUntilNext}
-            nextAnnouncementTime={nextAnnouncementTime}
-            progress={progress}
-            clockState={clockState}
-            mode={settings.mode}
-            focusRemainingSeconds={focusRemainingSeconds}
-            lastAnnouncementText={lastAnnouncementText}
-          />
-        </div>
-      )}
+      <div className="relative">
+        {/* Animated Voice Pulse Soundwave Ring */}
+        {isTestingVoice && (
+          <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[320px] h-[320px] rounded-full border-[6px] border-sage-300/40 dark:border-sage-500/30 animate-ping" />
+            <div className="absolute w-[360px] h-[360px] rounded-full border-4 border-sage-200/30 dark:border-sage-600/20 animate-pulse delay-150" style={{ animationDuration: '2s' }} />
+          </div>
+        )}
+
+        {isTimeTimerEnabled ? (
+          <div className="relative z-10 flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-white/80 dark:bg-warmgray-850/70 backdrop-blur-sm border border-warmgray-200/80 dark:border-warmgray-800 shadow-sm transition-all">
+            <TimeTimerDisc
+              totalSeconds={totalSpanSeconds}
+              secondsRemaining={secondsRemaining}
+              color={settings.timeTimer?.color || 'sage'}
+              showNumbers={settings.timeTimer?.showNumbers ?? true}
+              direction={settings.timeTimer?.direction || 'counter-clockwise'}
+              isActive={isRunning}
+              centerLabel={discCenterLabel}
+              centerTimeText={discCenterTime}
+              centerSublabel={discCenterSublabel}
+              size={280}
+            />
+          </div>
+        ) : (
+          <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ClockDisplay currentTime={currentTime} clockState={clockState} />
+            <TimeProgressRing
+              secondsUntilNext={secondsUntilNext}
+              nextAnnouncementTime={nextAnnouncementTime}
+              progress={progress}
+              clockState={clockState}
+              mode={settings.mode}
+              focusRemainingSeconds={focusRemainingSeconds}
+              lastAnnouncementText={lastAnnouncementText}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Preset Pills (in Continuous mode) */}
       {settings.mode === 'continuous' && (

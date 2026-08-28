@@ -57,8 +57,8 @@ describe('MicroTasksModule', () => {
     await waitFor(() => {
       expect(screen.getByText('Step A')).toBeInTheDocument();
     });
-    // Check if focus mode exit button exists (View List)
-    expect(screen.getByText('View List')).toBeInTheDocument();
+    // Check if focus mode exit button exists (View List -> Pełna lista)
+    expect(screen.getByText('Pełna lista')).toBeInTheDocument();
   });
 
   it('marks step as completed and moving to next step', async () => {
@@ -77,7 +77,7 @@ describe('MicroTasksModule', () => {
     });
     
     // Complete first step
-    const completeBtn = screen.getByRole('button', { name: /Done/i });
+    const completeBtn = screen.getByRole('button', { name: /Zrobione/i });
     fireEvent.click(completeBtn);
     
     // Check if next step is shown
@@ -100,11 +100,11 @@ describe('MicroTasksModule', () => {
     });
     
     // Complete first (and only) step
-    fireEvent.click(screen.getByRole('button', { name: /Done/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Zrobione/i }));
     
     // Check for celebration overlay
     await waitFor(() => {
-      expect(screen.getByText('Woohoo!')).toBeInTheDocument();
+      expect(screen.getByText('Gratulacje!')).toBeInTheDocument();
       expect(screen.getByText('Start Another Task')).toBeInTheDocument();
     });
   });

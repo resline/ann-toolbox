@@ -74,20 +74,20 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
             tabIndex={isActive ? 0 : -1}
             disabled={disabled}
             onClick={() => onModeChange(mode.id)}
-            className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center gap-3 transition-all duration-200 select-none text-left ${
+            className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center gap-3 transition-all duration-300 select-none text-left ${
               isActive
-                ? 'bg-sage-600 dark:bg-sage-500 text-white shadow-sm ring-1 ring-sage-400/40 font-medium scale-[1.01]'
+                ? 'bg-sage-100 dark:bg-sage-900/60 text-sage-900 dark:text-sage-100 shadow-sm border border-sage-300/60 dark:border-sage-700/60 font-medium scale-[1.02]'
                 : 'bg-white/70 dark:bg-warmgray-850/60 text-warmgray-700 dark:text-warmgray-300 hover:bg-white dark:hover:bg-warmgray-800 border border-warmgray-200/60 dark:border-warmgray-750/60'
             } ${
               disabled
                 ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                : 'cursor-pointer active:scale-[0.98]'
+                : 'cursor-pointer active:scale-95'
             }`}
           >
             <div
               className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                 isActive
-                  ? 'bg-white/20 text-white'
+                  ? 'bg-sage-200 dark:bg-sage-800 text-sage-700 dark:text-sage-300'
                   : 'bg-warmgray-100 dark:bg-warmgray-800 text-sage-600 dark:text-sage-400'
               }`}
             >
@@ -99,9 +99,9 @@ export const ModeTabs: React.FC<ModeTabsProps> = ({
                 {mode.title}
               </span>
               <span
-                className={`text-xs truncate leading-normal ${
+                className={`text-xs truncate leading-normal transition-colors ${
                   isActive
-                    ? 'text-white/80'
+                    ? 'text-sage-700 dark:text-sage-400'
                     : 'text-warmgray-500 dark:text-warmgray-400'
                 }`}
               >

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Header } from './Header';
@@ -18,35 +18,6 @@ describe('Header Component', () => {
     );
 
     expect(screen.getByText('Narzędziownik Ani')).toBeInTheDocument();
-  });
-
-  it('shows active tool indicator when inside a tool', () => {
-    render(
-      <ThemeProvider>
-        <Header activeToolId="speaking-clock" />
-      </ThemeProvider>
-    );
-
-    expect(screen.getByText(/Kotwica Czasu|Głos Czasu/i)).toBeInTheDocument();
-  });
-
-  it('triggers onNavigateToHub when Hub/back button or logo is clicked', async () => {
-    const user = userEvent.setup();
-    const handleNavigate = vi.fn();
-
-    render(
-      <ThemeProvider>
-        <Header activeToolId="speaking-clock" onNavigateToHub={handleNavigate} />
-      </ThemeProvider>
-    );
-
-    const backButton = screen.getByRole('button', { name: /wszystkie narzędzia|hub|wróć/i });
-    await user.click(backButton);
-    expect(handleNavigate).toHaveBeenCalledTimes(1);
-
-    const logoButton = screen.getByRole('button', { name: /narzędziownik ani/i });
-    await user.click(logoButton);
-    expect(handleNavigate).toHaveBeenCalledTimes(2);
   });
 
   it('cycles theme when theme switch button is clicked', async () => {
