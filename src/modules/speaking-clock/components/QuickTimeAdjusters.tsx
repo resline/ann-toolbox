@@ -69,7 +69,7 @@ export const QuickTimeAdjusters: React.FC<QuickTimeAdjustersProps> = ({
           aria-label={option.ariaLabel}
           disabled={disabled}
           onClick={() => onAdjustMinutes(option.minutes)}
-          className={`flex-1 sm:flex-none min-h-[48px] min-w-[56px] px-3.5 py-2.5 rounded-2xl font-mono text-sm font-semibold transition-all duration-150 select-none flex items-center justify-center border shadow-xs ${
+          className={`flex-1 sm:flex-none min-h-[48px] min-w-[56px] px-3.5 py-2.5 rounded-2xl font-mono text-sm font-semibold transition-all duration-150 select-none flex items-center justify-center border shadow-sm ${
             option.variant === 'negative'
               ? 'bg-rose-50/90 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border-rose-200/80 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 active:bg-rose-200 dark:active:bg-rose-800/80'
               : 'bg-sage-50/90 dark:bg-sage-950/40 text-sage-800 dark:text-sage-200 border-sage-200/80 dark:border-sage-800/80 hover:bg-sage-100 dark:hover:bg-sage-900/60 active:bg-sage-200 dark:active:bg-sage-800/80'

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { Check, Star, Edit2, Trash2, MoreVertical } from 'lucide-react';
+import { Check, Star, Edit2, Trash2, MoreVertical } from '../../../lib/icons';
+import { cn } from '../../../lib/cn';
 
 interface DopamineCardProps {
   id: string;
@@ -77,8 +76,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
       }}
       role="button"
       tabIndex={0}
-      className={twMerge(
-        clsx(
+      className={cn(
           'w-full text-left flex flex-col gap-3 p-4 min-h-[48px] rounded-3xl cursor-pointer',
           'bg-white dark:bg-warmgray-800 shadow-sm border border-warmgray-200 dark:border-warmgray-700',
           'transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500',
@@ -86,7 +84,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
           isDone && 'ring-2 ring-sage-400 bg-sage-50 dark:bg-sage-900/20',
           isFavorite && !isDone && 'ring-2 ring-yellow-400/50 dark:ring-yellow-500/50 shadow-yellow-100 dark:shadow-yellow-900/20'
         )
-      )}
+      }
       aria-label={`Dopamine item: ${title}`}
     >
       <div className="flex items-start gap-3 w-full">
@@ -100,7 +98,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
           <div className="flex items-start justify-between gap-2">
             <div>
               {category && (
-                <span className={clsx('inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1', badgeColors[categoryColor])}>
+                <span className={cn('inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1', badgeColors[categoryColor])}>
                   {category}
                 </span>
               )}
@@ -115,7 +113,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
                   e.stopPropagation();
                   onToggleFavorite?.(id);
                 }}
-                className={clsx(
+                className={cn(
                   "p-1.5 rounded-lg transition-colors",
                   isFavorite 
                     ? "text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/30" 
@@ -123,7 +121,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
                 )}
                 aria-label={isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
               >
-                <Star className={clsx("w-5 h-5", isFavorite && "fill-current")} />
+                <Star className={cn("w-5 h-5", isFavorite && "fill-current")} />
               </button>
               
               <button
@@ -140,7 +138,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
 
               {isMenuOpen && (
                 <div 
-                  className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-warmgray-800 rounded-xl shadow-lg border border-warmgray-100 dark:border-warmgray-700 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-200"
+                  className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-warmgray-800 rounded-xl shadow-lg border border-warmgray-100 dark:border-warmgray-700 overflow-hidden z-10 duration-200"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -186,7 +184,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
           )}
           {energyLevel && (
             <span
-              className={clsx(
+              className={cn(
                 'inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full',
                 energyColors[energyLevel]
               )}
@@ -198,7 +196,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
         
         <button
           onClick={handleDone}
-          className={clsx(
+          className={cn(
             'ml-2 shrink-0 flex items-center justify-center min-h-[36px] px-4 rounded-xl text-sm font-semibold transition-all duration-300',
             isDone 
               ? 'bg-sage-500 text-white shadow-sm' 
@@ -206,7 +204,7 @@ export const DopamineCard: React.FC<DopamineCardProps> = ({
           )}
         >
           {isDone ? (
-            <span className="flex items-center gap-1 animate-in zoom-in duration-200">
+            <span className="flex items-center gap-1 duration-200">
               <Check className="w-4 h-4" /> Zrobione! ✨
             </span>
           ) : (

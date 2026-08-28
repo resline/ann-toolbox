@@ -8,7 +8,7 @@
  */
 
 import React, { useRef } from 'react';
-import { Clock, Tag, Sparkles, Plus } from 'lucide-react';
+import { Clock, Tag, Sparkles, Plus } from '../../../lib/icons';
 import { DepartureSettings } from '../types';
 
 export interface DepartureConfigProps {

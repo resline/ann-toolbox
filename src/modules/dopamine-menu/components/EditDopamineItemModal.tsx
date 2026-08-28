@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save } from '../../../lib/icons';
 import { DopamineItem, EnergyLevel, DopamineCategory } from '../types';
 import { useDopamineMenuStore } from '../store';
 
@@ -46,8 +46,8 @@ export const EditDopamineItemModal: React.FC<EditDopamineItemModalProps> = ({ is
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warmgray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white dark:bg-warmgray-800 rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warmgray-900/50 backdrop-blur-sm duration-200">
+      <div className="relative w-full max-w-md bg-white dark:bg-warmgray-800 rounded-3xl shadow-xl overflow-hidden duration-300 flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between p-5 border-b border-warmgray-100 dark:border-warmgray-700">
           <h2 className="text-xl font-semibold text-warmgray-900 dark:text-warmgray-100">
             Edytuj aktywność

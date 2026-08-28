@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ListTodo, Sparkles, ArrowRight, Plus, FolderHeart, Trophy } from 'lucide-react';
+import { ListTodo, Sparkles, ArrowRight, Plus, FolderHeart, Trophy } from '../../../lib/icons';
 import { TaskDecomposerModal } from './TaskDecomposerModal';
 import { StepProgressCard } from './StepProgressCard';
 import { SingleStepFocusView } from './SingleStepFocusView';
@@ -118,7 +118,7 @@ export const MicroTasksModule: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col">
       {!activeTaskLocal ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in duration-500 max-w-xl mx-auto space-y-6">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 duration-500 max-w-xl mx-auto space-y-6">
           <div className="text-center w-full relative">
             <div className="absolute right-0 top-0 flex gap-2">
                <button onClick={() => setIsHistoryOpen(true)} className="p-2 text-yellow-600 bg-yellow-50 rounded-full hover:bg-yellow-100" title="Historia Sukcesów 🏆">
@@ -225,7 +225,7 @@ export const MicroTasksModule: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full max-w-2xl mx-auto animate-in fade-in duration-300">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 w-full max-w-2xl mx-auto duration-300">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-2xl font-bold text-warmgray-900 dark:text-white mb-1">

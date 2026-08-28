@@ -1,13 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="18" fill="#4A6B5D"/>
-  <circle cx="32" cy="32" r="23" stroke="#F8FAF8" stroke-width="2.5" stroke-opacity="0.9" fill="#3D5A4E"/>
-  <!-- Clock hands at 10:10 -->
-  <line x1="32" y1="32" x2="22" y2="20" stroke="#F8FAF8" stroke-width="3" stroke-linecap="round"/>
-  <line x1="32" y1="32" x2="44" y2="24" stroke="#F8FAF8" stroke-width="2.5" stroke-linecap="round"/>
-  <!-- Center hub -->
-  <circle cx="32" cy="32" r="3.5" fill="#F8FAF8"/>
-  <circle cx="32" cy="32" r="1.5" fill="#4A6B5D"/>
-  <!-- Sound waves radiating from top-right -->
-  <path d="M46 16C49 19 51 23 51 28" stroke="#81E6D9" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.9"/>
-  <path d="M51 11C56 16 58 22 58 29" stroke="#81E6D9" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="116" fill="#3F6B5B"/>
+  <g fill="none" stroke="#F6F4EF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="256" cy="132" r="32"/>
+    <path d="M256 164 V 396"/>
+    <path d="M176 214 H 336"/>
+    <path d="M148 300 C 148 370 196 408 256 408 C 316 408 364 370 364 300"/>
+  </g>
 </svg>

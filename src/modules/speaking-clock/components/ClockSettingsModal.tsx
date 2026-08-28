@@ -11,7 +11,7 @@
  */
 
 import React, { useEffect, useCallback } from 'react';
-import { X, Volume2, Music, Clock, Bell, Sparkles, Check } from 'lucide-react';
+import { X, Volume2, Music, Clock, Bell, Sparkles, Check } from '../../../lib/icons';
 import {
   type SpeakingClockSettings,
   type TimeFormatStyle,
@@ -70,7 +70,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-warmgray-950/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-warmgray-950/50 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="clock-settings-title"
@@ -181,7 +181,7 @@ export const ClockSettingsModal: React.FC<ClockSettingsModalProps> = ({
                           }`}
                         >
                           <span
-                            className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                            className="w-3 h-3 rounded-full shrink-0 shadow-sm"
                             style={{ backgroundColor: palette.color }}
                           />
                           <span>{palette.label}</span>

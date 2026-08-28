@@ -9,6 +9,7 @@ import {
   applyThemeToDocument,
   getNextTheme,
   isValidThemeId,
+  resolveStoredTheme,
 } from './theme';
 
 export interface ThemeContextValue {
@@ -33,9 +34,9 @@ function getInitialTheme(explicitInitial?: ThemeId): ThemeId {
 
   if (typeof window !== 'undefined' && window.localStorage) {
     try {
-      const stored = localStorage.getItem(THEME_STORAGE_KEY);
-      if (isValidThemeId(stored)) {
-        return stored;
+      const resolved = resolveStoredTheme(localStorage.getItem(THEME_STORAGE_KEY));
+      if (resolved) {
+        return resolved;
       }
     } catch {
       // Ignore localStorage access errors (e.g. sandboxed iframe or private browsing)

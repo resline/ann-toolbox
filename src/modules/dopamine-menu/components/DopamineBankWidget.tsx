@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDopamineMenuStore } from '../store';
-import { Sparkles, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, Trash2 } from '../../../lib/icons';
 
 export const DopamineBankWidget: React.FC = () => {
   const completedToday = useDopamineMenuStore((state) => state.completedToday) || [];
@@ -19,7 +19,7 @@ export const DopamineBankWidget: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-warmgray-800 rounded-3xl p-5 shadow-sm border border-warmgray-200 dark:border-warmgray-700 animate-in fade-in duration-500 mb-6">
+    <div className="w-full bg-white dark:bg-warmgray-800 rounded-3xl p-5 shadow-sm border border-warmgray-200 dark:border-warmgray-700 duration-500 mb-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400">

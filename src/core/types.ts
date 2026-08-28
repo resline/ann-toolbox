@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from '../lib/icons';
 import type React from 'react';
 
 export type ToolCategoryId = 'time' | 'focus' | 'wellbeing' | 'tasks';

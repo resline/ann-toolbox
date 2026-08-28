@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronRight, LayoutList, Play, Pause, RotateCcw, Plus, Star } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { Check, ChevronRight, LayoutList, Play, Pause, RotateCcw, Plus, Star } from '../../../lib/icons';
+import { cn } from '../../../lib/cn';
 
 interface SingleStepFocusViewProps {
   taskTitle: string;
@@ -70,7 +69,7 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
   const progressPct = resistanceTimeLeft > 0 ? ((120 - resistanceTimeLeft) / 120) * 100 : 100;
   
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto px-4 py-8 sm:py-12 animate-in fade-in zoom-in-95 duration-700 ease-out relative">
+    <div className="flex flex-col h-full max-w-3xl mx-auto px-4 py-8 sm:py-12 duration-700 ease-out relative">
       {/* Top Header - Zen & Minimal */}
       <div className="flex items-center justify-between mb-8 sm:mb-12">
         <div className="flex flex-col">
@@ -111,7 +110,7 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
             return (
               <div
                 key={i}
-                className={clsx(
+                className={cn(
                   "h-2.5 rounded-full transition-all duration-500 ease-out",
                   isCurrent ? "w-8 bg-sage-500 shadow-[0_0_8px_rgba(139,168,154,0.6)]" : 
                   isCompleted ? "w-2.5 bg-sage-300 dark:bg-sage-700" : "w-2.5 bg-warmgray-200 dark:bg-warmgray-800"
@@ -163,13 +162,12 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
             <button
               onClick={onComplete}
-              className={twMerge(
-                clsx(
+              className={cn(
                   'flex-1 w-full flex items-center justify-center gap-3 px-8 py-4 min-h-[64px] rounded-3xl text-lg font-bold text-white',
                   'bg-sage-600 hover:bg-sage-500 active:bg-sage-700 shadow-xl shadow-sage-600/20 active:scale-[0.98]',
                   'transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-sage-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-warmgray-900'
                 )
-              )}
+              }
             >
               <Check className="w-6 h-6" />
               Zrobione! Następny krok ✨
@@ -198,7 +196,7 @@ export const SingleStepFocusView: React.FC<SingleStepFocusViewProps> = ({
                   + Dodaj kolejny krok w locie
                 </button>
               ) : (
-                <form onSubmit={handleAddStepSubmit} className="flex gap-2 w-full animate-in fade-in slide-in-from-top-4 duration-300">
+                <form onSubmit={handleAddStepSubmit} className="flex gap-2 w-full duration-300">
                   <input
                     type="text"
                     value={newStepTitle}

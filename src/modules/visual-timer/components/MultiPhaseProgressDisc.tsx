@@ -1,6 +1,5 @@
 import React from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../../../lib/cn';
 
 interface MultiPhaseProgressDiscProps {
   progress: number; // 0 to 100
@@ -94,7 +93,7 @@ export const MultiPhaseProgressDisc: React.FC<MultiPhaseProgressDiscProps> = ({
       
       {/* Inner content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20">
-        <span className={twMerge(clsx("text-sm font-semibold tracking-widest uppercase mb-2 transition-colors duration-500", phaseColors[phase]))}>
+        <span className={cn("text-sm font-semibold tracking-widest uppercase mb-2 transition-colors duration-500", phaseColors[phase])}>
           {phase.replace('-', ' ')}
         </span>
         <span className="text-6xl sm:text-7xl font-extrabold text-warmgray-900 dark:text-white tabular-nums tracking-tighter drop-shadow-sm">
@@ -106,7 +105,7 @@ export const MultiPhaseProgressDisc: React.FC<MultiPhaseProgressDiscProps> = ({
       </div>
       
       {/* Hover overlay for play/pause */}
-      <div className={clsx(
+      <div className={cn(
         "absolute inset-6 rounded-full bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-30",
         isActive ? "" : "backdrop-blur-sm"
       )}>

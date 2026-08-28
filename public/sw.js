@@ -1,18 +1,22 @@
 /**
- * Service Worker (Narzędziownik Ani PWA)
+ * Service Worker (Przystań PWA)
  *
  * Cache-First with Network-Fallback strategy for full offline support.
  */
 
-const CACHE_NAME = 'ann-toolbox-v1';
+const CACHE_NAME = 'przystan-v2';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/favicon.svg',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
+  '/apple-touch-icon-180.png',
+  '/fonts/inter-latin.woff2',
+  '/fonts/inter-latin-ext.woff2',
 ];
 
 // Install event - Pre-cache core shell assets
@@ -44,43 +48,75 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - Cache-First for static assets, network fallback & dynamic cache for navigation
+// Fetch event
+//
+// Nawigacje obsługujemy wzorcem app shell: KAŻDA ścieżka dostaje tę samą,
+// jedną kopię /index.html. Wcześniej odpowiedź była cache'owana pod adresem
+// żądania, więc po dodaniu tras /czas, /skupienie itd. każda z nich trzymałaby
+// własną, osobno starzejącą się kopię powłoki.
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') {
     return;
   }
 
   const requestUrl = new URL(event.request.url);
 
-  // Ignore cross-origin requests or browser extensions
+  // Pomiń inne originy i rozszerzenia przeglądarki
   if (requestUrl.origin !== self.location.origin) {
     return;
   }
 
+  // --- nawigacje: zawsze powłoka spod /index.html ---
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+
+        const networkFetch = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put('/index.html', networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => null);
+
+        const cached = await cache.match('/index.html');
+        if (cached) {
+          // odśwież w tle, oddaj natychmiast
+          return cached;
+        }
+
+        const fromNetwork = await networkFetch;
+        if (fromNetwork) return fromNetwork;
+
+        const fallback = await cache.match('/');
+        if (fallback) return fallback;
+
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Content-Type': 'text/plain; charset=utf-8' }),
+        });
+      })()
+    );
+    return;
+  }
+
+  // --- zasoby: cache-first, dociągane po pierwszym użyciu ---
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Return cached asset immediately, revalidate in background for HTML/JS
-        if (event.request.mode === 'navigate' || requestUrl.pathname.endsWith('.html')) {
-          fetch(event.request)
-            .then((networkResponse) => {
-              if (networkResponse && networkResponse.status === 200) {
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                  cache.put(event.request, responseToCache);
-                });
-              }
-            })
-            .catch(() => {});
-        }
         return cachedResponse;
       }
 
-      // If not cached, fetch from network and cache
       return fetch(event.request)
         .then((networkResponse) => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+          if (
+            !networkResponse ||
+            networkResponse.status !== 200 ||
+            networkResponse.type !== 'basic'
+          ) {
             return networkResponse;
           }
 
@@ -91,17 +127,14 @@ self.addEventListener('fetch', (event) => {
 
           return networkResponse;
         })
-        .catch(() => {
-          // If offline and navigating, return cached root/index.html
-          if (event.request.mode === 'navigate') {
-            return caches.match('/index.html') || caches.match('/');
-          }
-          return new Response('Offline resource unavailable', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({ 'Content-Type': 'text/plain' }),
-          });
-        });
+        .catch(
+          () =>
+            new Response('Offline resource unavailable', {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: new Headers({ 'Content-Type': 'text/plain; charset=utf-8' }),
+            })
+        );
     })
   );
 });

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Check } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { X, Sparkles, Check } from '../../../lib/icons';
+import { cn } from '../../../lib/cn';
 
 interface DopamineRouletteModalProps {
   isOpen: boolean;
@@ -181,82 +180,14 @@ export const DopamineRouletteModal: React.FC<DopamineRouletteModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-warmgray-900/60 backdrop-blur-sm transition-opacity">
       <div 
-        className={twMerge(
-          clsx(
+        className={cn(
             'bg-white dark:bg-warmgray-800 rounded-3xl w-full max-w-sm shadow-2xl border border-warmgray-200 dark:border-warmgray-700 relative overflow-hidden',
-            'transform transition-all duration-300'
-          )
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="roulette-title"
-      >
-        <div className="flex items-center justify-between p-4 pb-0 z-20 relative">
-          <h2 id="roulette-title" className="text-lg font-semibold text-warmgray-900 dark:text-warmgray-50 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-sage-500" />
-            Dopamine Roulette
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 -mr-2 rounded-full text-warmgray-500 hover:bg-warmgray-100 dark:hover:bg-warmgray-700 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
-            aria-label="Close modal"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        
-        <div className="p-4 flex flex-col items-center justify-center relative">
-          
-          {showCelebration && selectedItem ? (
-            <div className="absolute inset-0 z-30 bg-white/95 dark:bg-warmgray-800/95 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
-              <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                {/* CSS Sparkles Effect */}
-                <div className="absolute top-10 left-10 text-yellow-400 animate-pulse"><Sparkles size={32}/></div>
-                <div className="absolute bottom-20 right-10 text-pink-400 animate-pulse delay-100"><Sparkles size={24}/></div>
-                <div className="absolute top-20 right-20 text-blue-400 animate-pulse delay-200"><Sparkles size={28}/></div>
-              </div>
-              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-tr from-sage-200 to-sage-100 dark:from-sage-900/50 dark:to-sage-800/50 flex items-center justify-center text-sage-600 dark:text-sage-300 mb-6 shadow-lg transform hover:scale-105 transition-transform">
-                {selectedItem.icon || <Sparkles className="w-12 h-12" />}
-              </div>
-              <h3 className="text-3xl font-bold text-warmgray-900 dark:text-white mb-3 text-center">
-                {selectedItem.title}
-              </h3>
-              <p className="text-warmgray-500 dark:text-warmgray-400 text-center mb-8">
-                Wybrana aktywność! Baw się dobrze.
-              </p>
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={onClose}
-                  className="flex-1 bg-sage-600 hover:bg-sage-700 text-white py-4 px-6 rounded-2xl font-bold min-h-[48px] flex items-center justify-center gap-2 shadow-md"
-                >
-                  <Check className="w-5 h-5" /> Akceptuję
-                </button>
-                <button
-                  onClick={() => setShowCelebration(false)}
-                  className="flex-1 bg-warmgray-100 dark:bg-warmgray-700 text-warmgray-700 dark:text-warmgray-200 py-4 px-6 rounded-2xl font-bold min-h-[48px] flex items-center justify-center"
-                >
-                  Kręć znowu
-                </button>
-              </div>
-            </div>
-          ) : (
-            renderWheel()
-          )}
-          
-          {!showCelebration && (
-            <div className="w-full mt-4">
-              <button
-                onClick={spin}
-                data-testid="spin-wheel-btn"
-                disabled={isSpinning || items.length === 0}
-                className={twMerge(
-                  clsx(
-                    'w-full py-4 px-6 rounded-2xl text-lg font-bold transition-all min-h-[48px] shadow-sm',
+            'transform transition-all duration-300' ) } role="dialog" aria-modal="true" aria-labelledby="roulette-title" > <div className="flex items-center justify-between p-4 pb-0 z-20 relative"> <h2 id="roulette-title" className="text-lg font-semibold text-warmgray-900 dark:text-warmgray-50 flex items-center gap-2"> <Sparkles className="w-5 h-5 text-sage-500" /> Dopamine Roulette </h2> <button onClick={onClose} className="p-2 -mr-2 rounded-full text-warmgray-500 hover:bg-warmgray-100 dark:hover:bg-warmgray-700 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500" aria-label="Close modal" > <X className="w-6 h-6" /> </button> </div> <div className="p-4 flex flex-col items-center justify-center relative"> {showCelebration && selectedItem ? ( <div className="absolute inset-0 z-30 bg-white/95 dark:bg-warmgray-800/95 flex flex-col items-center justify-center p-6 duration-500"> <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none"> {/* CSS Sparkles Effect */} <div className="absolute top-10 left-10 text-yellow-400 animate-pulse"><Sparkles size={32}/></div> <div className="absolute bottom-20 right-10 text-pink-400 animate-pulse delay-100"><Sparkles size={24}/></div> <div className="absolute top-20 right-20 text-blue-400 animate-pulse delay-200"><Sparkles size={28}/></div> </div> <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-tr from-sage-200 to-sage-100 dark:from-sage-900/50 dark:to-sage-800/50 flex items-center justify-center text-sage-600 dark:text-sage-300 mb-6 shadow-lg transform hover:scale-105 transition-transform"> {selectedItem.icon || <Sparkles className="w-12 h-12" />} </div> <h3 className="text-3xl font-bold text-warmgray-900 dark:text-white mb-3 text-center"> {selectedItem.title} </h3> <p className="text-warmgray-500 dark:text-warmgray-400 text-center mb-8"> Wybrana aktywność! Baw się dobrze. </p> <div className="flex gap-3 w-full"> <button onClick={onClose} className="flex-1 bg-sage-600 hover:bg-sage-700 text-white py-4 px-6 rounded-2xl font-bold min-h-[48px] flex items-center justify-center gap-2 shadow-md" > <Check className="w-5 h-5" /> Akceptuję </button> <button onClick={() => setShowCelebration(false)} className="flex-1 bg-warmgray-100 dark:bg-warmgray-700 text-warmgray-700 dark:text-warmgray-200 py-4 px-6 rounded-2xl font-bold min-h-[48px] flex items-center justify-center" > Kręć znowu </button> </div> </div> ) : ( renderWheel() )} {!showCelebration && ( <div className="w-full mt-4"> <button onClick={spin} data-testid="spin-wheel-btn" disabled={isSpinning || items.length === 0} className={cn( 'w-full py-4 px-6 rounded-2xl text-lg font-bold transition-all min-h-[48px] shadow-sm',
                     isSpinning || items.length === 0
                       ? 'bg-warmgray-200 text-warmgray-400 dark:bg-warmgray-700 dark:text-warmgray-500 cursor-not-allowed'
                       : 'bg-gradient-to-r from-sage-500 to-sage-600 hover:from-sage-600 hover:to-sage-700 text-white hover:shadow-md active:scale-[0.98]'
                   )
-                )}
+                }
               >
                 {isSpinning ? 'Losowanie...' : 'Zakręć kołem!'}
               </button>

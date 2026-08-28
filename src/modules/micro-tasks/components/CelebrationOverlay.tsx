@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { PartyPopper, Star } from 'lucide-react';
-import { clsx } from 'clsx';
+import { PartyPopper, Star } from '../../../lib/icons';
+import { cn } from '../../../lib/cn';
 
 interface CelebrationOverlayProps {
   isVisible: boolean;
@@ -60,7 +60,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none overflow-hidden">
-      <div className="absolute inset-0 bg-sage-500/20 dark:bg-sage-400/20 backdrop-blur-[4px] animate-in fade-in duration-500" />
+      <div className="absolute inset-0 bg-sage-500/20 dark:bg-sage-400/20 backdrop-blur-[4px] duration-500" />
       
       {/* Floating Stars and Butterflies Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -75,7 +75,7 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
               animationDelay: `${Math.random() * 1}s`,
             }}
           >
-            <Star className={clsx("w-6 h-6 text-yellow-400 fill-yellow-400", i % 2 === 0 ? "scale-75" : "scale-100")} />
+            <Star className={cn("w-6 h-6 text-yellow-400 fill-yellow-400", i % 2 === 0 ? "scale-75" : "scale-100")} />
           </div>
         ))}
         {/* Simple CSS butterflies using unicode or SVG */}
@@ -105,9 +105,9 @@ export const CelebrationOverlay: React.FC<CelebrationOverlayProps> = ({
       `}</style>
 
       <div 
-        className={clsx(
+        className={cn(
           "bg-white/90 dark:bg-warmgray-800/90 backdrop-blur-md p-10 rounded-3xl shadow-2xl border border-sage-200 dark:border-sage-700 flex flex-col items-center text-center max-w-md w-full mx-4",
-          "animate-in zoom-in slide-in-from-bottom-8 duration-700 ease-out"
+          "duration-700 ease-out"
         )}
       >
         <div className="w-24 h-24 bg-gradient-to-tr from-sage-200 to-sage-100 dark:from-sage-800 dark:to-sage-900 rounded-full flex items-center justify-center text-sage-600 dark:text-sage-300 mb-6 shadow-inner animate-bounce">

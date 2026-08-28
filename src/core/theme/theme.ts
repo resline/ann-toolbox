@@ -1,4 +1,13 @@
-export type ThemeId = 'sage-calm' | 'dark-warm' | 'oled-night';
+/**
+ * Motywy „Przystani".
+ *
+ * Wartości kolorów pochodzą wyłącznie z warstwy tokenów (src/design/tokens.ts),
+ * żeby podgląd w przełączniku nie mógł rozjechać się z tym, co widać na ekranie.
+ */
+
+import { COLOR_TOKENS, THEME_IS_DARK, type ThemeId } from '../../design/tokens';
+
+export type { ThemeId };
 
 export interface ThemeConfig {
   id: ThemeId;
@@ -6,7 +15,7 @@ export interface ThemeConfig {
   subtitle: string;
   description: string;
   isDark: boolean;
-  className: string;
+  /** Kolor akcentu — do kropki podglądu w przełączniku. */
   accentColor: string;
   previewBg: string;
   previewCard: string;
@@ -14,74 +23,83 @@ export interface ThemeConfig {
 }
 
 export const THEME_STORAGE_KEY = 'ann_toolbox_theme';
-export const DEFAULT_THEME: ThemeId = 'sage-calm';
+export const DEFAULT_THEME: ThemeId = 'day';
 
-export const THEMES: Record<ThemeId, ThemeConfig> = {
-  'sage-calm': {
-    id: 'sage-calm',
-    name: 'Szałwia Spokojna',
-    subtitle: 'Dzienny, organiczny',
-    description: 'Kojąca szałwiowa zieleń, ciepły krem i miękki kontrast idealny na dzień bez męczenia wzroku.',
-    isDark: false,
-    className: 'theme-sage-calm',
-    accentColor: '#4A6B5D',
-    previewBg: '#F8FAF8',
-    previewCard: '#FFFFFF',
-    textColor: '#2D3748',
-  },
-  'dark-warm': {
-    id: 'dark-warm',
-    name: 'Ciepły Zmierzch',
-    subtitle: 'Wieczorny, grafitowy',
-    description: 'Ciepły grafit łupkowy z miętowymi akcentami chroniący przed przebodźcowaniem wieczorem.',
-    isDark: true,
-    className: 'theme-dark-warm',
-    accentColor: '#81E6D9',
-    previewBg: '#1A202C',
-    previewCard: '#2D3748',
-    textColor: '#F8FAF8',
-  },
-  'oled-night': {
-    id: 'oled-night',
-    name: 'Czerń OLED',
-    subtitle: 'Nocny, oszczędny',
-    description: 'Czysta czerń AMOLED z dyskretnym szmaragdem dla maksymalnej oszczędności baterii i skupienia w nocy.',
-    isDark: true,
-    className: 'theme-oled-night',
-    accentColor: '#10B981',
-    previewBg: '#000000',
-    previewCard: '#111722',
-    textColor: '#FAF8F5',
-  },
+/** Identyfikatory sprzed rebrandingu — czytane raz, przy pierwszym uruchomieniu. */
+const LEGACY_THEME_IDS: Record<string, ThemeId> = {
+  'sage-calm': 'day',
+  'dark-warm': 'dusk',
+  'oled-night': 'oled',
 };
 
-export const THEME_LIST: ThemeConfig[] = [
-  THEMES['sage-calm'],
-  THEMES['dark-warm'],
-  THEMES['oled-night'],
-];
+const describe = (id: ThemeId, name: string, subtitle: string, description: string): ThemeConfig => ({
+  id,
+  name,
+  subtitle,
+  description,
+  isDark: THEME_IS_DARK[id],
+  accentColor: COLOR_TOKENS.accent[id],
+  previewBg: COLOR_TOKENS.canvas[id],
+  previewCard: COLOR_TOKENS['surface-raised'][id],
+  textColor: COLOR_TOKENS.ink[id],
+});
 
-const THEME_CYCLE_ORDER: ThemeId[] = ['sage-calm', 'dark-warm', 'oled-night'];
+export const THEMES: Record<ThemeId, ThemeConfig> = {
+  day: describe(
+    'day',
+    'Dzień',
+    'jasny, papierowy',
+    'Ciepła biel papieru i przygaszona szałwia. Kontrast wystarczający, żeby czytać, i na tyle niski, żeby nie męczyć oczu przez cały dzień.'
+  ),
+  dusk: describe(
+    'dusk',
+    'Zmierzch',
+    'ciepły, przygaszony',
+    'Ciepły grafit bez niebieskiego chłodu. Na wieczór, kiedy jasny ekran zaczyna przeszkadzać.'
+  ),
+  oled: describe(
+    'oled',
+    'Noc',
+    'czerń, oszczędna',
+    'Czysta czerń dla ekranów AMOLED. Najmniej światła i najdłuższa bateria — na noc i na budzenie się w ciemności.'
+  ),
+};
 
-/**
- * Get next theme in cycle sequence.
- */
+export const THEME_LIST: ThemeConfig[] = [THEMES.day, THEMES.dusk, THEMES.oled];
+
+const THEME_CYCLE_ORDER: ThemeId[] = ['day', 'dusk', 'oled'];
+
+/** Następny motyw w cyklu. */
 export function getNextTheme(current: ThemeId): ThemeId {
   const currentIndex = THEME_CYCLE_ORDER.indexOf(current);
   if (currentIndex === -1) return DEFAULT_THEME;
-  const nextIndex = (currentIndex + 1) % THEME_CYCLE_ORDER.length;
-  return THEME_CYCLE_ORDER[nextIndex];
+  return THEME_CYCLE_ORDER[(currentIndex + 1) % THEME_CYCLE_ORDER.length];
 }
 
-/**
- * Validate whether a string is a valid ThemeId.
- */
+/** Czy wartość jest aktualnym identyfikatorem motywu. */
 export function isValidThemeId(theme: unknown): theme is ThemeId {
   return typeof theme === 'string' && theme in THEMES;
 }
 
 /**
- * Apply theme classes to document root and sync dark mode class.
+ * Odczytuje motyw z zapisanej wartości, tłumacząc identyfikatory sprzed
+ * rebrandingu. Bez tego użytkowniczka po aktualizacji dostałaby motyw domyślny
+ * zamiast swojego.
+ */
+export function resolveStoredTheme(stored: unknown): ThemeId | null {
+  if (isValidThemeId(stored)) return stored;
+  if (typeof stored === 'string' && stored in LEGACY_THEME_IDS) {
+    return LEGACY_THEME_IDS[stored];
+  }
+  return null;
+}
+
+/**
+ * Ustawia motyw na <html>.
+ *
+ * Poza atrybutem `data-theme` nadal dokłada klasę `dark`, bo moduły wciąż
+ * opierają się na wariantach `dark:`. Klasa znika w fazie domykającej, kiedy
+ * ostatni moduł przejdzie na tokeny.
  */
 export function applyThemeToDocument(theme: ThemeId): void {
   if (typeof document === 'undefined') return;
@@ -89,23 +107,10 @@ export function applyThemeToDocument(theme: ThemeId): void {
   const root = document.documentElement;
   const config = THEMES[theme] || THEMES[DEFAULT_THEME];
 
-  // Remove existing theme classes
-  for (const t of THEME_CYCLE_ORDER) {
-    root.classList.remove(`theme-${t}`);
-  }
+  root.dataset.theme = config.id;
+  root.classList.toggle('dark', config.isDark);
 
-  // Add current theme class
-  root.classList.add(config.className);
-
-  // Sync Tailwind darkMode class
-  if (config.isDark) {
-    root.classList.add('dark');
-  } else {
-    root.classList.remove('dark');
-  }
-
-  // Update meta theme-color tag if present
-  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]:not([media])');
   if (metaThemeColor) {
     metaThemeColor.setAttribute('content', config.previewBg);
   }

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Plus, Trash2 } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { X, Sparkles, Plus, Trash2 } from '../../../lib/icons';
 import { ResistanceSlider } from './ResistanceSlider';
+import { cn } from '../../../lib/cn';
 
 interface TaskDecomposerModalProps {
   isOpen: boolean;
@@ -74,12 +73,11 @@ export const TaskDecomposerModal: React.FC<TaskDecomposerModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-warmgray-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity">
       <div 
-        className={twMerge(
-          clsx(
+        className={cn(
             'bg-white dark:bg-warmgray-800 rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl border border-warmgray-200 dark:border-warmgray-700',
             'transform transition-all duration-300 scale-100 opacity-100'
           )
-        )}
+        }
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-6 border-b border-warmgray-100 dark:border-warmgray-700 gap-4">
           <div>

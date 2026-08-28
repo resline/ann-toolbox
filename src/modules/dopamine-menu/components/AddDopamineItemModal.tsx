@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { X, Check } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { X, Check } from '../../../lib/icons';
+import { cn } from '../../../lib/cn';
 
 interface AddDopamineItemModalProps {
   isOpen: boolean;
@@ -34,12 +33,11 @@ export const AddDopamineItemModal: React.FC<AddDopamineItemModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-warmgray-900/40 dark:bg-black/60 backdrop-blur-sm transition-opacity">
       <div 
-        className={twMerge(
-          clsx(
+        className={cn(
             'bg-white dark:bg-warmgray-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-warmgray-200 dark:border-warmgray-700',
             'transform transition-all duration-300 scale-100 opacity-100'
           )
-        )}
+        }
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-item-title"
@@ -98,14 +96,13 @@ export const AddDopamineItemModal: React.FC<AddDopamineItemModalProps> = ({
                   key={level}
                   type="button"
                   onClick={() => setEnergyLevel(level)}
-                  className={twMerge(
-                    clsx(
+                  className={cn(
                       'py-2 px-3 min-h-[48px] rounded-xl text-sm font-medium capitalize transition-all border focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500',
                       energyLevel === level
                         ? 'bg-sage-100 border-sage-500 text-sage-800 dark:bg-sage-900/40 dark:border-sage-400 dark:text-sage-300 shadow-sm'
                         : 'bg-white border-warmgray-200 text-warmgray-600 hover:bg-warmgray-50 dark:bg-warmgray-800 dark:border-warmgray-700 dark:text-warmgray-400 dark:hover:bg-warmgray-700'
                     )
-                  )}
+                  }
                 >
                   {level}
                 </button>

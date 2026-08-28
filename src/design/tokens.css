@@ -1,0 +1,252 @@
+/* PLIK GENEROWANY — nie edytuj ręcznie.
+   Źródło: src/design/tokens.ts   Generator: scripts/build-tokens.mjs
+   Po zmianie wartości uruchom: node scripts/build-tokens.mjs */
+
+:root,
+[data-theme='day'] {
+  color-scheme: light;
+  --canvas: 246 244 239;
+  --surface: 253 252 249;
+  --surface-raised: 255 255 255;
+  --surface-sunken: 239 237 231;
+  --surface-hover: 241 239 233;
+  --surface-active: 233 230 222;
+  --ink: 35 33 29;
+  --ink-muted: 87 83 75;
+  --ink-faint: 108 102 94;
+  --line: 223 219 210;
+  --line-strong: 150 145 136;
+  --line-faint: 236 233 226;
+  --accent: 63 107 91;
+  --accent-hover: 53 89 76;
+  --accent-active: 43 74 63;
+  --accent-soft: 228 237 231;
+  --accent-ink: 44 74 63;
+  --accent-contrast: 251 253 251;
+  --focus-ring: 43 107 88;
+  --positive: 63 107 74;
+  --positive-soft: 227 237 228;
+  --positive-ink: 46 81 54;
+  --caution: 122 93 27;
+  --caution-soft: 243 235 216;
+  --caution-ink: 94 71 19;
+  --attention: 154 74 56;
+  --attention-soft: 245 228 223;
+  --attention-ink: 124 58 44;
+  --m-time: 63 107 91;
+  --m-time-soft: 228 237 231;
+  --m-time-ink: 44 74 63;
+  --m-focus: 61 94 119;
+  --m-focus-soft: 227 234 240;
+  --m-focus-ink: 43 67 86;
+  --m-energy: 126 82 39;
+  --m-energy-soft: 243 233 220;
+  --m-energy-ink: 95 61 28;
+  --m-start: 107 74 120;
+  --m-start-soft: 237 230 240;
+  --m-start-ink: 78 53 88;
+  --disc-sage-from: 91 130 114;
+  --disc-sage-to: 74 107 93;
+  --disc-sage-glow: 74 107 93;
+  --disc-amber-from: 245 158 11;
+  --disc-amber-to: 217 119 6;
+  --disc-amber-glow: 217 119 6;
+  --disc-lavender-from: 139 92 246;
+  --disc-lavender-to: 124 58 237;
+  --disc-lavender-glow: 124 58 237;
+  --disc-rose-from: 244 63 94;
+  --disc-rose-to: 225 29 72;
+  --disc-rose-glow: 225 29 72;
+  --disc-ocean-from: 14 165 233;
+  --disc-ocean-to: 2 132 199;
+  --disc-ocean-glow: 2 132 199;
+  --shadow-hairline: 0 0 0 1px rgb(var(--line));
+  --shadow-lift: 0 1px 2px rgb(35 33 29 / 0.04), 0 4px 12px -4px rgb(35 33 29 / 0.10);
+  --shadow-sheet: 0 -2px 8px rgb(35 33 29 / 0.04), 0 -12px 40px -8px rgb(35 33 29 / 0.14);
+}
+
+[data-theme='dusk'] {
+  color-scheme: dark;
+  --canvas: 27 25 23;
+  --surface: 35 33 30;
+  --surface-raised: 43 40 37;
+  --surface-sunken: 21 20 18;
+  --surface-hover: 42 39 36;
+  --surface-active: 50 46 42;
+  --ink: 239 235 227;
+  --ink-muted: 182 175 164;
+  --ink-faint: 151 144 133;
+  --line: 54 50 48;
+  --line-strong: 116 110 102;
+  --line-faint: 43 40 37;
+  --accent: 127 183 159;
+  --accent-hover: 147 198 175;
+  --accent-active: 107 164 140;
+  --accent-soft: 38 51 45;
+  --accent-ink: 167 211 190;
+  --accent-contrast: 22 36 30;
+  --focus-ring: 143 198 173;
+  --positive: 134 188 147;
+  --positive-soft: 36 49 42;
+  --positive-ink: 166 208 175;
+  --caution: 215 179 106;
+  --caution-soft: 51 45 31;
+  --caution-ink: 227 198 139;
+  --attention: 208 138 118;
+  --attention-soft: 51 36 31;
+  --attention-ink: 224 168 149;
+  --m-time: 127 183 159;
+  --m-time-soft: 38 51 45;
+  --m-time-ink: 167 211 190;
+  --m-focus: 127 168 198;
+  --m-focus-soft: 35 44 51;
+  --m-focus-ink: 166 199 221;
+  --m-energy: 211 164 107;
+  --m-energy-soft: 50 42 32;
+  --m-energy-ink: 225 190 144;
+  --m-start: 177 153 206;
+  --m-start-soft: 43 37 51;
+  --m-start-ink: 201 184 222;
+  --disc-sage-from: 110 154 135;
+  --disc-sage-to: 86 126 108;
+  --disc-sage-glow: 86 126 108;
+  --disc-amber-from: 199 146 70;
+  --disc-amber-to: 168 117 47;
+  --disc-amber-glow: 168 117 47;
+  --disc-lavender-from: 154 127 208;
+  --disc-lavender-to: 127 99 180;
+  --disc-lavender-glow: 127 99 180;
+  --disc-rose-from: 208 112 127;
+  --disc-rose-to: 178 82 96;
+  --disc-rose-glow: 178 82 96;
+  --disc-ocean-from: 78 150 192;
+  --disc-ocean-to: 58 121 163;
+  --disc-ocean-glow: 58 121 163;
+  --shadow-hairline: 0 0 0 1px rgb(var(--line));
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.40), 0 4px 12px -4px rgb(0 0 0 / 0.50);
+  --shadow-sheet: 0 -2px 8px rgb(0 0 0 / 0.40), 0 -12px 40px -8px rgb(0 0 0 / 0.60);
+}
+
+[data-theme='oled'] {
+  color-scheme: dark;
+  --canvas: 0 0 0;
+  --surface: 11 11 12;
+  --surface-raised: 20 20 22;
+  --surface-sunken: 0 0 0;
+  --surface-hover: 23 23 26;
+  --surface-active: 30 30 34;
+  --ink: 216 212 204;
+  --ink-muted: 154 149 141;
+  --ink-faint: 131 125 117;
+  --line: 35 35 38;
+  --line-strong: 95 95 100;
+  --line-faint: 22 22 24;
+  --accent: 124 201 170;
+  --accent-hover: 143 214 184;
+  --accent-active: 104 182 149;
+  --accent-soft: 16 35 28;
+  --accent-ink: 155 220 194;
+  --accent-contrast: 4 20 14;
+  --focus-ring: 124 201 170;
+  --positive: 127 197 143;
+  --positive-soft: 14 34 20;
+  --positive-ink: 155 213 168;
+  --caution: 212 175 102;
+  --caution-soft: 36 28 14;
+  --caution-ink: 226 196 137;
+  --attention: 206 137 116;
+  --attention-soft: 36 19 16;
+  --attention-ink: 223 167 149;
+  --m-time: 124 201 170;
+  --m-time-soft: 16 35 28;
+  --m-time-ink: 155 220 194;
+  --m-focus: 127 180 218;
+  --m-focus-soft: 14 26 36;
+  --m-focus-ink: 163 203 230;
+  --m-energy: 224 177 115;
+  --m-energy-soft: 36 27 14;
+  --m-energy-ink: 234 199 150;
+  --m-start: 188 160 224;
+  --m-start-soft: 26 18 36;
+  --m-start-ink: 207 188 235;
+  --disc-sage-from: 99 140 122;
+  --disc-sage-to: 78 114 97;
+  --disc-sage-glow: 78 114 97;
+  --disc-amber-from: 184 134 62;
+  --disc-amber-to: 154 106 40;
+  --disc-amber-glow: 154 106 40;
+  --disc-lavender-from: 141 116 192;
+  --disc-lavender-to: 114 89 166;
+  --disc-lavender-glow: 114 89 166;
+  --disc-rose-from: 192 101 111;
+  --disc-rose-to: 163 73 85;
+  --disc-rose-glow: 163 73 85;
+  --disc-ocean-from: 71 138 176;
+  --disc-ocean-to: 52 109 147;
+  --disc-ocean-glow: 52 109 147;
+  --shadow-hairline: 0 0 0 1px rgb(var(--line));
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.60), 0 4px 12px -4px rgb(0 0 0 / 0.70);
+  --shadow-sheet: 0 -2px 8px rgb(0 0 0 / 0.60), 0 -12px 40px -8px rgb(0 0 0 / 0.80);
+}
+
+/* Wymiary — wspólne dla wszystkich motywów */
+:root {
+  --radius-control: 10px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
+  --tap: 48px;
+  --tabbar-h: 64px;
+  --space-gutter: 20px;
+  --space-section: 32px;
+  --space-card: 16px;
+}
+
+/* Alias akcentu modułu. Prymitywy czytają --module i kolorują się same;
+   fallback na --accent jest obowiązkowy, inaczej poza modułem renderują się
+   przezroczysto. */
+:root {
+  --module: var(--accent);
+  --module-soft: var(--accent-soft);
+  --module-ink: var(--accent-ink);
+}
+[data-module='czas'] {
+  --module: var(--m-time);
+  --module-soft: var(--m-time-soft);
+  --module-ink: var(--m-time-ink);
+}
+[data-module='skupienie'] {
+  --module: var(--m-focus);
+  --module-soft: var(--m-focus-soft);
+  --module-ink: var(--m-focus-ink);
+}
+[data-module='energia'] {
+  --module: var(--m-energy);
+  --module-soft: var(--m-energy-soft);
+  --module-ink: var(--m-energy-ink);
+}
+[data-module='start'] {
+  --module: var(--m-start);
+  --module-soft: var(--m-start-soft);
+  --module-ink: var(--m-start-ink);
+}
+
+/* Ograniczenie ruchu. Framer degraduje własne drzewo przez MotionConfig,
+   ale przejścia Tailwinda przez nie nie przechodzą — stąd ta warstwa. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html[data-motion='reduced'] *,
+html[data-motion='reduced'] *::before,
+html[data-motion='reduced'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

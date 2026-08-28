@@ -1,6 +1,5 @@
 import React from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../../../lib/cn';
 
 interface PhaseTimelineProps {
   currentPhaseIndex: number;
@@ -20,8 +19,7 @@ export const PhaseTimeline: React.FC<PhaseTimelineProps> = ({
         return (
           <div key={phase.id} className="flex items-center gap-2">
             <div 
-              className={twMerge(
-                clsx(
+              className={cn(
                   'h-2 rounded-full transition-all duration-300',
                   phase.type === 'focus' ? 'w-12' : phase.type === 'long-break' ? 'w-8' : 'w-4',
                   isPast 
@@ -30,7 +28,7 @@ export const PhaseTimeline: React.FC<PhaseTimelineProps> = ({
                     ? 'bg-sage-600 dark:bg-sage-400 scale-110 shadow-sm'
                     : 'bg-warmgray-200 dark:bg-warmgray-700'
                 )
-              )}
+              }
               title={`${phase.type} - ${phase.duration}m`}
             />
           </div>

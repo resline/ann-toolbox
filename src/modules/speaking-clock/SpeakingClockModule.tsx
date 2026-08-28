@@ -12,7 +12,7 @@
  */
 
 import React, { useState } from 'react';
-import { Volume2, Footprints, SlidersHorizontal } from 'lucide-react';
+import { Volume2, Footprints, SlidersHorizontal } from '../../lib/icons';
 import { useSpeakingClock } from './hooks/useSpeakingClock';
 import { ModeTabs } from './components/ModeTabs';
 import { DepartureConfig } from './components/DepartureConfig';
@@ -151,7 +151,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
             disabled={isTestingVoice}
             aria-label="Przetestuj głos lektora"
             title="Przetestuj głos lektora"
-            className="min-h-[44px] min-w-[44px] p-2.5 rounded-2xl bg-white dark:bg-warmgray-850 hover:bg-sage-50 dark:hover:bg-warmgray-800 border border-warmgray-200 dark:border-warmgray-750 text-warmgray-700 dark:text-warmgray-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer disabled:opacity-50"
+            className="min-h-[44px] min-w-[44px] p-2.5 rounded-2xl bg-white dark:bg-warmgray-850 hover:bg-sage-50 dark:hover:bg-warmgray-800 border border-warmgray-200 dark:border-warmgray-750 text-warmgray-700 dark:text-warmgray-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer disabled:opacity-50"
           >
             <Volume2 className={`w-4 h-4 text-sage-600 dark:text-sage-400 ${isTestingVoice ? 'animate-spin' : ''}`} />
             <span className="hidden md:inline">Test głosu</span>
@@ -162,7 +162,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
             onClick={() => setIsSettingsOpen(true)}
             aria-label="Otwórz ustawienia zegara"
             title="Ustawienia Kotwicy Czasu"
-            className="min-h-[44px] min-w-[44px] p-2.5 rounded-2xl bg-white dark:bg-warmgray-850 hover:bg-sage-50 dark:hover:bg-warmgray-800 border border-warmgray-200 dark:border-warmgray-750 text-warmgray-700 dark:text-warmgray-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer"
+            className="min-h-[44px] min-w-[44px] p-2.5 rounded-2xl bg-white dark:bg-warmgray-850 hover:bg-sage-50 dark:hover:bg-warmgray-800 border border-warmgray-200 dark:border-warmgray-750 text-warmgray-700 dark:text-warmgray-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-sm cursor-pointer"
           >
             <SlidersHorizontal className="w-4 h-4 text-sage-600 dark:text-sage-400" />
             <span className="hidden md:inline">Ustawienia</span>
@@ -179,7 +179,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
 
       {/* Departure Mode Configuration Card (when idle) or Active Target Header (when running) */}
       {settings.mode === 'departure' && (
-        <div className="animate-fade-in">
+        <div className="">
           {clockState === 'idle' ? (
             <DepartureConfig
               settings={settings.departure}
@@ -258,7 +258,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
 
       {/* Preset Pills (in Continuous mode) */}
       {settings.mode === 'continuous' && (
-        <div className="p-4 sm:p-5 rounded-3xl bg-white/70 dark:bg-warmgray-850/60 backdrop-blur-sm border border-warmgray-200/70 dark:border-warmgray-800 shadow-sm animate-fade-in">
+        <div className="p-4 sm:p-5 rounded-3xl bg-white/70 dark:bg-warmgray-850/60 backdrop-blur-sm border border-warmgray-200/70 dark:border-warmgray-800 shadow-sm">
           <PresetPills
             intervalMinutes={settings.intervalMinutes}
             onSelectInterval={setIntervalMinutes}
@@ -268,7 +268,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({
 
       {/* Quick Time Adjusters (-5m, +1m, +5m, +10m) shown when running in Departure or Focus mode */}
       {(isRunning || isPaused) && (settings.mode === 'departure' || settings.mode === 'focus') && (
-        <div className="p-4 rounded-3xl bg-white/70 dark:bg-warmgray-850/60 backdrop-blur-sm border border-warmgray-200/70 dark:border-warmgray-800 shadow-sm animate-fade-in">
+        <div className="p-4 rounded-3xl bg-white/70 dark:bg-warmgray-850/60 backdrop-blur-sm border border-warmgray-200/70 dark:border-warmgray-800 shadow-sm">
           <QuickTimeAdjusters onAdjustMinutes={addMinutes} />
         </div>
       )}

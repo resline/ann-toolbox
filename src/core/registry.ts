@@ -1,4 +1,5 @@
-import { Volume2, Timer, Sparkles, ListTodo } from 'lucide-react';
+import { Clock, CircleDot, Sparkles, Footprints } from '../lib/icons';
+import { modules } from '../copy';
 import type { ToolCategory, ToolCategoryId, ToolModule } from './types';
 import { SpeakingClockModule } from '../modules/speaking-clock/SpeakingClockModule';
 import { VisualTimerModule } from '../modules/visual-timer/components/VisualTimerModule';
@@ -31,50 +32,42 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
 export const DEFAULT_TOOLS: ToolModule[] = [
   {
     id: 'speaking-clock',
-    title: 'Kotwica Czasu',
-    subtitle: 'Mówiący zegar, odliczanie i Time Timer',
-    description:
-      'Dyskretny mówiący zegar, odliczanie do wyjścia z domu oraz wizualny Time Timer dla wsparcia percepcji czasu.',
-    icon: Volume2,
+    title: modules.czas.title,
+    subtitle: modules.czas.purpose,
+    description: modules.czas.purpose,
+    icon: Clock,
     category: 'time',
     status: 'available',
-    badge: 'Aktywny',
     component: SpeakingClockModule,
   },
   {
     id: 'visual-timer',
-    title: 'Wizualny Timer',
-    subtitle: 'Upływ czasu w kolorach',
-    description:
-      'Kolorowy zegar wizualny ułatwiający poczucie upływającego czasu bez presji i stresu.',
-    icon: Timer,
+    title: modules.skupienie.title,
+    subtitle: modules.skupienie.purpose,
+    description: modules.skupienie.purpose,
+    icon: CircleDot,
     category: 'time',
     status: 'available',
-    badge: 'Aktywny',
     component: VisualTimerModule,
   },
   {
     id: 'dopamine-menu',
-    title: 'Menu Dopaminowe',
-    subtitle: 'Zasoby energii i mikronagrody',
-    description:
-      'Osobiste menu aktywności podnoszących poziom dopaminy: przystawki, dania główne, deski przekąsek.',
+    title: modules.energia.title,
+    subtitle: modules.energia.purpose,
+    description: modules.energia.purpose,
     icon: Sparkles,
     category: 'wellbeing',
     status: 'available',
-    badge: 'Aktywny',
     component: DopamineDashboard,
   },
   {
     id: 'micro-tasks',
-    title: 'Mikro-Zadania',
-    subtitle: 'Krok po kroku bez oporu',
-    description:
-      'Rozbijanie paraliżujących zadań na mikrokroki wymagające poniżej 2 minut zaangażowania.',
-    icon: ListTodo,
+    title: modules.start.title,
+    subtitle: modules.start.purpose,
+    description: modules.start.purpose,
+    icon: Footprints,
     category: 'tasks',
     status: 'available',
-    badge: 'Aktywny',
     component: MicroTasksModule,
   },
 ];

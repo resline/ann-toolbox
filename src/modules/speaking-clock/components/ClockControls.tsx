@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { Play, Pause, Square, Volume2, Settings, Loader2 } from 'lucide-react';
+import { Play, Pause, Square, Volume2, Settings, Loader2 } from '../../../lib/icons';
 import { type ClockState } from '../types';
 
 export interface ClockControlsProps {

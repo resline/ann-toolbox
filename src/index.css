@@ -1,3 +1,7 @@
+@import './design/tokens.css';
+@import './design/typography.css';
+@import './design/motion.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -39,11 +43,23 @@
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.25s ease, color 0.25s ease;
   }
+
+  ::selection {
+    background-color: theme('colors.sage.200');
+    color: theme('colors.sage.900');
+  }
 }
 
 @layer utilities {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
   .shadow-soft {
     box-shadow: 0 -4px 20px -2px rgba(0, 0, 0, 0.05);

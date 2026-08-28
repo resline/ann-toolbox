@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, X, RefreshCw } from 'lucide-react';
+import { Sparkles, X, RefreshCw } from '../../../lib/icons';
 import { useDopamineMenuStore } from '../store';
 
 const SOS_ACTIONS = [
@@ -86,8 +86,8 @@ export const DopamineSOSModal: React.FC<DopamineSOSModalProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warmgray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white dark:bg-warmgray-800 rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warmgray-900/50 backdrop-blur-sm duration-200">
+      <div className="relative w-full max-w-md bg-white dark:bg-warmgray-800 rounded-3xl shadow-xl overflow-hidden duration-300">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 text-warmgray-400 hover:bg-warmgray-100 dark:hover:bg-warmgray-700 rounded-full transition-colors"

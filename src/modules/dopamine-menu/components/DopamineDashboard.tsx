@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Sparkles, Filter } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { Plus, Sparkles, Filter } from '../../../lib/icons';
+import * as Icons from '../../../lib/icons';
 import { CategorySection } from './CategorySection';
 import { DopamineCard } from './DopamineCard';
 import { DopamineRouletteModal } from './DopamineRouletteModal';
@@ -63,7 +63,7 @@ export const DopamineDashboard: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-8 animate-in fade-in duration-500">
+    <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-8 duration-500">
       <DopamineBankWidget />
       
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -91,7 +91,7 @@ export const DopamineDashboard: React.FC = () => {
             aria-label="Zakręć kołem dopaminy"
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 min-h-[48px] rounded-2xl font-semibold text-sage-800 bg-sage-100 hover:bg-sage-200 dark:bg-sage-900/40 dark:text-sage-200 dark:hover:bg-sage-900/60 shadow-sm transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500"
           >
-            <Sparkles className="w-4 h-4 text-sage-600 dark:text-sage-400 animate-spin-slow" />
+            <Sparkles className="w-4 h-4 text-sage-600 dark:text-sage-400" />
             <span className="hidden sm:inline">Zakręć!</span>
           </button>
           <button

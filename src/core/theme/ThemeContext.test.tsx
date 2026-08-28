@@ -3,9 +3,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ThemeProvider, useTheme } from './ThemeContext';
-import { THEME_STORAGE_KEY, THEMES } from './theme';
+import { THEME_STORAGE_KEY, THEMES, resolveStoredTheme } from './theme';
 
-// Test consumer component
 const TestThemeConsumer: React.FC = () => {
   const { theme, setTheme, cycleTheme, themeConfig, availableThemes } = useTheme();
 
@@ -15,49 +14,54 @@ const TestThemeConsumer: React.FC = () => {
       <span data-testid="theme-name">{themeConfig.name}</span>
       <span data-testid="is-dark">{themeConfig.isDark ? 'dark' : 'light'}</span>
       <span data-testid="available-count">{availableThemes.length}</span>
-      <button onClick={() => setTheme('dark-warm')} data-testid="btn-set-dark">
-        Set Dark
+      <button onClick={() => setTheme('dusk')} data-testid="btn-set-dusk">
+        dusk
       </button>
-      <button onClick={() => setTheme('oled-night')} data-testid="btn-set-oled">
-        Set OLED
+      <button onClick={() => setTheme('oled')} data-testid="btn-set-oled">
+        oled
       </button>
-      <button onClick={() => setTheme('sage-calm')} data-testid="btn-set-sage">
-        Set Sage
+      <button onClick={() => setTheme('day')} data-testid="btn-set-day">
+        day
       </button>
       <button onClick={cycleTheme} data-testid="btn-cycle">
-        Cycle Theme
+        cycle
       </button>
     </div>
   );
 };
 
+const themeOf = () => document.documentElement.dataset.theme;
+const isDarkClass = () => document.documentElement.classList.contains('dark');
+
 describe('ThemeContext & useTheme', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.className = '';
+    delete document.documentElement.dataset.theme;
   });
 
   afterEach(() => {
     localStorage.clear();
     document.documentElement.className = '';
+    delete document.documentElement.dataset.theme;
   });
 
-  it('provides default theme "sage-calm" when localStorage is empty', () => {
+  it('domyślnie ustawia motyw dzienny, gdy nic nie jest zapisane', () => {
     render(
       <ThemeProvider>
         <TestThemeConsumer />
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('sage-calm');
-    expect(screen.getByTestId('theme-name')).toHaveTextContent(THEMES['sage-calm'].name);
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('day');
+    expect(screen.getByTestId('theme-name')).toHaveTextContent(THEMES.day.name);
     expect(screen.getByTestId('is-dark')).toHaveTextContent('light');
-    expect(document.documentElement.classList.contains('theme-sage-calm')).toBe(true);
-    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(themeOf()).toBe('day');
+    expect(isDarkClass()).toBe(false);
   });
 
-  it('restores theme from localStorage if valid', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'dark-warm');
+  it('przywraca zapisany motyw', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dusk');
 
     render(
       <ThemeProvider>
@@ -65,14 +69,13 @@ describe('ThemeContext & useTheme', () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('dark-warm');
-    expect(screen.getByTestId('is-dark')).toHaveTextContent('dark');
-    expect(document.documentElement.classList.contains('theme-dark-warm')).toBe(true);
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('dusk');
+    expect(themeOf()).toBe('dusk');
+    expect(isDarkClass()).toBe(true);
   });
 
-  it('falls back to "sage-calm" when localStorage has invalid value', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'invalid-unknown-theme');
+  it('wraca do motywu dziennego przy nieznanej wartości', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'nie-taki-motyw');
 
     render(
       <ThemeProvider>
@@ -80,23 +83,22 @@ describe('ThemeContext & useTheme', () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('sage-calm');
-    expect(document.documentElement.classList.contains('theme-sage-calm')).toBe(true);
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('day');
   });
 
-  it('allows overriding with initialTheme prop', () => {
+  it('honoruje initialTheme przekazany propsem', () => {
     render(
-      <ThemeProvider initialTheme="oled-night">
+      <ThemeProvider initialTheme="oled">
         <TestThemeConsumer />
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('oled-night');
-    expect(document.documentElement.classList.contains('theme-oled-night')).toBe(true);
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('oled');
+    expect(themeOf()).toBe('oled');
+    expect(isDarkClass()).toBe(true);
   });
 
-  it('updates document classes and localStorage when setTheme is called', async () => {
+  it('setTheme aktualizuje atrybut na <html> i zapis', async () => {
     const user = userEvent.setup();
 
     render(
@@ -105,62 +107,42 @@ describe('ThemeContext & useTheme', () => {
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('sage-calm');
-    expect(document.documentElement.classList.contains('theme-sage-calm')).toBe(true);
+    await user.click(screen.getByTestId('btn-set-dusk'));
+    expect(themeOf()).toBe('dusk');
+    expect(isDarkClass()).toBe(true);
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dusk');
 
-    // Switch to dark-warm
-    await user.click(screen.getByTestId('btn-set-dark'));
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('dark-warm');
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark-warm');
-    expect(document.documentElement.classList.contains('theme-dark-warm')).toBe(true);
-    expect(document.documentElement.classList.contains('theme-sage-calm')).toBe(false);
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
-
-    // Switch to oled-night
-    await user.click(screen.getByTestId('btn-set-oled'));
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('oled-night');
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('oled-night');
-    expect(document.documentElement.classList.contains('theme-oled-night')).toBe(true);
-    expect(document.documentElement.classList.contains('theme-dark-warm')).toBe(false);
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
-
-    // Switch back to sage-calm
-    await user.click(screen.getByTestId('btn-set-sage'));
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('sage-calm');
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('sage-calm');
-    expect(document.documentElement.classList.contains('theme-sage-calm')).toBe(true);
-    expect(document.documentElement.classList.contains('theme-oled-night')).toBe(false);
-    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    await user.click(screen.getByTestId('btn-set-day'));
+    expect(themeOf()).toBe('day');
+    expect(isDarkClass()).toBe(false);
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('day');
   });
 
-  it('cycles through sage-calm -> dark-warm -> oled-night -> sage-calm', async () => {
+  it('cykl przechodzi day -> dusk -> oled -> day', async () => {
     const user = userEvent.setup();
 
     render(
-      <ThemeProvider initialTheme="sage-calm">
+      <ThemeProvider>
         <TestThemeConsumer />
       </ThemeProvider>
     );
 
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('sage-calm');
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('day');
 
-    // 1st cycle: sage-calm -> dark-warm
     await user.click(screen.getByTestId('btn-cycle'));
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('dark-warm');
-    expect(document.documentElement.classList.contains('theme-dark-warm')).toBe(true);
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('dusk');
+    expect(themeOf()).toBe('dusk');
 
-    // 2nd cycle: dark-warm -> oled-night
     await user.click(screen.getByTestId('btn-cycle'));
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('oled-night');
-    expect(document.documentElement.classList.contains('theme-oled-night')).toBe(true);
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('oled');
+    expect(themeOf()).toBe('oled');
 
-    // 3rd cycle: oled-night -> sage-calm
     await user.click(screen.getByTestId('btn-cycle'));
-    expect(screen.getByTestId('current-theme')).toHaveTextContent('sage-calm');
-    expect(document.documentElement.classList.contains('theme-sage-calm')).toBe(true);
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('day');
+    expect(themeOf()).toBe('day');
   });
 
-  it('provides availableThemes list with all 3 configured themes', () => {
+  it('udostępnia listę wszystkich trzech motywów', () => {
     render(
       <ThemeProvider>
         <TestThemeConsumer />
@@ -170,14 +152,56 @@ describe('ThemeContext & useTheme', () => {
     expect(screen.getByTestId('available-count')).toHaveTextContent('3');
   });
 
-  it('throws an error when useTheme is called outside of ThemeProvider', () => {
-    // Suppress console.error in react error boundary for this test
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('useTheme poza providerem rzuca błąd', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => render(<TestThemeConsumer />)).toThrow(/ThemeProvider/);
+    spy.mockRestore();
+  });
+});
 
-    expect(() => render(<TestThemeConsumer />)).toThrow(
-      'useTheme must be used within a ThemeProvider'
+describe('migracja motywów sprzed rebrandingu', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.className = '';
+    delete document.documentElement.dataset.theme;
+  });
+
+  it.each([
+    ['sage-calm', 'day'],
+    ['dark-warm', 'dusk'],
+    ['oled-night', 'oled'],
+  ])('resolveStoredTheme tłumaczy %s na %s', (legacy, expected) => {
+    expect(resolveStoredTheme(legacy)).toBe(expected);
+  });
+
+  it('resolveStoredTheme zwraca null dla wartości nieznanej', () => {
+    expect(resolveStoredTheme('cokolwiek')).toBeNull();
+    expect(resolveStoredTheme(null)).toBeNull();
+    expect(resolveStoredTheme(42)).toBeNull();
+  });
+
+  it('zapisany stary motyw jest odtworzony, a nie zresetowany do domyślnego', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'oled-night');
+
+    render(
+      <ThemeProvider>
+        <TestThemeConsumer />
+      </ThemeProvider>
     );
 
-    consoleSpy.mockRestore();
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('oled');
+    expect(themeOf()).toBe('oled');
+  });
+
+  it('po migracji zapis jest przepisany na nowy identyfikator', async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'dark-warm');
+
+    render(
+      <ThemeProvider>
+        <TestThemeConsumer />
+      </ThemeProvider>
+    );
+
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dusk');
   });
 });

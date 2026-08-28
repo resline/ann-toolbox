@@ -1,5 +1,6 @@
+import { modules } from '../copy';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Clock } from 'lucide-react';
+import { Clock } from '../lib/icons';
 import {
   registerTool,
   getTools,
@@ -31,35 +32,33 @@ describe('Tool Registry', () => {
     it('has speaking-clock configured as available with correct metadata', () => {
       const clock = getToolById('speaking-clock');
       expect(clock).toBeDefined();
-      expect(clock?.title).toBe('Kotwica Czasu');
-      expect(clock?.subtitle).toBe('Mówiący zegar, odliczanie i Time Timer');
+      expect(clock?.title).toBe(modules.czas.title);
+      expect(clock?.subtitle).toBe(modules.czas.purpose);
       expect(clock?.category).toBe('time');
       expect(clock?.status).toBe('available');
       expect(clock?.icon).toBeDefined();
-      expect(clock?.description).toBe(
-        'Dyskretny mówiący zegar, odliczanie do wyjścia z domu oraz wizualny Time Timer dla wsparcia percepcji czasu.'
-      );
+      expect(clock?.description).toBe(modules.czas.purpose);
     });
 
     it('has planned tools configured as coming_soon', () => {
       const visualTimer = getToolById('visual-timer');
       expect(visualTimer).toBeDefined();
-      expect(visualTimer?.title).toBe('Wizualny Timer');
-      expect(visualTimer?.subtitle).toBe('Upływ czasu w kolorach');
+      expect(visualTimer?.title).toBe(modules.skupienie.title);
+      expect(visualTimer?.subtitle).toBe(modules.skupienie.purpose);
       expect(visualTimer?.category).toBe('time');
       expect(visualTimer?.status).toBe('available');
 
       const dopamineMenu = getToolById('dopamine-menu');
       expect(dopamineMenu).toBeDefined();
-      expect(dopamineMenu?.title).toBe('Menu Dopaminowe');
-      expect(dopamineMenu?.subtitle).toBe('Zasoby energii i mikronagrody');
+      expect(dopamineMenu?.title).toBe(modules.energia.title);
+      expect(dopamineMenu?.subtitle).toBe(modules.energia.purpose);
       expect(dopamineMenu?.category).toBe('wellbeing');
       expect(dopamineMenu?.status).toBe('available');
 
       const microTasks = getToolById('micro-tasks');
       expect(microTasks).toBeDefined();
-      expect(microTasks?.title).toBe('Mikro-Zadania');
-      expect(microTasks?.subtitle).toBe('Krok po kroku bez oporu');
+      expect(microTasks?.title).toBe(modules.start.title);
+      expect(microTasks?.subtitle).toBe(modules.start.purpose);
       expect(microTasks?.category).toBe('tasks');
       expect(microTasks?.status).toBe('available');
     });

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../../../lib/cn';
 
 interface BreathingCircleProps {
   isActive?: boolean;
@@ -97,14 +96,13 @@ export const BreathingCircle: React.FC<BreathingCircleProps> = () => {
           <button
             key={key}
             onClick={() => handleTechniqueChange(key)}
-            className={twMerge(
-              clsx(
+            className={cn(
                 'px-4 py-2 rounded-full text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500',
                 activeTechKey === key 
                   ? 'bg-white dark:bg-warmgray-700 text-warmgray-900 dark:text-white shadow-sm' 
                   : 'text-warmgray-500 hover:text-warmgray-700 dark:text-warmgray-400 dark:hover:text-warmgray-200'
               )
-            )}
+            }
           >
             {TECHNIQUES[key].name}
           </button>
@@ -119,15 +117,14 @@ export const BreathingCircle: React.FC<BreathingCircleProps> = () => {
       >
         {/* Outer Aura */}
         <div 
-          className={twMerge(
-            clsx(
+          className={cn(
               'absolute inset-0 rounded-full opacity-30 transition-all ease-in-out',
               isRunning ? 'animate-pulse' : '',
               currentPhase.color,
               scaleClass,
               transitionDuration
             )
-          )}
+          }
           style={{ 
             transitionDuration: isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract') ? `${currentPhase.duration}s` : '1s'
           }}
@@ -135,13 +132,12 @@ export const BreathingCircle: React.FC<BreathingCircleProps> = () => {
         
         {/* Middle Ring */}
         <div 
-          className={twMerge(
-            clsx(
+          className={cn(
               'absolute inset-4 rounded-full opacity-50 backdrop-blur-sm transition-all ease-in-out',
               currentPhase.color,
               scaleClass
             )
-          )}
+          }
           style={{ 
             transitionDuration: isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract') ? `${currentPhase.duration}s` : '1s'
           }}
@@ -149,14 +145,13 @@ export const BreathingCircle: React.FC<BreathingCircleProps> = () => {
 
         {/* Center Circle */}
         <div 
-          className={twMerge(
-            clsx(
+          className={cn(
               'relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all ease-in-out',
               currentPhase.color,
               currentPhase.glow,
               scaleClass
             )
-          )}
+          }
           style={{ 
             transitionDuration: isRunning && (currentPhase.action === 'expand' || currentPhase.action === 'contract') ? `${currentPhase.duration}s` : '1s'
           }}
@@ -180,12 +175,11 @@ export const BreathingCircle: React.FC<BreathingCircleProps> = () => {
 
       {/* Synchronized Text */}
       <div className="h-12 flex items-center justify-center">
-        <p className={twMerge(
-          clsx(
+        <p className={cn(
             "text-xl sm:text-2xl font-light transition-all duration-500 text-center",
             isRunning ? "text-warmgray-900 dark:text-white" : "text-warmgray-400"
           )
-        )}>
+        }>
           {isRunning 
             ? `${currentPhase.name} (${currentPhase.duration}s)...` 
             : "Wybierz technikę i naciśnij Start"}

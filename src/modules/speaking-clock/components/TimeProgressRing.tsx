@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { type ClockState, type ClockMode } from '../types';
-import { Volume2, Sparkles } from 'lucide-react';
+import { Volume2, Sparkles } from '../../../lib/icons';
 
 export interface TimeProgressRingProps {
   secondsUntilNext: number;
@@ -118,7 +118,7 @@ export const TimeProgressRing: React.FC<TimeProgressRingProps> = ({
 
       {/* Last Announcement Pill */}
       {lastAnnouncementText && (
-        <div className="mt-4 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-sage-50 dark:bg-sage-950/40 border border-sage-200/60 dark:border-sage-900/60 text-xs text-sage-800 dark:text-sage-200 max-w-xs text-center animate-fade-in">
+        <div className="mt-4 flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-sage-50 dark:bg-sage-950/40 border border-sage-200/60 dark:border-sage-900/60 text-xs text-sage-800 dark:text-sage-200 max-w-xs text-center">
           <Sparkles className="w-3.5 h-3.5 text-sage-500 shrink-0" />
           <span className="truncate">
             Ostatnio: <span className="italic font-medium">„{lastAnnouncementText}”</span>

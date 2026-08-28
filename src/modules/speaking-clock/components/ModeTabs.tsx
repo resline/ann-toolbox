@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Clock, Sparkles, Footprints } from 'lucide-react';
+import { Clock, Sparkles, Footprints } from '../../../lib/icons';
 import { ClockMode } from '../types';
 
 export interface ModeTabsProps {

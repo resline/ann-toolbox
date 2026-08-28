@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings2, RefreshCcw } from 'lucide-react';
+import { Settings2, RefreshCcw } from '../../../lib/icons';
 import { MultiPhaseProgressDisc } from './MultiPhaseProgressDisc';
 import { BreathingCircle } from './BreathingCircle';
 import { AmbienceControls } from './AmbienceControls';
@@ -65,7 +65,7 @@ export const VisualTimerModule: React.FC = () => {
   const progress = 100 - (timeLeftSec / (currentPhase.duration * 60)) * 100;
 
   return (
-    <div className="w-full h-full max-w-lg mx-auto flex flex-col px-4 py-6 sm:py-8 space-y-6 animate-in fade-in duration-500">
+    <div className="w-full h-full max-w-lg mx-auto flex flex-col px-4 py-6 sm:py-8 space-y-6 duration-500">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-warmgray-900 dark:text-white tracking-tight">

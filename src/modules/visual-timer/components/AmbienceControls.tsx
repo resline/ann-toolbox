@@ -1,7 +1,6 @@
 import React from 'react';
-import { Volume2, VolumeX, CloudRain, Waves, TreePine } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { Volume2, VolumeX, CloudRain, Waves, TreePine } from '../../../lib/icons';
+import { cn } from '../../../lib/cn';
 
 interface AmbienceControlsProps {
   activeSound: string | null;
@@ -76,14 +75,13 @@ export const AmbienceControls: React.FC<AmbienceControlsProps> = ({
             <button
               key={sound.id}
               onClick={() => onToggleSound(sound.id)}
-              className={twMerge(
-                clsx(
+              className={cn(
                   'relative overflow-hidden flex flex-col items-center justify-center gap-3 p-4 min-h-[96px] rounded-2xl transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sage-500 group',
                   isActive
                     ? 'bg-sage-100/80 text-sage-700 dark:bg-sage-900/60 dark:text-sage-300 shadow-inner'
                     : 'bg-white/50 text-warmgray-500 hover:bg-white hover:shadow-sm hover:-translate-y-0.5 dark:bg-warmgray-800/50 dark:text-warmgray-400 dark:hover:bg-warmgray-700/80'
                 )
-              )}
+              }
               aria-pressed={isActive}
             >
               {isActive && (
@@ -91,13 +89,13 @@ export const AmbienceControls: React.FC<AmbienceControlsProps> = ({
               )}
               
               <div className="relative z-10">
-                <Icon className={clsx(
+                <Icon className={cn(
                   "w-7 h-7 transition-transform duration-500", 
                   isActive ? "scale-110 drop-shadow-sm" : "group-hover:scale-110 group-hover:text-warmgray-700 dark:group-hover:text-warmgray-200"
                 )} />
               </div>
               
-              <span className={clsx(
+              <span className={cn(
                 "relative z-10 text-xs font-semibold tracking-wide",
                 isActive ? "" : "group-hover:text-warmgray-700 dark:group-hover:text-warmgray-200"
               )}>

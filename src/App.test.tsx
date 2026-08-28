@@ -2,103 +2,173 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
-
+import { shellIds, terazIds } from './app/testIds';
+import { ROUTES } from './app/routes';
 import * as speechService from './modules/speaking-clock/services/speechService';
 
-describe('App Component', () => {
+/**
+ * Testy powłoki. Selektory to role ARIA i identyfikatory ze stałych —
+ * ani jednego polskiego literału, żeby zmiana brzmienia napisów nie wymagała
+ * dotykania tego pliku. Za poprawność samych napisów odpowiada src/copy/copy.test.ts.
+ */
+describe('Powłoka aplikacji', () => {
   beforeEach(() => {
     localStorage.clear();
     document.documentElement.className = '';
+    delete document.documentElement.dataset.theme;
+    window.history.replaceState({}, '', '/');
     vi.spyOn(speechService, 'getPolishVoices').mockResolvedValue([]);
   });
 
-  it('renders application with header and default view (Głos Czasu)', async () => {
+  it('startuje na ekranie „Teraz", a nie w module', () => {
     render(<App />);
-
-    expect(screen.getByText('Narzędziownik Ani')).toBeInTheDocument();
-    // Speaking clock elements should be present
-    expect(await screen.findByRole('button', { name: /start/i })).toBeInTheDocument();
+    expect(screen.getByTestId(terazIds.greeting)).toBeInTheDocument();
   });
 
-  it('allows navigating to Hub dashboard and back to Speaking Clock', async () => {
+  it('pokazuje wejście do każdego z czterech modułów', () => {
+    render(<App />);
+    for (const route of ROUTES.filter((r) => r.toolId)) {
+      expect(screen.getByTestId(terazIds.entry(route.toolId!))).toBeInTheDocument();
+    }
+  });
+
+  it('nawigacja dolna ma pozycję dla każdej trasy i oznacza aktywną', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Click Hub / back button in Bottom Nav
-    const hubButton = screen.getByRole('button', { name: /hub/i });
-    await user.click(hubButton);
+    const nav = screen.getByTestId(shellIds.tabBar);
+    expect(nav).toHaveAttribute('aria-label');
 
-    // Should now be on HubDashboard
-    expect(screen.getByText(/Witaj w swojej spokojnej przestrzeni, Aniu/i)).toBeInTheDocument();
-    expect(screen.getByText(/Menu Dopaminowe/i)).toBeInTheDocument();
+    for (const route of ROUTES) {
+      expect(screen.getByTestId(shellIds.tab(route.id))).toBeInTheDocument();
+    }
 
-    // Click "Gubię poczucie czasu" quick action button in Hub
-    const speakingClockCard = screen.getByRole('button', { name: /Gubię poczucie czasu/i });
-    await user.click(speakingClockCard);
+    expect(screen.getByTestId(shellIds.tab('teraz'))).toHaveAttribute('aria-current', 'page');
 
-    // Should return to SpeakingClock view
-    expect(screen.getByRole('button', { name: /start/i })).toBeInTheDocument();
+    await user.click(screen.getByTestId(shellIds.tab('energia')));
+    expect(screen.getByTestId(shellIds.tab('energia'))).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByTestId(shellIds.tab('teraz'))).not.toHaveAttribute('aria-current');
   });
 
-  it('switches theme through header theme button', async () => {
+  it('wejście z ekranu „Teraz" otwiera moduł i zmienia adres', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    const themeButton = screen.getByRole('button', { name: /zmień motyw/i });
-    expect(document.documentElement.classList.contains('theme-sage-calm')).toBe(true);
+    await user.click(screen.getByTestId(terazIds.entry('dopamine-menu')));
 
-    await user.click(themeButton);
-    expect(document.documentElement.classList.contains('theme-dark-warm')).toBe(true);
+    expect(window.location.pathname).toBe('/energia');
+    expect(screen.queryByTestId(terazIds.greeting)).not.toBeInTheDocument();
   });
 
-  it('handles PWA beforeinstallprompt event and shows install banner', async () => {
+  it('przycisk Wstecz wraca z modułu na ekran „Teraz", nie zamyka aplikacji', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Initially no install banner
-    expect(screen.queryByTestId('pwa-install-banner')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId(shellIds.tab('start')));
+    expect(window.location.pathname).toBe('/start');
 
-    // Simulate beforeinstallprompt event
+    window.history.back();
+    await waitFor(() => expect(window.location.pathname).toBe('/'));
+    await waitFor(() => expect(screen.getByTestId(terazIds.greeting)).toBeInTheDocument());
+  });
+
+  it('wchodzi wprost w moduł po otwarciu adresu głębokiego', () => {
+    window.history.replaceState({}, '', '/energia');
+    render(<App />);
+
+    expect(screen.queryByTestId(terazIds.greeting)).not.toBeInTheDocument();
+    expect(screen.getByTestId(shellIds.tab('energia'))).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('nagłówek pokazuje markę na ekranie startowym i nazwę modułu w module', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const title = screen.getByTestId(shellIds.headerTitle);
+    const brand = title.textContent;
+
+    await user.click(screen.getByTestId(shellIds.tab('czas')));
+    expect(screen.getByTestId(shellIds.headerTitle).textContent).not.toBe(brand);
+  });
+
+  it('ustawienia otwierają się jako arkusz i pozwalają zmienić motyw', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(document.documentElement.dataset.theme).toBe('day');
+    await user.click(screen.getByTestId(shellIds.settingsButton));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+
+    const options = screen.getAllByRole('radio');
+    // trzy motywy + trzy ustawienia ruchu
+    expect(options.length).toBeGreaterThanOrEqual(6);
+
+    await user.click(options[1]);
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('dusk'));
+  });
+
+  it('ustawia atrybut modułu na powłoce, żeby akcent szedł za trasą', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.getByTestId(shellIds.root)).not.toHaveAttribute('data-module');
+
+    await user.click(screen.getByTestId(shellIds.tab('start')));
+    expect(screen.getByTestId(shellIds.root)).toHaveAttribute('data-module', 'start');
+  });
+});
+
+describe('Instalacja PWA', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState({}, '', '/');
+    vi.spyOn(speechService, 'getPolishVoices').mockResolvedValue([]);
+  });
+
+  function fireInstallPrompt(outcome: 'accepted' | 'dismissed' = 'accepted') {
     const promptMock = vi.fn().mockResolvedValue(undefined);
-    const installEvent = new Event('beforeinstallprompt') as any;
-    installEvent.prompt = promptMock;
-    installEvent.userChoice = Promise.resolve({ outcome: 'accepted' });
+    const event = new Event('beforeinstallprompt') as Event & {
+      prompt: () => Promise<void>;
+      userChoice: Promise<{ outcome: string }>;
+    };
+    event.prompt = promptMock;
+    event.userChoice = Promise.resolve({ outcome });
+    fireEvent(window, event);
+    return promptMock;
+  }
 
-    fireEvent(window, installEvent);
+  it('pokazuje pasek dopiero po zdarzeniu przeglądarki', async () => {
+    render(<App />);
+    expect(screen.queryByTestId(shellIds.installBanner)).not.toBeInTheDocument();
 
-    // Install banner should appear
-    await waitFor(() => {
-      expect(screen.getByTestId('pwa-install-banner')).toBeInTheDocument();
-    });
+    fireInstallPrompt();
+    await waitFor(() => expect(screen.getByTestId(shellIds.installBanner)).toBeInTheDocument());
+  });
 
-    const installButton = screen.getByRole('button', { name: /zainstaluj/i });
-    await user.click(installButton);
+  it('uruchamia natywny monit i chowa pasek', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const promptMock = fireInstallPrompt();
+
+    await waitFor(() => expect(screen.getByTestId(shellIds.installBanner)).toBeInTheDocument());
+    await user.click(screen.getByTestId(shellIds.installAccept));
 
     expect(promptMock).toHaveBeenCalledTimes(1);
-
-    // Banner should disappear after prompt accepted
-    await waitFor(() => {
-      expect(screen.queryByTestId('pwa-install-banner')).not.toBeInTheDocument();
-    });
+    await waitFor(() =>
+      expect(screen.queryByTestId(shellIds.installBanner)).not.toBeInTheDocument()
+    );
   });
 
-  it('allows dismissing PWA install banner', async () => {
+  it('pozwala odrzucić pasek', async () => {
     const user = userEvent.setup();
     render(<App />);
+    fireInstallPrompt('dismissed');
 
-    const installEvent = new Event('beforeinstallprompt') as any;
-    installEvent.prompt = vi.fn();
-    installEvent.userChoice = Promise.resolve({ outcome: 'dismissed' });
+    await waitFor(() => expect(screen.getByTestId(shellIds.installBanner)).toBeInTheDocument());
+    await user.click(screen.getByTestId(shellIds.installDismiss));
 
-    fireEvent(window, installEvent);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('pwa-install-banner')).toBeInTheDocument();
-    });
-
-    const dismissButton = screen.getByRole('button', { name: /pomiń|ukryj|zamknij/i });
-    await user.click(dismissButton);
-
-    expect(screen.queryByTestId('pwa-install-banner')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(shellIds.installBanner)).not.toBeInTheDocument();
   });
 });
