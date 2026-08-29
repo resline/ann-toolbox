@@ -55,6 +55,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
     availableVoices,
     isLoadingVoices,
     isTestingVoice,
+    speechFailure,
     totalSpanSeconds,
     secondsRemaining,
     departureLabel,
@@ -124,6 +125,25 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
         <Text data-testid={czasIds.noVoiceNotice} size="sm" tone="muted" className="text-center">
           {czas.notice.noPolishVoice}
         </Text>
+      )}
+
+      {speechFailure && (
+        <div
+          role="alert"
+          data-testid={czasIds.speechFailure}
+          className="flex flex-col gap-2 rounded-control border border-caution/40 bg-caution-soft p-3"
+        >
+          <Text size="sm">{czas.notice.speechFailed}</Text>
+          <Button
+            data-testid={czasIds.retryVoice}
+            variant="secondary"
+            tone="module"
+            onClick={testVoiceNow}
+            loading={isTestingVoice}
+          >
+            {czas.action.retryVoice}
+          </Button>
+        </div>
       )}
 
       {/* tarcza — pierwsza rzecz pod przełącznikiem, zawsze nad zgięciem ekranu */}

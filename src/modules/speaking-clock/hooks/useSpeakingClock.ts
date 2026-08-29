@@ -14,6 +14,7 @@ import {
   type AnnouncementPayload,
   type DepartureSettings,
   type TimeTimerSettings,
+  type SpeechOutcome,
   DEFAULT_SPEAKING_CLOCK_SETTINGS,
 } from '../types';
 import { BackgroundTimerEngine } from '../services/backgroundTimerEngine';
@@ -128,6 +129,7 @@ export interface UseSpeakingClockReturn {
   availableVoices: SpeechSynthesisVoice[];
   isLoadingVoices: boolean;
   isTestingVoice: boolean;
+  speechFailure: SpeechOutcome | null;
   totalSpanSeconds: number;
   secondsRemaining: number;
   departureLabel: string;
@@ -159,6 +161,7 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [isLoadingVoices, setIsLoadingVoices] = useState<boolean>(true);
   const [isTestingVoice, setIsTestingVoice] = useState<boolean>(false);
+  const [speechFailure, setSpeechFailure] = useState<SpeechOutcome | null>(null);
   const [runningSecondsRemaining, setRunningSecondsRemaining] = useState<number | null>(null);
   const [runningTotalSpanSeconds, setRunningTotalSpanSeconds] = useState<number | null>(null);
 
@@ -210,6 +213,20 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
       },
       onAnnounce: (payload: AnnouncementPayload) => {
         setLastAnnouncementText(payload.text);
+      },
+      onSpeechOutcome: (outcome: SpeechOutcome) => {
+        if (
+          outcome.status === 'unavailable' ||
+          outcome.status === 'not-started' ||
+          outcome.status === 'failed'
+        ) {
+          setSpeechFailure(outcome);
+        } else if (
+          outcome.status === 'completed' ||
+          outcome.status === 'started-unconfirmed'
+        ) {
+          setSpeechFailure(null);
+        }
       },
     });
 
@@ -267,23 +284,26 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
   }, []);
 
   const updateSettings = useCallback((partial: Partial<SpeakingClockSettings>) => {
-    setSettings((prev) => {
-      const next = {
-        ...prev,
-        ...partial,
-        departure: {
-          ...prev.departure,
-          ...(partial.departure || {}),
-        },
-        timeTimer: {
-          ...prev.timeTimer,
-          ...(partial.timeTimer || {}),
-        },
-      };
-      persistSettings(next);
-      engineRef.current?.updateSettings(next);
-      return next;
-    });
+    const previous = settingsRef.current;
+    const next: SpeakingClockSettings = {
+      ...previous,
+      ...partial,
+      departure: {
+        ...previous.departure,
+        ...(partial.departure || {}),
+      },
+      timeTimer: {
+        ...previous.timeTimer,
+        ...(partial.timeTimer || {}),
+      },
+    };
+
+    // Keep the ref ahead of the engine's synchronous onTick callback so live
+    // interval changes calculate progress against the newly selected cadence.
+    settingsRef.current = next;
+    persistSettings(next);
+    engineRef.current?.updateSettings(next);
+    setSettings(next);
   }, []);
 
   const setDepartureSettings = useCallback(
@@ -449,6 +469,7 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
     availableVoices,
     isLoadingVoices,
     isTestingVoice,
+    speechFailure,
     totalSpanSeconds,
     secondsRemaining,
     departureLabel,

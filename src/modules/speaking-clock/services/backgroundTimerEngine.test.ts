@@ -21,7 +21,12 @@ vi.mock('../../../lib/audio/chime', () => ({
 }));
 
 vi.mock('./speechService', () => ({
-  speakText: vi.fn().mockResolvedValue(undefined),
+  prepareSpeech: vi.fn().mockReturnValue(true),
+  speakText: vi.fn().mockResolvedValue({
+    status: 'completed',
+    attempts: 1,
+    visibilityState: 'visible',
+  }),
   stopSpeaking: vi.fn(),
   isSpeechSynthesisSupported: vi.fn().mockReturnValue(true),
 }));
@@ -330,6 +335,61 @@ describe('BackgroundTimerEngine', () => {
       expect(announcements[0].text).toContain('Dwunasta w południe');
       expect(chimeSynthesizer.playChime).toHaveBeenCalledTimes(1);
       expect(speechService.speakText).toHaveBeenCalledTimes(1);
+      expect(speechService.prepareSpeech).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not start speech after an idle manual test is stopped during its chime', async () => {
+      let finishChime!: () => void;
+      vi.mocked(chimeSynthesizer.playChime).mockReturnValueOnce(
+        new Promise<void>((resolve) => {
+          finishChime = resolve;
+        })
+      );
+      const engine = new BackgroundTimerEngine({ chimeEnabled: true });
+
+      const announcementPromise = engine.triggerImmediateAnnouncement();
+      expect(chimeSynthesizer.playChime).toHaveBeenCalledTimes(1);
+
+      // Manual tests are allowed while idle; stop/destroy must still invalidate them.
+      engine.stop();
+      finishChime();
+      await announcementPromise;
+
+      expect(speechService.speakText).not.toHaveBeenCalled();
+      expect(speechService.stopSpeaking).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores the stale outcome when a newer manual test replaces an active one', async () => {
+      let finishFirstSpeech!: (outcome: Awaited<ReturnType<typeof speechService.speakText>>) => void;
+      vi.mocked(speechService.speakText)
+        .mockImplementationOnce(
+          () => new Promise((resolve) => {
+            finishFirstSpeech = resolve;
+          })
+        )
+        .mockResolvedValueOnce({
+          status: 'completed',
+          attempts: 1,
+          visibilityState: 'visible',
+        });
+      const onSpeechOutcome = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        { chimeEnabled: false },
+        { onSpeechOutcome }
+      );
+
+      const first = engine.triggerImmediateAnnouncement();
+      const second = engine.triggerImmediateAnnouncement();
+      await second;
+      finishFirstSpeech({
+        status: 'completed',
+        attempts: 1,
+        visibilityState: 'visible',
+      });
+      await first;
+
+      expect(speechService.stopSpeaking).toHaveBeenCalledTimes(1);
+      expect(onSpeechOutcome).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -404,6 +464,113 @@ describe('BackgroundTimerEngine', () => {
 
       engine.stop();
     });
+
+    it('starts a full new relative interval at the moment of a live change', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 0, 0));
+      const ticks: TickPayload[] = [];
+      const announcements: AnnouncementPayload[] = [];
+      const engine = new BackgroundTimerEngine(
+        { intervalMinutes: 5, clockSync: false },
+        {
+          onTick: (tick) => ticks.push(tick),
+          onAnnounce: (announcement) => announcements.push(announcement),
+        }
+      );
+
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+
+      engine.updateSettings({ intervalMinutes: 10 });
+      const afterChange = ticks[ticks.length - 1];
+      expect(afterChange.remainingSecondsToNextAnnouncement).toBe(10 * 60);
+      expect(afterChange.nextAnnouncementTime?.getTime()).toBe(
+        new Date(2026, 7, 27, 10, 12, 0).getTime()
+      );
+      expect(announcements).toHaveLength(0);
+
+      await vi.advanceTimersByTimeAsync(9 * 60 * 1000 + 59_750);
+      expect(announcements).toHaveLength(0);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(announcements).toHaveLength(1);
+
+      engine.stop();
+    });
+
+    it('uses the nearest future wall-clock boundary after a live synced change', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 7, 0));
+      const ticks: TickPayload[] = [];
+      const announcements: AnnouncementPayload[] = [];
+      const engine = new BackgroundTimerEngine(
+        { intervalMinutes: 15, clockSync: true },
+        {
+          onTick: (tick) => ticks.push(tick),
+          onAnnounce: (announcement) => announcements.push(announcement),
+        }
+      );
+
+      await engine.start();
+      engine.updateSettings({ intervalMinutes: 5 });
+
+      const afterChange = ticks[ticks.length - 1];
+      expect(afterChange.nextAnnouncementTime?.getTime()).toBe(
+        new Date(2026, 7, 27, 10, 10, 0).getTime()
+      );
+      expect(afterChange.remainingSecondsToNextAnnouncement).toBe(3 * 60);
+      expect(announcements).toHaveLength(0);
+
+      engine.stop();
+    });
+
+    it('does not reschedule when the selected interval or unrelated settings stay unchanged', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 0, 0));
+      const ticks: TickPayload[] = [];
+      const engine = new BackgroundTimerEngine(
+        { intervalMinutes: 5, clockSync: false },
+        { onTick: (tick) => ticks.push(tick) }
+      );
+
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      const targetBefore = ticks[ticks.length - 1].nextAnnouncementTime?.getTime();
+
+      engine.updateSettings({ intervalMinutes: 5 });
+      engine.updateSettings({ volume: 0.5 });
+      await vi.advanceTimersByTimeAsync(250);
+
+      expect(ticks[ticks.length - 1].nextAnnouncementTime?.getTime()).toBe(targetBefore);
+      expect(ticks[ticks.length - 1].remainingSecondsToNextAnnouncement).toBe(180);
+
+      engine.stop();
+    });
+
+    it('starts an interval selected while paused from the moment of resume', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 0, 0));
+      const ticks: TickPayload[] = [];
+      const announcements: AnnouncementPayload[] = [];
+      const engine = new BackgroundTimerEngine(
+        { intervalMinutes: 5, clockSync: false },
+        {
+          onTick: (tick) => ticks.push(tick),
+          onAnnounce: (announcement) => announcements.push(announcement),
+        }
+      );
+
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+      engine.pause();
+      await vi.advanceTimersByTimeAsync(3 * 60 * 1000);
+      engine.updateSettings({ intervalMinutes: 10 });
+      await engine.resume();
+
+      const afterResume = ticks[ticks.length - 1];
+      expect(afterResume.remainingSecondsToNextAnnouncement).toBe(10 * 60);
+      expect(afterResume.nextAnnouncementTime?.getTime()).toBe(
+        new Date(2026, 7, 27, 10, 15, 0).getTime()
+      );
+      expect(announcements).toHaveLength(0);
+
+      engine.stop();
+    });
   });
 
   describe('MediaSession Integration', () => {
@@ -474,6 +641,33 @@ describe('BackgroundTimerEngine', () => {
       await engine.triggerImmediateAnnouncement();
 
       expect(onError).toHaveBeenCalledWith(error);
+    });
+
+    it('reports a speech start failure without stopping the timer', async () => {
+      vi.mocked(speechService.speakText).mockResolvedValueOnce({
+        status: 'not-started',
+        attempts: 2,
+        visibilityState: 'hidden',
+      });
+      const onSpeechOutcome = vi.fn();
+      const onError = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        { chimeEnabled: false },
+        { onSpeechOutcome, onError }
+      );
+
+      await engine.start();
+      await engine.triggerImmediateAnnouncement();
+
+      expect(onSpeechOutcome).toHaveBeenCalledWith({
+        status: 'not-started',
+        attempts: 2,
+        visibilityState: 'hidden',
+      });
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(engine.getState()).toBe('running');
+
+      engine.stop();
     });
   });
 
@@ -961,4 +1155,3 @@ describe('SilentAudioLoop', () => {
     loop.stop();
   });
 });
-

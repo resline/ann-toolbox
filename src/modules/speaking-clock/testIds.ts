@@ -19,6 +19,8 @@ export const czasIds = {
   intervalPreset: (minutes: number) => `czas-interval-${minutes}`,
 
   noVoiceNotice: 'czas-no-voice',
+  speechFailure: 'czas-speech-failure',
+  retryVoice: 'czas-retry-voice',
   statusBadge: 'czas-status',
 
   sheet: 'czas-sheet',

@@ -9,6 +9,7 @@ import * as speechService from './services/speechService';
 // Mock Web Speech & Chime services
 vi.mock('./services/speechService', () => ({
   isSpeechSynthesisSupported: vi.fn(() => true),
+  prepareSpeech: vi.fn(() => true),
   getAllVoices: vi.fn(async () => [
     { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
     { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
@@ -17,7 +18,11 @@ vi.mock('./services/speechService', () => ({
     { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
     { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
   ]),
-  speakText: vi.fn(async () => {}),
+  speakText: vi.fn(async () => ({
+    status: 'completed',
+    attempts: 1,
+    visibilityState: 'visible',
+  })),
   stopSpeaking: vi.fn(),
   isSpeaking: vi.fn(() => false),
 }));
@@ -107,6 +112,24 @@ describe('Moduł Czas', () => {
     });
   });
 
+  it('pozwala zmienić interwał bez pauzowania działającego zegara', async () => {
+    const user = userEvent.setup();
+    render(<SpeakingClockModule />);
+
+    await user.click(screen.getByTestId(czasIds.primaryAction));
+    await waitFor(() => expect(screen.getByTestId(czasIds.modeTab('focus'))).toBeDisabled());
+    const runningStatus = screen.getByTestId(czasIds.statusBadge).textContent;
+
+    await user.click(screen.getByTestId(czasIds.settingsRow));
+    await screen.findByRole('dialog');
+    const tenMinutes = screen.getByTestId(czasIds.intervalPreset(10));
+    expect(tenMinutes).toBeEnabled();
+
+    await user.click(tenMinutes);
+    expect(tenMinutes).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId(czasIds.statusBadge).textContent).toBe(runningStatus);
+  });
+
   it('wiersz podsumowania otwiera arkusz ustawień', async () => {
     const user = userEvent.setup();
     render(<SpeakingClockModule />);
@@ -142,6 +165,31 @@ describe('Moduł Czas', () => {
     render(<SpeakingClockModule />);
 
     expect(await screen.findByTestId(czasIds.noVoiceNotice)).toBeInTheDocument();
+  });
+
+  it('pokazuje błąd startu mowy i pozwala ponowić test bez zatrzymywania zegara', async () => {
+    vi.mocked(speechService.speakText).mockResolvedValueOnce({
+      status: 'not-started',
+      attempts: 2,
+      visibilityState: 'hidden',
+    });
+    const user = userEvent.setup();
+    render(<SpeakingClockModule />);
+
+    await user.click(screen.getByTestId(czasIds.primaryAction));
+    const runningStatus = screen.getByTestId(czasIds.statusBadge).textContent;
+    await user.click(screen.getByTestId(czasIds.settingsRow));
+    await user.click(screen.getByTestId(czasIds.sheetTab('voice')));
+    await user.click(screen.getByTestId(czasIds.secondaryAction));
+
+    expect(await screen.findByTestId(czasIds.speechFailure)).toHaveAttribute('role', 'alert');
+    expect(screen.getByTestId(czasIds.statusBadge).textContent).toBe(runningStatus);
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await user.click(screen.getByTestId(czasIds.retryVoice));
+    await waitFor(() => expect(screen.queryByTestId(czasIds.speechFailure)).not.toBeInTheDocument());
+    expect(screen.getByTestId(czasIds.statusBadge).textContent).toBe(runningStatus);
   });
 
   it('pokazuje szybkie korekty czasu dopiero po starcie odliczania', async () => {

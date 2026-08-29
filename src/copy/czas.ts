@@ -18,6 +18,7 @@ export const czas = {
 
   action: {
     testVoice: 'Posłuchaj głosu',
+    retryVoice: 'Przetestuj głos',
     openSettings: 'Ustawienia czasu',
     adjustPlus: (minutes: number) => `Dodaj ${minutes} min`,
     adjustMinus: (minutes: number) => `Odejmij ${minutes} min`,
@@ -35,6 +36,7 @@ export const czas = {
   notice: {
     noPolishVoice:
       'Ten telefon nie ma polskiego głosu. Zegar zadzwoni gongiem, ale nie powie godziny.',
+    speechFailed: 'Nie udało się uruchomić głosu. Zegar nadal działa.',
   },
 
   interval: {

@@ -3,9 +3,12 @@ import {
   isSpeechSynthesisSupported,
   getAllVoices,
   getPolishVoices,
+  prepareSpeech,
   speakText,
   stopSpeaking,
   isSpeaking,
+  SPEECH_RETRY_DELAY_MS,
+  SPEECH_START_TIMEOUT_MS,
   type SpeechOptions,
 } from './speechService';
 
@@ -60,6 +63,7 @@ class MockSpeechSynthesis implements SpeechSynthesis {
   speak = vi.fn().mockImplementation((utterance: MockSpeechSynthesisUtterance) => {
     this.speaking = true;
     lastSpokenUtterance = utterance;
+    spokenUtterances.push(utterance);
 
     const originalOnEnd = utterance.onend;
     utterance.onend = (ev) => {
@@ -123,12 +127,14 @@ class MockSpeechSynthesis implements SpeechSynthesis {
 
 let mockSynthesis: MockSpeechSynthesis;
 let lastSpokenUtterance: MockSpeechSynthesisUtterance | null = null;
+let spokenUtterances: MockSpeechSynthesisUtterance[] = [];
 
 describe('speechService', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockSynthesis = new MockSpeechSynthesis();
     lastSpokenUtterance = null;
+    spokenUtterances = [];
 
     Object.defineProperty(window, 'speechSynthesis', {
       value: mockSynthesis,
@@ -193,8 +199,11 @@ describe('speechService', () => {
       expect(voices).toEqual([]);
     });
 
-    it('speakText resolves without error', async () => {
-      await expect(speakText('Dzień dobry')).resolves.toBeUndefined();
+    it('speakText reports that synthesis is unavailable', async () => {
+      await expect(speakText('Dzień dobry')).resolves.toMatchObject({
+        status: 'unavailable',
+        attempts: 0,
+      });
     });
 
     it('stopSpeaking does not throw', () => {
@@ -291,12 +300,19 @@ describe('speechService', () => {
   });
 
   describe('speakText', () => {
+    it('prepares speech synchronously during the user Start gesture', () => {
+      expect(prepareSpeech()).toBe(true);
+      expect(mockSynthesis.resume).toHaveBeenCalledTimes(1);
+      expect(mockSynthesis.getVoices).toHaveBeenCalledTimes(1);
+    });
+
     it('creates utterance, sets defaults and speaks', async () => {
       const plVoice = createMockVoice({ name: 'Zosia', lang: 'pl-PL', voiceURI: 'pl-zosia' });
       mockSynthesis.setVoices([plVoice]);
 
       const speakPromise = speakText('Jest godzina dwunasta zero zero');
-      expect(mockSynthesis.cancel).toHaveBeenCalled();
+      expect(mockSynthesis.cancel).not.toHaveBeenCalled();
+      expect(mockSynthesis.resume).toHaveBeenCalledTimes(1);
       expect(mockSynthesis.speak).toHaveBeenCalled();
       expect(lastSpokenUtterance).not.toBeNull();
       expect(lastSpokenUtterance?.text).toBe('Jest godzina dwunasta zero zero');
@@ -309,7 +325,10 @@ describe('speechService', () => {
 
       // Simulate onend
       lastSpokenUtterance?.onend?.({} as SpeechSynthesisEvent);
-      await speakPromise;
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'completed',
+        attempts: 1,
+      });
 
       expect(isSpeaking()).toBe(false);
     });
@@ -390,42 +409,119 @@ describe('speechService', () => {
       await speakPromise;
     });
 
-    it('resolves immediately for empty or whitespace-only text', async () => {
-      await expect(speakText('')).resolves.toBeUndefined();
-      await expect(speakText('   ')).resolves.toBeUndefined();
+    it('reports an empty request without touching synthesis', async () => {
+      await expect(speakText('')).resolves.toMatchObject({ status: 'empty', attempts: 0 });
+      await expect(speakText('   ')).resolves.toMatchObject({ status: 'empty', attempts: 0 });
       expect(mockSynthesis.speak).not.toHaveBeenCalled();
     });
 
-    it('resolves cleanly when error is "canceled" or "interrupted"', async () => {
+    it('reports a canceled utterance without treating it as a playback failure', async () => {
       const speakPromise = speakText('Komunikat przerwany');
       expect(isSpeaking()).toBe(true);
 
+      lastSpokenUtterance?.onstart?.({} as SpeechSynthesisEvent);
       const cancelErrorEvent = { error: 'canceled' } as SpeechSynthesisErrorEvent;
       lastSpokenUtterance?.onerror?.(cancelErrorEvent);
 
-      await expect(speakPromise).resolves.toBeUndefined();
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'cancelled',
+        attempts: 1,
+        errorCode: 'canceled',
+      });
       expect(isSpeaking()).toBe(false);
     });
 
-    it('rejects with descriptive Error on actual speech synthesis failure', async () => {
+    it('retries when the engine cancels before confirming speech start', async () => {
+      const speakPromise = speakText('Komunikat anulowany przed startem');
+      spokenUtterances[0].onerror?.({ error: 'canceled' } as SpeechSynthesisErrorEvent);
+
+      await vi.advanceTimersByTimeAsync(SPEECH_RETRY_DELAY_MS);
+      expect(spokenUtterances).toHaveLength(2);
+
+      spokenUtterances[1].onstart?.({} as SpeechSynthesisEvent);
+      spokenUtterances[1].onend?.({} as SpeechSynthesisEvent);
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'completed',
+        attempts: 2,
+      });
+    });
+
+    it('reports not-started after both attempts are canceled before onstart', async () => {
+      const speakPromise = speakText('Komunikat dwukrotnie anulowany');
+      spokenUtterances[0].onerror?.({ error: 'interrupted' } as SpeechSynthesisErrorEvent);
+
+      await vi.advanceTimersByTimeAsync(SPEECH_RETRY_DELAY_MS);
+      spokenUtterances[1].onerror?.({ error: 'canceled' } as SpeechSynthesisErrorEvent);
+
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'not-started',
+        attempts: 2,
+        errorCode: 'canceled',
+      });
+    });
+
+    it('reports an actual speech synthesis failure', async () => {
       const speakPromise = speakText('Komunikat z błędem');
       expect(isSpeaking()).toBe(true);
 
       const networkErrorEvent = { error: 'audio-busy' } as SpeechSynthesisErrorEvent;
       lastSpokenUtterance?.onerror?.(networkErrorEvent);
 
-      await expect(speakPromise).rejects.toThrow('Speech synthesis error: audio-busy');
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'failed',
+        attempts: 1,
+        errorCode: 'audio-busy',
+      });
       expect(isSpeaking()).toBe(false);
     });
 
-    it('safety timeout resolves promise when onend never fires (Chrome bug workaround)', async () => {
+    it('reports an unconfirmed completion when onstart fires but onend is lost', async () => {
       const speakPromise = speakText('Krótki tekst');
       expect(isSpeaking()).toBe(true);
+      lastSpokenUtterance?.onstart?.({} as SpeechSynthesisEvent);
 
       // Advance timers past the calculated safety timeout
-      vi.advanceTimersByTime(10000);
+      await vi.advanceTimersByTimeAsync(10000);
 
-      await expect(speakPromise).resolves.toBeUndefined();
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'started-unconfirmed',
+        attempts: 1,
+      });
+      expect(isSpeaking()).toBe(false);
+    });
+
+    it('retries speech once when Android never reports onstart', async () => {
+      const speakPromise = speakText('Jest godzina dwunasta');
+      expect(spokenUtterances).toHaveLength(1);
+
+      await vi.advanceTimersByTimeAsync(SPEECH_START_TIMEOUT_MS + SPEECH_RETRY_DELAY_MS);
+
+      expect(spokenUtterances).toHaveLength(2);
+      expect(mockSynthesis.cancel).toHaveBeenCalledTimes(1);
+      expect(mockSynthesis.resume).toHaveBeenCalledTimes(2);
+
+      spokenUtterances[1].onstart?.({} as SpeechSynthesisEvent);
+      spokenUtterances[1].onend?.({} as SpeechSynthesisEvent);
+
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'completed',
+        attempts: 2,
+      });
+    });
+
+    it('reports not-started after exactly one failed recovery attempt', async () => {
+      const speakPromise = speakText('Jest godzina trzynasta');
+
+      await vi.advanceTimersByTimeAsync(
+        SPEECH_START_TIMEOUT_MS + SPEECH_RETRY_DELAY_MS + SPEECH_START_TIMEOUT_MS
+      );
+
+      await expect(speakPromise).resolves.toMatchObject({
+        status: 'not-started',
+        attempts: 2,
+      });
+      expect(mockSynthesis.speak).toHaveBeenCalledTimes(2);
+      expect(mockSynthesis.cancel).toHaveBeenCalledTimes(2);
       expect(isSpeaking()).toBe(false);
     });
 
@@ -436,10 +532,10 @@ describe('speechService', () => {
       const speakPromise2 = speakText('Druga wypowiedź');
 
       // The second speak cancels previous
-      expect(mockSynthesis.cancel).toHaveBeenCalledTimes(2);
+      expect(mockSynthesis.cancel).toHaveBeenCalledTimes(1);
 
       // speakPromise1 resolves immediately on cancel via stopSpeaking()
-      await expect(speakPromise1).resolves.toBeUndefined();
+      await expect(speakPromise1).resolves.toMatchObject({ status: 'cancelled' });
 
       lastSpokenUtterance?.onend?.({} as SpeechSynthesisEvent);
       await speakPromise2;
@@ -455,7 +551,7 @@ describe('speechService', () => {
 
       // Now voices resolve
       mockSynthesis.triggerVoicesChanged([createMockVoice()]);
-      await expect(speakPromise).resolves.toBeUndefined();
+      await expect(speakPromise).resolves.toMatchObject({ status: 'cancelled' });
       // Should not have spoken utterance since it was cancelled during async voice resolution
       expect(mockSynthesis.speak).not.toHaveBeenCalled();
     });
@@ -471,7 +567,7 @@ describe('speechService', () => {
       expect(isSpeaking()).toBe(false);
 
       // Verify pending promise resolved cleanly
-      await expect(speakPromise).resolves.toBeUndefined();
+      await expect(speakPromise).resolves.toMatchObject({ status: 'cancelled' });
     });
 
     it('isSpeaking returns true if window.speechSynthesis.speaking is true', () => {

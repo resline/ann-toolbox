@@ -6,6 +6,7 @@ import * as speechService from '../services/speechService';
 // Mock Web Speech & Chime services
 vi.mock('../services/speechService', () => ({
   isSpeechSynthesisSupported: vi.fn(() => true),
+  prepareSpeech: vi.fn(() => true),
   getAllVoices: vi.fn(async () => [
     { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
     { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
@@ -14,7 +15,11 @@ vi.mock('../services/speechService', () => ({
     { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
     { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
   ]),
-  speakText: vi.fn(async () => {}),
+  speakText: vi.fn(async () => ({
+    status: 'completed',
+    attempts: 1,
+    visibilityState: 'visible',
+  })),
   stopSpeaking: vi.fn(),
   isSpeaking: vi.fn(() => false),
 }));
@@ -62,6 +67,7 @@ describe('useSpeakingClock Hook', () => {
         <span data-testid="target-time">{clock.targetTime}</span>
         <span data-testid="departure-label">{clock.departureLabel}</span>
         <span data-testid="total-span">{clock.totalSpanSeconds}</span>
+        <span data-testid="speech-failure">{clock.speechFailure?.status ?? ''}</span>
         <button onClick={() => clock.start()}>Start</button>
         <button onClick={() => clock.pause()}>Pause</button>
         <button onClick={() => clock.resume()}>Resume</button>
@@ -133,6 +139,24 @@ describe('useSpeakingClock Hook', () => {
     expect(saved.intervalMinutes).toBe(10);
   });
 
+  it('updates the interval while the clock stays running', async () => {
+    await act(async () => {
+      render(<HookConsumer />);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+    });
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Set10Min' }));
+    });
+
+    expect(screen.getByTestId('state').textContent).toBe('running');
+    expect(screen.getByTestId('interval').textContent).toBe('10');
+    const saved = JSON.parse(localStorage.getItem('ann_speaking_clock_settings') || '{}');
+    expect(saved.intervalMinutes).toBe(10);
+  });
+
   it('updates departure settings and time timer settings via dedicated setters', async () => {
     await act(async () => {
       render(<HookConsumer />);
@@ -175,5 +199,32 @@ describe('useSpeakingClock Hook', () => {
     });
 
     expect(speechService.speakText).toHaveBeenCalled();
+  });
+
+  it('exposes a speech start failure and clears it after a successful retry', async () => {
+    vi.mocked(speechService.speakText)
+      .mockResolvedValueOnce({
+        status: 'not-started',
+        attempts: 2,
+        visibilityState: 'hidden',
+      })
+      .mockResolvedValueOnce({
+        status: 'completed',
+        attempts: 1,
+        visibilityState: 'visible',
+      });
+
+    await act(async () => {
+      render(<HookConsumer />);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'TestVoice' }));
+    });
+    expect(screen.getByTestId('speech-failure').textContent).toBe('not-started');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'TestVoice' }));
+    });
+    expect(screen.getByTestId('speech-failure').textContent).toBe('');
   });
 });

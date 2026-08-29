@@ -109,7 +109,6 @@ export const CzasSheet: React.FC<CzasSheetProps> = ({
                         type="button"
                         data-testid={czasIds.intervalPreset(minutes)}
                         onClick={() => onUpdateSettings({ intervalMinutes: minutes })}
-                        disabled={disabled}
                         aria-pressed={settings.intervalMinutes === minutes}
                         className={pill(settings.intervalMinutes === minutes)}
                       >

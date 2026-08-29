@@ -14,6 +14,22 @@ export type ClockState = 'idle' | 'running' | 'paused';
 
 export type AnnouncementReason = 'interval' | 'manual' | 'session_end';
 
+export type SpeechOutcomeStatus =
+  | 'completed'
+  | 'started-unconfirmed'
+  | 'unavailable'
+  | 'empty'
+  | 'cancelled'
+  | 'not-started'
+  | 'failed';
+
+export interface SpeechOutcome {
+  status: SpeechOutcomeStatus;
+  attempts: number;
+  errorCode?: string;
+  visibilityState: DocumentVisibilityState | 'unknown';
+}
+
 export interface DepartureSettings {
   targetTime: string; // HH:MM (e.g. "08:30")
   label: string; // e.g. "Wyjście z domu"
@@ -114,6 +130,7 @@ export interface EngineCallbacks {
   onTick?: (payload: TickPayload) => void;
   onStateChange?: (state: ClockState) => void;
   onAnnounce?: (payload: AnnouncementPayload) => void;
+  onSpeechOutcome?: (outcome: SpeechOutcome) => void;
   onError?: (error: Error) => void;
 }
 

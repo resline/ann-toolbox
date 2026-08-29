@@ -15,6 +15,7 @@ import {
   type TickPayload,
   type AnnouncementPayload,
   type EngineCallbacks,
+  type SpeechOutcome,
   DEFAULT_SPEAKING_CLOCK_SETTINGS,
 } from '../types';
 import {
@@ -22,7 +23,7 @@ import {
   formatDepartureAnnouncement,
 } from './polishTimeFormatter';
 import { playChime } from '../../../lib/audio/chime';
-import { speakText, stopSpeaking } from './speechService';
+import { prepareSpeech, speakText, stopSpeaking } from './speechService';
 import { WakeLockService } from './wakeLockService';
 import { SilentAudioLoop } from './silentAudioLoop';
 import { createTimerWorker } from './timerWorker';
@@ -113,11 +114,11 @@ export class BackgroundTimerEngine {
   private state: ClockState = 'idle';
 
   private startTime: number | null = null;
-  private lastAnnouncementTime: number | null = null;
   private lastAnnouncedTargetTime: number | null = null;
   private pauseStartTime: number | null = null;
   private totalPausedDuration = 0;
   private nextAnnouncementTime: Date | null = null;
+  private resetCadenceOnResume = false;
 
   private departureTargetTimestamp: number | null = null;
   private departureInitialSeconds: number | null = null;
@@ -128,6 +129,7 @@ export class BackgroundTimerEngine {
   private wakeLockService: WakeLockService;
   private silentAudioLoop: SilentAudioLoop;
   private isAnnouncing = false;
+  private audioSequenceGeneration = 0;
 
   constructor(
     settings?: Partial<SpeakingClockSettings>,
@@ -244,20 +246,34 @@ export class BackgroundTimerEngine {
       }
     } else {
       // Continuous mode
+      const previousInterval = this.settings.intervalMinutes;
       this.settings.intervalMinutes = Math.max(
         1,
         this.settings.intervalMinutes + deltaMinutes
       );
-      if (this.state === 'running') {
-        this.nextAnnouncementTime = calculateNextAnnouncementTime(
-          new Date(now),
-          this.settings.intervalMinutes,
-          this.settings.clockSync,
-          this.lastAnnouncementTime ? new Date(this.lastAnnouncementTime) : new Date(now)
-        );
+      const intervalChanged = previousInterval !== this.settings.intervalMinutes;
+      if (this.state === 'running' && intervalChanged) {
+        this.resetIntervalSchedule(now);
         this.handleTick(now);
+      } else if (this.state === 'paused' && intervalChanged) {
+        this.resetCadenceOnResume = true;
       }
     }
+  }
+
+  /**
+   * Starts a fresh continuous/focus cadence at the supplied timestamp.
+   * For relative timing this means a full interval from now; for clock-sync it
+   * means the nearest strictly-future wall-clock boundary.
+   */
+  private resetIntervalSchedule(timestamp: number): void {
+    const now = new Date(timestamp);
+    this.nextAnnouncementTime = calculateNextAnnouncementTime(
+      now,
+      this.settings.intervalMinutes,
+      this.settings.clockSync,
+      now
+    );
   }
 
   /**
@@ -345,12 +361,15 @@ export class BackgroundTimerEngine {
       return;
     }
 
+    // Must run before the first await while Start is still a direct user gesture.
+    prepareSpeech();
+
     const now = Date.now();
     this.startTime = now;
-    this.lastAnnouncementTime = now;
     this.lastAnnouncedTargetTime = null;
     this.pauseStartTime = null;
     this.totalPausedDuration = 0;
+    this.resetCadenceOnResume = false;
 
     if (this.settings.mode === 'departure') {
       this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(
@@ -416,6 +435,8 @@ export class BackgroundTimerEngine {
       return;
     }
 
+    prepareSpeech();
+
     const now = Date.now();
     let pausedDuration = 0;
     if (this.pauseStartTime !== null) {
@@ -424,8 +445,12 @@ export class BackgroundTimerEngine {
       this.pauseStartTime = null;
     }
 
-    // Shift relative target by the duration the engine was paused
-    if (!this.settings.clockSync && this.nextAnnouncementTime) {
+    if (this.resetCadenceOnResume && this.settings.mode !== 'departure') {
+      // A cadence selected while paused starts only when the timer resumes.
+      this.resetIntervalSchedule(now);
+      this.resetCadenceOnResume = false;
+    } else if (!this.settings.clockSync && this.nextAnnouncementTime) {
+      // Preserve the old relative cadence when no interval setting changed.
       this.nextAnnouncementTime = new Date(
         this.nextAnnouncementTime.getTime() + pausedDuration
       );
@@ -446,6 +471,10 @@ export class BackgroundTimerEngine {
    * Stops the engine and resets session state.
    */
   stop(): void {
+    // Invalidate audio even while idle: a manual voice test can still be
+    // awaiting its chime when the component is unmounted.
+    this.cancelAudioSequence();
+
     if (this.state === 'idle') {
       return;
     }
@@ -455,16 +484,15 @@ export class BackgroundTimerEngine {
 
     this.wakeLockService.release().catch(() => {});
     this.silentAudioLoop.stop();
-    stopSpeaking();
 
     this.updateMediaSessionState('none');
 
     this.startTime = null;
-    this.lastAnnouncementTime = null;
     this.lastAnnouncedTargetTime = null;
     this.pauseStartTime = null;
     this.totalPausedDuration = 0;
     this.nextAnnouncementTime = null;
+    this.resetCadenceOnResume = false;
     this.departureTargetTimestamp = null;
     this.departureInitialSeconds = null;
     this.triggeredMilestones.clear();
@@ -485,6 +513,8 @@ export class BackgroundTimerEngine {
     const prevWakeLock = this.settings.keepAwake;
     const prevMode = this.settings.mode;
     const prevTarget = this.settings.departure?.targetTime;
+    const prevInterval = this.settings.intervalMinutes;
+    const prevClockSync = this.settings.clockSync;
 
     this.settings = {
       ...this.settings,
@@ -499,9 +529,14 @@ export class BackgroundTimerEngine {
       },
     };
 
+    const modeChanged = prevMode !== this.settings.mode;
+    const cadenceChanged =
+      prevInterval !== this.settings.intervalMinutes ||
+      prevClockSync !== this.settings.clockSync;
+
     if (
       this.settings.mode === 'departure' &&
-      (prevMode !== 'departure' || prevTarget !== this.settings.departure.targetTime)
+      (modeChanged || prevTarget !== this.settings.departure.targetTime)
     ) {
       const now = new Date();
       this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(
@@ -527,6 +562,7 @@ export class BackgroundTimerEngine {
     if (this.state === 'running') {
       const now = Date.now();
       if (this.settings.mode === 'departure') {
+        this.resetCadenceOnResume = false;
         const secondsRemaining = Math.max(
           0,
           Math.floor(((this.departureTargetTimestamp ?? now) - now) / 1000)
@@ -535,13 +571,10 @@ export class BackgroundTimerEngine {
           now,
           secondsRemaining
         );
-      } else {
-        this.nextAnnouncementTime = calculateNextAnnouncementTime(
-          new Date(now),
-          this.settings.intervalMinutes,
-          this.settings.clockSync,
-          this.lastAnnouncementTime ? new Date(this.lastAnnouncementTime) : new Date(now)
-        );
+      } else if (cadenceChanged || modeChanged) {
+        this.resetIntervalSchedule(now);
+        this.resetCadenceOnResume = false;
+        this.handleTick(now);
       }
 
       if (this.settings.keepAwake && !prevWakeLock) {
@@ -551,6 +584,12 @@ export class BackgroundTimerEngine {
       }
 
       this.updateMediaSessionMetadata();
+    } else if (this.state === 'paused') {
+      if (this.settings.mode === 'departure') {
+        this.resetCadenceOnResume = false;
+      } else if (cadenceChanged || modeChanged) {
+        this.resetCadenceOnResume = true;
+      }
     }
   }
 
@@ -558,6 +597,10 @@ export class BackgroundTimerEngine {
    * Manually triggers an immediate voice time announcement.
    */
   async triggerImmediateAnnouncement(): Promise<void> {
+    // Keep this synchronous: the retry button is a fresh user gesture and is
+    // our best chance to resume a speech engine suspended by Android.
+    prepareSpeech();
+
     const now = new Date();
     const elapsedMs = this.startTime
       ? Date.now() - this.startTime - this.totalPausedDuration
@@ -754,7 +797,6 @@ export class BackgroundTimerEngine {
           if (this.lastAnnouncedTargetTime !== targetMs) {
             this.lastAnnouncedTargetTime = targetMs;
             this.triggerIntervalAnnouncement(now, elapsedMinutes);
-            this.lastAnnouncementTime = timestamp;
             this.nextAnnouncementTime = calculateNextAnnouncementTime(
               now,
               this.settings.intervalMinutes,
@@ -849,7 +891,13 @@ export class BackgroundTimerEngine {
    * Executes the audio sequence: gentle chime (if enabled) followed by voice synthesis.
    */
   private async executeAudioSequence(text: string): Promise<void> {
+    const replacesActiveSequence = this.isAnnouncing;
+    const sequenceGeneration = ++this.audioSequenceGeneration;
+    if (replacesActiveSequence) {
+      stopSpeaking();
+    }
     this.isAnnouncing = true;
+
     try {
       if (this.settings.chimeEnabled) {
         await playChime({
@@ -858,17 +906,51 @@ export class BackgroundTimerEngine {
         });
       }
 
-      await speakText(text, {
+      if (sequenceGeneration !== this.audioSequenceGeneration) {
+        return;
+      }
+
+      const outcome = await speakText(text, {
         voiceURI: this.settings.voiceURI,
         rate: this.settings.rate,
         pitch: this.settings.pitch,
         volume: this.settings.volume,
       });
+
+      if (sequenceGeneration !== this.audioSequenceGeneration) {
+        return;
+      }
+
+      this.callbacks.onSpeechOutcome?.(outcome);
+
+      if (this.isSpeechFailure(outcome)) {
+        this.callbacks.onError?.(
+          new Error(`Nie udało się uruchomić syntezy mowy (${outcome.status}).`)
+        );
+      }
     } catch (err) {
-      this.callbacks.onError?.(err as Error);
+      if (sequenceGeneration === this.audioSequenceGeneration) {
+        this.callbacks.onError?.(err as Error);
+      }
     } finally {
-      this.isAnnouncing = false;
+      if (sequenceGeneration === this.audioSequenceGeneration) {
+        this.isAnnouncing = false;
+      }
     }
+  }
+
+  private cancelAudioSequence(): void {
+    this.audioSequenceGeneration += 1;
+    this.isAnnouncing = false;
+    stopSpeaking();
+  }
+
+  private isSpeechFailure(outcome: SpeechOutcome): boolean {
+    return (
+      outcome.status === 'unavailable' ||
+      outcome.status === 'not-started' ||
+      outcome.status === 'failed'
+    );
   }
 
   /**
