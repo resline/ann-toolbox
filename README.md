@@ -51,14 +51,19 @@ kierunek ubywania do wyboru.
 **Korekta w locie.** W trakcie odliczania: −5, +1, +5, +10 minut jednym dotknięciem,
 bez zatrzymywania i resetowania.
 
-**Naturalna polszczyzna.** Silnik fleksyjny odmienia liczebniki poprawnie
+**Naturalna polszczyzna offline.** Silnik fleksyjny odmienia liczebniki poprawnie
 („za minutę", „za 2 minuty", „za 5 minut"). Cztery sposoby mówienia: naturalnie
 („za piętnaście druga"), dokładnie („trzynasta czterdzieści pięć"), krótko, oraz
-„ile minęło". Przed każdą wypowiedzią ciepły gong, żeby głos nie zaskakiwał w ciszy.
+„ile minęło". Głos Kore jest zapisany w aplikacji jako 337 nagranych fragmentów —
+telefon nie korzysta z Android Speech ani z chmury. Przed każdą wypowiedzią ciepły
+gong, żeby głos nie zaskakiwał w ciszy.
 
 **Działanie w tle.** Dedykowany Web Worker odporny na usypianie kart, MediaSession
 (sterowanie z ekranu blokady), cichy nośnik audio utrzymujący proces w systemie,
-opcjonalna blokada wygaszania ekranu.
+opcjonalna blokada wygaszania ekranu. Gong i wszystkie fragmenty wypowiedzi są
+planowane jednocześnie na jednej osi Web Audio, więc zablokowanie ekranu między nimi
+nie urywa głosu. Android może jednak zakończyć proces PWA pod presją pamięci lub po
+wymuszeniu zatrzymania — tego aplikacja webowa nie może obejść.
 
 ---
 
@@ -132,6 +137,18 @@ npm run dev -- --host      # dostępne też w sieci lokalnej, do testów na tele
 npm test            # pełny zestaw
 npx tsc --noEmit    # weryfikacja typów
 npm run build       # build produkcyjny
+npm run voice:validate # integralność, kompletność i pamięć pakietu głosowego
+```
+
+Pakiet głosowy jest niezmiennym artefaktem buildu i zwykły build go nie regeneruje.
+Build wymaga `ffmpeg`, ponieważ przed kompilacją zawsze dekoduje i sprawdza cały
+pakiet; obraz Docker instaluje to narzędzie wyłącznie w etapie budowania.
+Kontrolowana regeneracja wymaga zalogowanego `gcloud`, najpierw pokazuje kosztorys i
+nie wysyła żądań bez jawnego potwierdzenia:
+
+```bash
+npm run voice:generate
+npm run voice:generate -- --confirm-generate
 ```
 
 Poza testami jednostkowymi zestaw zawiera bramki jakości, które trudno utrzymać ręcznie:

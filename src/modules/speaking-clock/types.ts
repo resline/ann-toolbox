@@ -16,11 +16,7 @@ export type AnnouncementReason = 'interval' | 'manual' | 'session_end';
 
 export type SpeechOutcomeStatus =
   | 'completed'
-  | 'started-unconfirmed'
-  | 'unavailable'
-  | 'empty'
   | 'cancelled'
-  | 'not-started'
   | 'failed';
 
 export interface SpeechOutcome {
@@ -51,13 +47,7 @@ export interface SpeakingClockSettings {
   clockSync: boolean;
   /** Voice formatting style for time announcement */
   formatStyle: TimeFormatStyle;
-  /** Speech synthesis voice URI (pl-PL default selected if empty) */
-  voiceURI: string;
-  /** Speech rate (0.5 to 2.0) */
-  rate: number;
-  /** Speech pitch (0.5 to 1.5) */
-  pitch: number;
-  /** Speech volume (0.0 to 1.0) */
+  /** Prerecorded offline voice volume (0.0 to 1.0). */
   volume: number;
   /** Whether to play a harmonic chime before speaking */
   chimeEnabled: boolean;
@@ -81,9 +71,6 @@ export const DEFAULT_SPEAKING_CLOCK_SETTINGS: SpeakingClockSettings = {
   intervalMinutes: 5,
   clockSync: true,
   formatStyle: 'natural',
-  voiceURI: '',
-  rate: 1.0,
-  pitch: 1.0,
   volume: 1.0,
   chimeEnabled: true,
   chimeTone: 'gentle',

@@ -33,8 +33,7 @@ export interface CzasSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   settings: SpeakingClockSettings;
-  availableVoices: SpeechSynthesisVoice[];
-  isLoadingVoices?: boolean;
+  voicePackStatus: 'loading' | 'ready' | 'failed';
   isTestingVoice?: boolean;
   onUpdateSettings: (patch: Partial<SpeakingClockSettings>) => void;
   onDepartureChange: (patch: Partial<DepartureSettings>) => void;
@@ -57,8 +56,7 @@ export const CzasSheet: React.FC<CzasSheetProps> = ({
   open,
   onOpenChange,
   settings,
-  availableVoices,
-  isLoadingVoices = false,
+  voicePackStatus,
   isTestingVoice = false,
   onUpdateSettings,
   onDepartureChange,
@@ -66,7 +64,6 @@ export const CzasSheet: React.FC<CzasSheetProps> = ({
   disabled = false,
 }) => {
   const [tab, setTab] = useState<SheetTab>('mode');
-  const hasNoVoice = !isLoadingVoices && availableVoices.length === 0;
 
   const pill = (active: boolean) =>
     [
@@ -145,6 +142,7 @@ export const CzasSheet: React.FC<CzasSheetProps> = ({
                   settings={settings.departure}
                   onChange={onDepartureChange}
                   disabled={disabled}
+                  cadenceDisabled={false}
                 />
               )}
 
@@ -169,25 +167,17 @@ export const CzasSheet: React.FC<CzasSheetProps> = ({
           {/* ── głos ── */}
           {tab === 'voice' && (
             <Stack gap="lg" className="pb-6">
-              {hasNoVoice ? (
-                <Text size="sm" tone="muted">
-                  {czas.sheet.voiceMissing}
+              <Stack gap="xs">
+                <LabelText>{czas.sheet.voice}</LabelText>
+                <Text size="sm">{czas.sheet.offlineVoice}</Text>
+                <Text size="xs" tone="faint">
+                  {voicePackStatus === 'ready'
+                    ? czas.sheet.offlineVoiceReady
+                    : voicePackStatus === 'loading'
+                      ? czas.notice.voiceLoading
+                      : czas.sheet.voiceMissing}
                 </Text>
-              ) : (
-                <Stack gap="sm">
-                  <LabelText>{czas.sheet.voice}</LabelText>
-                  <RadioCards<string>
-                    label={czas.sheet.voice}
-                    value={settings.voiceURI || availableVoices[0]?.voiceURI || ''}
-                    onValueChange={(voiceURI) => onUpdateSettings({ voiceURI })}
-                    options={availableVoices.map((voice) => ({
-                      value: voice.voiceURI,
-                      label: voice.name,
-                      description: voice.lang,
-                    }))}
-                  />
-                </Stack>
-              )}
+              </Stack>
 
               <Stack gap="sm">
                 <LabelText>{czas.sheet.style}</LabelText>
@@ -204,26 +194,6 @@ export const CzasSheet: React.FC<CzasSheetProps> = ({
               </Stack>
 
               <Stack gap="sm">
-                <LabelText>{czas.sheet.speed}</LabelText>
-                <Slider
-                  label={czas.sheet.speed}
-                  value={settings.rate}
-                  onValueChange={(rate) => onUpdateSettings({ rate })}
-                  min={0.7}
-                  max={1.5}
-                  step={0.05}
-                  valueText={`${settings.rate.toFixed(2)}`}
-                />
-                <LabelText>{czas.sheet.pitch}</LabelText>
-                <Slider
-                  label={czas.sheet.pitch}
-                  value={settings.pitch}
-                  onValueChange={(pitch) => onUpdateSettings({ pitch })}
-                  min={0.6}
-                  max={1.4}
-                  step={0.05}
-                  valueText={`${settings.pitch.toFixed(2)}`}
-                />
                 <LabelText>{czas.sheet.volume}</LabelText>
                 <Slider
                   label={czas.sheet.volume}
@@ -238,6 +208,7 @@ export const CzasSheet: React.FC<CzasSheetProps> = ({
                 tone="module"
                 onClick={onTestVoice}
                 loading={isTestingVoice}
+                disabled={voicePackStatus !== 'ready'}
                 data-testid={czasIds.secondaryAction}
               >
                 <Volume2 className="w-4 h-4" aria-hidden />

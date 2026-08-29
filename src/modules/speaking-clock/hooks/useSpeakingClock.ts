@@ -2,7 +2,7 @@
  * useSpeakingClock Hook
  *
  * Connects BackgroundTimerEngine to React UI state, persists user settings in localStorage,
- * tracks voice synthesis list, and exposes simple actions (start/pause/resume/stop/test/adjust).
+ * preloads the immutable offline voice pack, and exposes clock actions.
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -18,7 +18,7 @@ import {
   DEFAULT_SPEAKING_CLOCK_SETTINGS,
 } from '../types';
 import { BackgroundTimerEngine } from '../services/backgroundTimerEngine';
-import { getPolishVoices } from '../services/speechService';
+import type { VoicePackFailureCode } from '../services/spriteSpeechPlayer';
 import { playChime } from '../../../lib/audio/chime';
 
 export const SPEAKING_CLOCK_STORAGE_KEY = 'ann_speaking_clock_settings';
@@ -26,10 +26,8 @@ export const SPEAKING_CLOCK_STORAGE_KEY = 'ann_speaking_clock_settings';
 /**
  * Tłumaczy zapis sprzed ujednolicenia nazw.
  *
- * Do tej pory ten sam parametr istniał pod dwiema nazwami naraz
- * (speechRate/rate, playChimeBefore/chimeEnabled, wakeLockEnabled/keepAwake),
- * a silnik czytał wariant „legacy". Bez tego kroku usunięcie duplikatów
- * zresetowałoby zapisane ustawienia głosu do domyślnych.
+ * Usuwa pola systemowego TTS, którego pakiet offline już nie używa, i zachowuje
+ * nadal wspierane starsze nazwy głośności, gongu i blokady wygaszania.
  *
  * Wartość „legacy" wygrywa tylko wtedy, gdy kanonicznej nie ma — tak wygląda
  * zapis zrobiony przez starą wersję modalu.
@@ -39,16 +37,15 @@ export function migrateStoredSettings(raw: unknown): Partial<SpeakingClockSettin
   const parsed = raw as Record<string, unknown>;
 
   const LEGACY_TO_CANONICAL: Record<string, keyof SpeakingClockSettings> = {
-    speechRate: 'rate',
-    speechPitch: 'pitch',
     speechVolume: 'volume',
     playChimeBefore: 'chimeEnabled',
     wakeLockEnabled: 'keepAwake',
   };
 
+  const removedKeys = new Set(['voiceURI', 'rate', 'pitch', 'speechRate', 'speechPitch']);
   const migrated: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(parsed)) {
-    if (key in LEGACY_TO_CANONICAL) continue;
+    if (key in LEGACY_TO_CANONICAL || removedKeys.has(key)) continue;
     migrated[key] = value;
   }
   for (const [legacy, canonical] of Object.entries(LEGACY_TO_CANONICAL)) {
@@ -126,8 +123,8 @@ export interface UseSpeakingClockReturn {
   lastAnnouncementText: string | null;
   focusRemainingSeconds?: number;
   elapsedSeconds: number;
-  availableVoices: SpeechSynthesisVoice[];
-  isLoadingVoices: boolean;
+  voicePackStatus: 'loading' | 'ready' | 'failed';
+  voicePackFailureCode: VoicePackFailureCode | null;
   isTestingVoice: boolean;
   speechFailure: SpeechOutcome | null;
   totalSpanSeconds: number;
@@ -142,6 +139,7 @@ export interface UseSpeakingClockReturn {
   setDepartureSettings: (settings: Partial<DepartureSettings>) => void;
   setTimeTimerSettings: (settings: Partial<TimeTimerSettings>) => void;
   testVoiceNow: () => Promise<void>;
+  retryVoicePack: () => Promise<void>;
   testChimeNow: (tone?: SpeakingClockSettings['chimeTone'], volume?: number) => Promise<void>;
   setIntervalMinutes: (minutes: number) => void;
   setMode: (mode: ClockMode) => void;
@@ -158,8 +156,8 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
   const [lastAnnouncementText, setLastAnnouncementText] = useState<string | null>(null);
   const [focusRemainingSeconds, setFocusRemainingSeconds] = useState<number | undefined>(undefined);
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [isLoadingVoices, setIsLoadingVoices] = useState<boolean>(true);
+  const [voicePackStatus, setVoicePackStatus] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [voicePackFailureCode, setVoicePackFailureCode] = useState<VoicePackFailureCode | null>(null);
   const [isTestingVoice, setIsTestingVoice] = useState<boolean>(false);
   const [speechFailure, setSpeechFailure] = useState<SpeechOutcome | null>(null);
   const [runningSecondsRemaining, setRunningSecondsRemaining] = useState<number | null>(null);
@@ -215,16 +213,9 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
         setLastAnnouncementText(payload.text);
       },
       onSpeechOutcome: (outcome: SpeechOutcome) => {
-        if (
-          outcome.status === 'unavailable' ||
-          outcome.status === 'not-started' ||
-          outcome.status === 'failed'
-        ) {
+        if (outcome.status === 'failed') {
           setSpeechFailure(outcome);
-        } else if (
-          outcome.status === 'completed' ||
-          outcome.status === 'started-unconfirmed'
-        ) {
+        } else if (outcome.status === 'completed') {
           setSpeechFailure(null);
         }
       },
@@ -232,18 +223,18 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
 
     engineRef.current = engine;
 
-    // Load available Polish TTS voices
-    setIsLoadingVoices(true);
-    getPolishVoices()
-      .then((voices) => {
-        setAvailableVoices(voices);
-      })
-      .catch(() => {
-        setAvailableVoices([]);
-      })
-      .finally(() => {
-        setIsLoadingVoices(false);
-      });
+    // Fetch, verify and decode the complete immutable voice sprite before Start.
+    setVoicePackStatus('loading');
+    engine.prepareVoicePack().then((result) => {
+      if (engineRef.current !== engine) return;
+      if (result.status === 'ready') {
+        setVoicePackStatus('ready');
+        setVoicePackFailureCode(null);
+      } else {
+        setVoicePackStatus('failed');
+        setVoicePackFailureCode(result.code);
+      }
+    });
 
     // Idle wall-clock ticker when engine is not actively ticking
     const idleTicker = setInterval(() => {
@@ -339,6 +330,7 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
       if (engineRef.current && (clockState === 'running' || clockState === 'paused')) {
         engineRef.current.addMinutes(deltaMinutes);
         const updated = engineRef.current.getSettings();
+        settingsRef.current = updated;
         setSettings(updated);
         persistSettings(updated);
       } else {
@@ -382,13 +374,43 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
     [clockState]
   );
 
+  const retryVoicePack = useCallback(async () => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    setVoicePackStatus('loading');
+    setVoicePackFailureCode(null);
+    const result = await engine.prepareVoicePack(true);
+    if (engineRef.current !== engine) return;
+    if (result.status === 'ready') {
+      setVoicePackStatus('ready');
+      setVoicePackFailureCode(null);
+      setSpeechFailure(null);
+    } else {
+      setVoicePackStatus('failed');
+      setVoicePackFailureCode(result.code);
+    }
+  }, []);
+
   const testVoiceNow = useCallback(async () => {
-    if (!engineRef.current) return;
+    const engine = engineRef.current;
+    if (!engine) return;
     setIsTestingVoice(true);
     try {
-      await engineRef.current.triggerImmediateAnnouncement();
+      if (engine.getVoicePackState() !== 'ready') {
+        setVoicePackStatus('loading');
+        const result = await engine.prepareVoicePack(true);
+        if (engineRef.current !== engine) return;
+        if (result.status === 'failed') {
+          setVoicePackStatus('failed');
+          setVoicePackFailureCode(result.code);
+          return;
+        }
+        setVoicePackStatus('ready');
+        setVoicePackFailureCode(null);
+      }
+      await engine.triggerImmediateAnnouncement();
     } finally {
-      setIsTestingVoice(false);
+      if (engineRef.current === engine) setIsTestingVoice(false);
     }
   }, []);
 
@@ -466,8 +488,8 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
     lastAnnouncementText,
     focusRemainingSeconds,
     elapsedSeconds,
-    availableVoices,
-    isLoadingVoices,
+    voicePackStatus,
+    voicePackFailureCode,
     isTestingVoice,
     speechFailure,
     totalSpanSeconds,
@@ -482,6 +504,7 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
     setDepartureSettings,
     setTimeTimerSettings,
     testVoiceNow,
+    retryVoicePack,
     testChimeNow,
     setIntervalMinutes,
     setMode,

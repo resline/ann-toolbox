@@ -9,6 +9,7 @@ export interface DepartureConfigProps {
   settings: DepartureSettings;
   onChange: (settings: Partial<DepartureSettings>) => void;
   disabled?: boolean;
+  cadenceDisabled?: boolean;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ export const DepartureConfig: React.FC<DepartureConfigProps> = ({
   settings,
   onChange,
   disabled = false,
+  cadenceDisabled = disabled,
   className = '',
 }) => {
   const customInputRef = useRef<HTMLInputElement>(null);
@@ -126,6 +128,11 @@ export const DepartureConfig: React.FC<DepartureConfigProps> = ({
             />
           )}
         </Field>
+        {isCustomLabel && (
+          <Text size="xs" tone="faint">
+            {czas.departure.customSpokenHint}
+          </Text>
+        )}
       </Stack>
 
       {/* kadencja przypomnień */}
@@ -136,7 +143,7 @@ export const DepartureConfig: React.FC<DepartureConfigProps> = ({
             type="button"
             data-testid={czasIds.cadenceSmart}
             onClick={() => onChange({ smartDensity: true })}
-            disabled={disabled}
+            disabled={cadenceDisabled}
             aria-pressed={settings.smartDensity}
             className={pill(settings.smartDensity)}
           >
@@ -148,7 +155,7 @@ export const DepartureConfig: React.FC<DepartureConfigProps> = ({
               type="button"
               data-testid={czasIds.cadenceFixed(minutes)}
               onClick={() => onChange({ smartDensity: false, intervalMinutes: minutes })}
-              disabled={disabled}
+              disabled={cadenceDisabled}
               aria-pressed={!settings.smartDensity && settings.intervalMinutes === minutes}
               className={pill(!settings.smartDensity && settings.intervalMinutes === minutes)}
             >

@@ -8,6 +8,8 @@
 export class WakeLockService {
   private sentinel: WakeLockSentinel | null = null;
   private isRequested = false;
+  private requestGeneration = 0;
+  private pendingAcquire: Promise<boolean> | null = null;
 
   private handleVisibilityChange = async (): Promise<void> => {
     if (
@@ -16,7 +18,7 @@ export class WakeLockService {
       document.visibilityState === 'visible' &&
       (!this.sentinel || this.sentinel.released)
     ) {
-      await this.acquire();
+      await this.acquireSingleFlight(this.requestGeneration);
     }
   };
 
@@ -46,20 +48,47 @@ export class WakeLockService {
       document.addEventListener('visibilitychange', this.handleVisibilityChange);
     }
 
-    return this.acquire();
+    if (this.sentinel && !this.sentinel.released) {
+      return true;
+    }
+    if (this.pendingAcquire) {
+      return this.pendingAcquire;
+    }
+    this.sentinel = null;
+    const generation = ++this.requestGeneration;
+
+    return this.acquireSingleFlight(generation);
+  }
+
+  private acquireSingleFlight(generation: number): Promise<boolean> {
+    if (this.pendingAcquire) return this.pendingAcquire;
+
+    const pending = this.acquire(generation);
+    this.pendingAcquire = pending;
+    void pending.finally(() => {
+      if (this.pendingAcquire === pending) {
+        this.pendingAcquire = null;
+      }
+    });
+    return pending;
   }
 
   /**
    * Internal acquisition of the WakeLock sentinel.
    */
-  private async acquire(): Promise<boolean> {
+  private async acquire(generation: number): Promise<boolean> {
     if (!this.isSupported()) {
       return false;
     }
 
     try {
-      this.sentinel = await navigator.wakeLock.request('screen');
-      this.sentinel.onrelease = () => {
+      const sentinel = await navigator.wakeLock.request('screen');
+      if (!this.isRequested || generation !== this.requestGeneration) {
+        await sentinel.release().catch(() => {});
+        return false;
+      }
+      this.sentinel = sentinel;
+      sentinel.onrelease = () => {
         // Sentinel was released by the browser (e.g. tab minimized or low battery)
       };
       return true;
@@ -73,18 +102,24 @@ export class WakeLockService {
    */
   async release(): Promise<void> {
     this.isRequested = false;
+    this.requestGeneration += 1;
+    // The in-flight platform request cannot be cancelled. Detach it so a
+    // later explicit request can start immediately; its generation guard will
+    // release the stale sentinel if it eventually resolves.
+    this.pendingAcquire = null;
 
     if (typeof document !== 'undefined' && document.removeEventListener) {
       document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     }
 
-    if (this.sentinel) {
+    const sentinel = this.sentinel;
+    this.sentinel = null;
+    if (sentinel) {
       try {
-        await this.sentinel.release();
+        await sentinel.release();
       } catch {
         // Ignore release errors
       }
-      this.sentinel = null;
     }
   }
 

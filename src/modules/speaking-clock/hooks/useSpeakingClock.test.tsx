@@ -1,31 +1,39 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { useSpeakingClock } from './useSpeakingClock';
-import * as speechService from '../services/speechService';
 
-// Mock Web Speech & Chime services
-vi.mock('../services/speechService', () => ({
-  isSpeechSynthesisSupported: vi.fn(() => true),
-  prepareSpeech: vi.fn(() => true),
-  getAllVoices: vi.fn(async () => [
-    { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
-    { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
-  ]),
-  getPolishVoices: vi.fn(async () => [
-    { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
-    { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
-  ]),
-  speakText: vi.fn(async () => ({
-    status: 'completed',
-    attempts: 1,
-    visibilityState: 'visible',
+const voicePlayerMocks = vi.hoisted(() => ({
+  state: 'ready' as 'idle' | 'loading' | 'ready' | 'failed',
+  prepare: vi.fn(async () => ({ status: 'ready' as const, decodedBytes: 1024, fragmentCount: 337 })),
+  resume: vi.fn(async () => true),
+  schedule: vi.fn(() => ({
+    startAt: 1,
+    endAt: 2,
+    sources: [],
+    done: Promise.resolve('completed' as const),
+    reap: vi.fn(() => false),
+    stop: vi.fn(),
   })),
-  stopSpeaking: vi.fn(),
-  isSpeaking: vi.fn(() => false),
+  cancel: vi.fn(),
+  release: vi.fn(),
+  context: { currentTime: 0, state: 'running', destination: {} } as AudioContext,
+}));
+
+vi.mock('../services/spriteSpeechPlayer', () => ({
+  SpriteSpeechPlayer: vi.fn().mockImplementation(() => ({
+    prepare: voicePlayerMocks.prepare,
+    getState: () => voicePlayerMocks.state,
+    getAudioContext: () => voicePlayerMocks.context,
+    resumeFromUserGesture: voicePlayerMocks.resume,
+    schedule: voicePlayerMocks.schedule,
+    cancel: voicePlayerMocks.cancel,
+    release: voicePlayerMocks.release,
+  })),
 }));
 
 vi.mock('../../../lib/audio/chime', () => ({
   playChime: vi.fn(async () => {}),
+  scheduleChime: vi.fn((_context, startAt) => ({ startAt, endAt: startAt + 0.8, stop: vi.fn() })),
   stopChime: vi.fn(),
   isWebAudioSupported: vi.fn(() => true),
 }));
@@ -55,6 +63,17 @@ describe('useSpeakingClock Hook', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+    voicePlayerMocks.state = 'ready';
+    voicePlayerMocks.prepare.mockResolvedValue({ status: 'ready', decodedBytes: 1024, fragmentCount: 337 });
+    voicePlayerMocks.resume.mockResolvedValue(true);
+    voicePlayerMocks.schedule.mockImplementation(() => ({
+      startAt: 1,
+      endAt: 2,
+      sources: [],
+      done: Promise.resolve('completed' as const),
+      reap: vi.fn(() => false),
+      stop: vi.fn(),
+    }));
   });
 
   function HookConsumer() {
@@ -83,6 +102,7 @@ describe('useSpeakingClock Hook', () => {
           SetTimeTimerCustom
         </button>
         <button onClick={() => clock.testVoiceNow()}>TestVoice</button>
+        <button onClick={() => clock.retryVoicePack()}>RetryPack</button>
       </div>
     );
   }
@@ -198,21 +218,35 @@ describe('useSpeakingClock Hook', () => {
       fireEvent.click(screen.getByRole('button', { name: 'TestVoice' }));
     });
 
-    expect(speechService.speakText).toHaveBeenCalled();
+    expect(voicePlayerMocks.schedule).toHaveBeenCalled();
+  });
+
+  it('forces an atomic cache refresh when the user retries the voice pack', async () => {
+    await act(async () => {
+      render(<HookConsumer />);
+    });
+    voicePlayerMocks.prepare.mockClear();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'RetryPack' }));
+    });
+
+    expect(voicePlayerMocks.prepare).toHaveBeenCalledWith(true);
   });
 
   it('exposes a speech start failure and clears it after a successful retry', async () => {
-    vi.mocked(speechService.speakText)
-      .mockResolvedValueOnce({
-        status: 'not-started',
-        attempts: 2,
-        visibilityState: 'hidden',
+    voicePlayerMocks.schedule
+      .mockImplementationOnce(() => {
+        throw new Error('missing-fragment');
       })
-      .mockResolvedValueOnce({
-        status: 'completed',
-        attempts: 1,
-        visibilityState: 'visible',
-      });
+      .mockImplementationOnce(() => ({
+        startAt: 1,
+        endAt: 2,
+        sources: [],
+        done: Promise.resolve('completed' as const),
+        reap: vi.fn(() => false),
+        stop: vi.fn(),
+      }));
 
     await act(async () => {
       render(<HookConsumer />);
@@ -220,7 +254,7 @@ describe('useSpeakingClock Hook', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'TestVoice' }));
     });
-    expect(screen.getByTestId('speech-failure').textContent).toBe('not-started');
+    expect(screen.getByTestId('speech-failure').textContent).toBe('failed');
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'TestVoice' }));

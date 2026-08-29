@@ -4,6 +4,7 @@ import {
   getAudioContext,
   setAudioContext,
   closeAudioContext,
+  scheduleChime,
   CHIME_TONES,
   type ChimeOptions,
   type ChimeTone,
@@ -209,6 +210,44 @@ describe('syntezator gongu', () => {
   });
 
   describe('ADSR envelope and volume scheduling', () => {
+    it('rolls back every created node if a later oscillator cannot start', () => {
+      mockCtx.state = 'running';
+      const originalFactory = () => {
+        const osc: MockOscillatorNode = {
+          type: 'sine',
+          frequency: {
+            value: 440,
+            setValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+            setTargetAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          onended: null,
+        };
+        mockCtx.createdOscillators.push(osc);
+        return osc;
+      };
+      mockCtx.createOscillator
+        .mockImplementationOnce(originalFactory)
+        .mockImplementationOnce(() => {
+          const osc = originalFactory();
+          osc.start.mockImplementationOnce(() => { throw new Error('start failed'); });
+          return osc;
+        });
+
+      expect(() => scheduleChime(mockCtx as unknown as AudioContext, 0)).toThrow('start failed');
+      expect(mockCtx.createdOscillators).toHaveLength(2);
+      for (const oscillator of mockCtx.createdOscillators) {
+        expect(oscillator.stop).toHaveBeenCalled();
+        expect(oscillator.disconnect).toHaveBeenCalled();
+      }
+      for (const gain of mockCtx.createdGains) expect(gain.disconnect).toHaveBeenCalled();
+    });
+
     it('applies ADSR envelope with soft attack and decay to master gain node', async () => {
       const playPromise = playChime({ volume: 0.8 });
       await vi.runAllTimersAsync();

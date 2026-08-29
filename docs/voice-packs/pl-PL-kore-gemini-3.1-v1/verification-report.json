@@ -1,0 +1,24 @@
+{
+  "generatedAt": "2026-08-29T12:36:00.381Z",
+  "budget": {
+    "maximumUsd": 5,
+    "pessimisticPreflightEstimateUsd": 2.042354,
+    "estimatedInputCostUsd": 0.020229,
+    "estimatedAudioCostUsd": 0.184783,
+    "estimatedTotalCostUsd": 0.205012,
+    "sentAttempts": 2,
+    "reservedWorstCaseAttemptCostUsd": 0.655484,
+    "note": "Every sent attempt reserves the documented 16,384-token model maximum before the request; accepted audio is still limited to 12 seconds. This is a local per-invocation guard, not a provider-side quota."
+  },
+  "asset": {
+    "fragmentCount": 337,
+    "encodedBytes": 2339504,
+    "sourceFrames": 9354852,
+    "sourceDurationSeconds": 389.786,
+    "decodedPcmBytesAt24k": 18709704,
+    "decodedAudioBufferBytesAt24k": 37419408,
+    "decodedAudioBufferBytesAt48k": 74838816,
+    "decodedDurationSeconds": 389.786,
+    "spriteSha256": "4425e127ae868ac6ca4d46859dff5a732c85408abca258b83ff3ec4f57fe2c16"
+  }
+}

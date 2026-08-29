@@ -19,11 +19,16 @@ import {
   DEFAULT_SPEAKING_CLOCK_SETTINGS,
 } from '../types';
 import {
-  formatPolishTime,
-  formatDepartureAnnouncement,
-} from './polishTimeFormatter';
-import { playChime } from '../../../lib/audio/chime';
-import { prepareSpeech, speakText, stopSpeaking } from './speechService';
+  planDepartureAnnouncement,
+  planTimeAnnouncement,
+  type AnnouncementPlan,
+} from './polishAnnouncementPlanner';
+import { scheduleChime, type ScheduledChime } from '../../../lib/audio/chime';
+import {
+  SpriteSpeechPlayer,
+  type ScheduledVoiceSequence,
+  type VoicePackPreparation,
+} from './spriteSpeechPlayer';
 import { WakeLockService } from './wakeLockService';
 import { SilentAudioLoop } from './silentAudioLoop';
 import { createTimerWorker } from './timerWorker';
@@ -128,12 +133,20 @@ export class BackgroundTimerEngine {
   private fallbackIntervalId: ReturnType<typeof setInterval> | null = null;
   private wakeLockService: WakeLockService;
   private silentAudioLoop: SilentAudioLoop;
+  private spriteSpeechPlayer: SpriteSpeechPlayer;
+  private scheduledVoice: ScheduledVoiceSequence | null = null;
+  private scheduledChime: ScheduledChime | null = null;
   private isAnnouncing = false;
   private audioSequenceGeneration = 0;
+  private lifecycleGeneration = 0;
+  private manualAnnouncementGeneration = 0;
+  private focusEndAnnouncementPending = false;
+  private destroyed = false;
 
   constructor(
     settings?: Partial<SpeakingClockSettings>,
-    callbacks?: EngineCallbacks
+    callbacks?: EngineCallbacks,
+    spriteSpeechPlayer?: SpriteSpeechPlayer
   ) {
     this.settings = {
       ...DEFAULT_SPEAKING_CLOCK_SETTINGS,
@@ -141,7 +154,23 @@ export class BackgroundTimerEngine {
     };
     this.callbacks = callbacks || {};
     this.wakeLockService = new WakeLockService();
-    this.silentAudioLoop = new SilentAudioLoop();
+    this.spriteSpeechPlayer = spriteSpeechPlayer ?? new SpriteSpeechPlayer();
+    this.silentAudioLoop = new SilentAudioLoop(this.spriteSpeechPlayer.getAudioContext());
+  }
+
+  prepareVoicePack(forceRefresh = false): Promise<VoicePackPreparation> {
+    if (this.destroyed) {
+      return Promise.resolve({
+        status: 'failed',
+        code: 'unsupported',
+        message: 'The speaking-clock engine has been destroyed.',
+      });
+    }
+    return this.spriteSpeechPlayer.prepare(forceRefresh);
+  }
+
+  getVoicePackState(): ReturnType<SpriteSpeechPlayer['getState']> {
+    return this.spriteSpeechPlayer.getState();
   }
 
   /**
@@ -328,6 +357,20 @@ export class BackgroundTimerEngine {
   }
 
   /**
+   * Reconciles a countdown after start, resume or a live cadence change.
+   * Positive thresholds at or behind the current countdown point are history;
+   * zero deliberately stays unmarked so the terminal message fires once.
+   */
+  private markPastDepartureMilestones(secondsRemaining: number, reset = false): void {
+    if (reset) this.triggeredMilestones.clear();
+    for (const milestone of this.getDepartureMilestones()) {
+      if (milestone > 0 && milestone * 60 >= secondsRemaining) {
+        this.triggeredMilestones.add(milestone);
+      }
+    }
+  }
+
+  /**
    * Calculates next milestone date for departure countdown.
    */
   private calculateNextDepartureMilestoneTime(
@@ -352,6 +395,9 @@ export class BackgroundTimerEngine {
    * Starts the speaking clock engine.
    */
   async start(): Promise<void> {
+    if (this.destroyed) {
+      return;
+    }
     if (this.state === 'running') {
       return;
     }
@@ -361,8 +407,15 @@ export class BackgroundTimerEngine {
       return;
     }
 
-    // Must run before the first await while Start is still a direct user gesture.
-    prepareSpeech();
+    // Resume the shared Web Audio context directly from the Start gesture.
+    const lifecycleGeneration = this.lifecycleGeneration;
+    const audioReady = await this.spriteSpeechPlayer.resumeFromUserGesture();
+    if (!this.isLifecycleCurrent(lifecycleGeneration, 'idle')) return;
+    if (this.spriteSpeechPlayer.getState() !== 'ready' || !audioReady) {
+      const error = new Error('Offline voice pack is not ready.');
+      this.callbacks.onError?.(error);
+      return;
+    }
 
     const now = Date.now();
     this.startTime = now;
@@ -370,6 +423,7 @@ export class BackgroundTimerEngine {
     this.pauseStartTime = null;
     this.totalPausedDuration = 0;
     this.resetCadenceOnResume = false;
+    this.focusEndAnnouncementPending = false;
 
     if (this.settings.mode === 'departure') {
       this.departureTargetTimestamp = this.calculateDepartureTargetTimestamp(
@@ -381,13 +435,7 @@ export class BackgroundTimerEngine {
         Math.floor((this.departureTargetTimestamp - now) / 1000)
       );
       this.departureInitialSeconds = Math.max(1, initialSecondsRemaining);
-      this.triggeredMilestones.clear();
-      const milestones = this.getDepartureMilestones();
-      for (const m of milestones) {
-        if (m * 60 >= initialSecondsRemaining) {
-          this.triggeredMilestones.add(m);
-        }
-      }
+      this.markPastDepartureMilestones(initialSecondsRemaining, true);
       this.nextAnnouncementTime = this.calculateNextDepartureMilestoneTime(
         now,
         initialSecondsRemaining
@@ -405,11 +453,14 @@ export class BackgroundTimerEngine {
     this.startTimerLoop();
 
     // Background keep-alive & screen wake lock
-    await this.silentAudioLoop.start();
+    await this.silentAudioLoop.start(this.spriteSpeechPlayer.getAudioContext());
+    if (!this.isLifecycleCurrent(lifecycleGeneration, 'running')) return;
     if (this.settings.keepAwake) {
       await this.wakeLockService.request();
+      if (!this.isLifecycleCurrent(lifecycleGeneration, 'running')) return;
     }
 
+    if (!this.isLifecycleCurrent(lifecycleGeneration, 'running')) return;
     this.setupMediaSession();
     this.handleTick(now);
   }
@@ -418,10 +469,14 @@ export class BackgroundTimerEngine {
    * Pauses the engine.
    */
   pause(): void {
+    this.lifecycleGeneration += 1;
+    this.manualAnnouncementGeneration += 1;
     if (this.state !== 'running') {
       return;
     }
 
+    this.cancelAudioSequence();
+    this.focusEndAnnouncementPending = false;
     this.pauseStartTime = Date.now();
     this.setState('paused');
     this.updateMediaSessionState('paused');
@@ -431,11 +486,20 @@ export class BackgroundTimerEngine {
    * Resumes the paused engine.
    */
   async resume(): Promise<void> {
+    if (this.destroyed) {
+      return;
+    }
     if (this.state !== 'paused') {
       return;
     }
 
-    prepareSpeech();
+    const lifecycleGeneration = this.lifecycleGeneration;
+    const audioReady = await this.spriteSpeechPlayer.resumeFromUserGesture();
+    if (!this.isLifecycleCurrent(lifecycleGeneration, 'paused')) return;
+    if (this.spriteSpeechPlayer.getState() !== 'ready' || !audioReady) {
+      this.callbacks.onError?.(new Error('Offline voice pack is not ready.'));
+      return;
+    }
 
     const now = Date.now();
     let pausedDuration = 0;
@@ -445,7 +509,18 @@ export class BackgroundTimerEngine {
       this.pauseStartTime = null;
     }
 
-    if (this.resetCadenceOnResume && this.settings.mode !== 'departure') {
+    if (this.settings.mode === 'departure') {
+      const secondsRemaining = Math.max(
+        0,
+        Math.floor(((this.departureTargetTimestamp ?? now) - now) / 1000)
+      );
+      this.markPastDepartureMilestones(secondsRemaining, true);
+      this.nextAnnouncementTime = this.calculateNextDepartureMilestoneTime(
+        now,
+        secondsRemaining
+      );
+      this.resetCadenceOnResume = false;
+    } else if (this.resetCadenceOnResume) {
       // A cadence selected while paused starts only when the timer resumes.
       this.resetIntervalSchedule(now);
       this.resetCadenceOnResume = false;
@@ -458,11 +533,14 @@ export class BackgroundTimerEngine {
 
     this.setState('running');
 
-    await this.silentAudioLoop.start();
+    await this.silentAudioLoop.start(this.spriteSpeechPlayer.getAudioContext());
+    if (!this.isLifecycleCurrent(lifecycleGeneration, 'running')) return;
     if (this.settings.keepAwake) {
       await this.wakeLockService.request();
+      if (!this.isLifecycleCurrent(lifecycleGeneration, 'running')) return;
     }
 
+    if (!this.isLifecycleCurrent(lifecycleGeneration, 'running')) return;
     this.updateMediaSessionState('playing');
     this.handleTick(now);
   }
@@ -471,15 +549,13 @@ export class BackgroundTimerEngine {
    * Stops the engine and resets session state.
    */
   stop(): void {
+    this.lifecycleGeneration += 1;
+    this.manualAnnouncementGeneration += 1;
     // Invalidate audio even while idle: a manual voice test can still be
     // awaiting its chime when the component is unmounted.
     this.cancelAudioSequence();
 
-    if (this.state === 'idle') {
-      return;
-    }
-
-    this.setState('idle');
+    if (this.state !== 'idle') this.setState('idle');
     this.stopTimerLoop();
 
     this.wakeLockService.release().catch(() => {});
@@ -493,6 +569,7 @@ export class BackgroundTimerEngine {
     this.totalPausedDuration = 0;
     this.nextAnnouncementTime = null;
     this.resetCadenceOnResume = false;
+    this.focusEndAnnouncementPending = false;
     this.departureTargetTimestamp = null;
     this.departureInitialSeconds = null;
     this.triggeredMilestones.clear();
@@ -502,7 +579,9 @@ export class BackgroundTimerEngine {
    * Permanently stops and cleans up engine resources.
    */
   destroy(): void {
+    this.destroyed = true;
     this.stop();
+    this.spriteSpeechPlayer.release();
     this.clearMediaSession();
   }
 
@@ -513,6 +592,11 @@ export class BackgroundTimerEngine {
     const prevWakeLock = this.settings.keepAwake;
     const prevMode = this.settings.mode;
     const prevTarget = this.settings.departure?.targetTime;
+    const prevDepartureCadence = {
+      smartDensity: this.settings.departure.smartDensity,
+      intervalMinutes: this.settings.departure.intervalMinutes,
+      customMilestonesMinutes: this.settings.departure.customMilestonesMinutes,
+    };
     const prevInterval = this.settings.intervalMinutes;
     const prevClockSync = this.settings.clockSync;
 
@@ -530,9 +614,17 @@ export class BackgroundTimerEngine {
     };
 
     const modeChanged = prevMode !== this.settings.mode;
+    if (modeChanged) {
+      this.focusEndAnnouncementPending = false;
+    }
     const cadenceChanged =
       prevInterval !== this.settings.intervalMinutes ||
       prevClockSync !== this.settings.clockSync;
+    const departureCadenceChanged =
+      prevDepartureCadence.smartDensity !== this.settings.departure.smartDensity ||
+      prevDepartureCadence.intervalMinutes !== this.settings.departure.intervalMinutes ||
+      JSON.stringify(prevDepartureCadence.customMilestonesMinutes ?? []) !==
+        JSON.stringify(this.settings.departure.customMilestonesMinutes ?? []);
 
     if (
       this.settings.mode === 'departure' &&
@@ -549,13 +641,7 @@ export class BackgroundTimerEngine {
           Math.floor((this.departureTargetTimestamp - now.getTime()) / 1000)
         );
         this.departureInitialSeconds = Math.max(1, remaining);
-        this.triggeredMilestones.clear();
-        const milestones = this.getDepartureMilestones();
-        for (const m of milestones) {
-          if (m * 60 >= remaining) {
-            this.triggeredMilestones.add(m);
-          }
-        }
+        this.markPastDepartureMilestones(remaining, true);
       }
     }
 
@@ -567,6 +653,12 @@ export class BackgroundTimerEngine {
           0,
           Math.floor(((this.departureTargetTimestamp ?? now) - now) / 1000)
         );
+        if (departureCadenceChanged) {
+          // A live cadence change starts from the next still-future milestone.
+          // Mark every new milestone at or behind the current countdown point
+          // so switching modes cannot replay a boundary already passed.
+          this.markPastDepartureMilestones(secondsRemaining, true);
+        }
         this.nextAnnouncementTime = this.calculateNextDepartureMilestoneTime(
           now,
           secondsRemaining
@@ -590,6 +682,12 @@ export class BackgroundTimerEngine {
       } else if (cadenceChanged || modeChanged) {
         this.resetCadenceOnResume = true;
       }
+
+      if (this.settings.keepAwake && !prevWakeLock) {
+        this.wakeLockService.request().catch(() => {});
+      } else if (!this.settings.keepAwake && prevWakeLock) {
+        this.wakeLockService.release().catch(() => {});
+      }
     }
   }
 
@@ -597,9 +695,18 @@ export class BackgroundTimerEngine {
    * Manually triggers an immediate voice time announcement.
    */
   async triggerImmediateAnnouncement(): Promise<void> {
-    // Keep this synchronous: the retry button is a fresh user gesture and is
-    // our best chance to resume a speech engine suspended by Android.
-    prepareSpeech();
+    if (this.destroyed) return;
+    const lifecycleGeneration = this.lifecycleGeneration;
+    const manualGeneration = ++this.manualAnnouncementGeneration;
+    const audioReady = await this.spriteSpeechPlayer.resumeFromUserGesture();
+    if (
+      !this.isLifecycleCurrent(lifecycleGeneration) ||
+      manualGeneration !== this.manualAnnouncementGeneration
+    ) return;
+    if (this.spriteSpeechPlayer.getState() !== 'ready' || !audioReady) {
+      this.callbacks.onError?.(new Error('Offline voice pack is not ready.'));
+      return;
+    }
 
     const now = new Date();
     const elapsedMs = this.startTime
@@ -607,13 +714,13 @@ export class BackgroundTimerEngine {
       : 0;
     const elapsedMinutes = Math.floor(Math.max(0, elapsedMs) / 60000);
 
-    const text = formatPolishTime(now, this.settings.formatStyle, {
+    const plan = planTimeAnnouncement(now, this.settings.formatStyle, {
       elapsedMinutes,
       isSessionEnd: false,
     });
 
     const payload: AnnouncementPayload = {
-      text,
+      text: plan.text,
       timestamp: now,
       elapsedMinutes,
       isFocusEnd: false,
@@ -621,7 +728,18 @@ export class BackgroundTimerEngine {
     };
 
     this.callbacks.onAnnounce?.(payload);
-    await this.executeAudioSequence(text);
+    await this.executeAudioSequence(plan);
+  }
+
+  private isLifecycleCurrent(
+    generation: number,
+    expectedState?: ClockState
+  ): boolean {
+    return (
+      !this.destroyed &&
+      generation === this.lifecycleGeneration &&
+      (expectedState === undefined || this.state === expectedState)
+    );
   }
 
   /**
@@ -684,6 +802,7 @@ export class BackgroundTimerEngine {
    * Core tick calculation and announcement triggering logic.
    */
   private handleTick(timestamp: number): void {
+    this.reapAudioSequenceIfElapsed();
     const now = new Date(timestamp);
 
     const elapsedMs =
@@ -710,66 +829,74 @@ export class BackgroundTimerEngine {
         );
       }
 
-      secondsRemaining = Math.max(
+      const departureSecondsRemaining = Math.max(
         0,
         Math.floor((this.departureTargetTimestamp - timestamp) / 1000)
       );
-      totalSeconds = this.departureInitialSeconds ?? Math.max(1, secondsRemaining);
-      const elapsedInDeparture = Math.max(0, totalSeconds - secondsRemaining);
+      secondsRemaining = departureSecondsRemaining;
+      totalSeconds = this.departureInitialSeconds ?? Math.max(1, departureSecondsRemaining);
+      const elapsedInDeparture = Math.max(0, totalSeconds - departureSecondsRemaining);
       progressPercent = Math.min(100, Math.max(0, (elapsedInDeparture / totalSeconds) * 100));
 
       const targetDate = new Date(this.departureTargetTimestamp);
       const milestones = this.getDepartureMilestones();
 
       if (this.state === 'running' && !this.isAnnouncing) {
-        for (const m of milestones) {
-          const milestoneSec = m * 60;
-          if (secondsRemaining <= milestoneSec && !this.triggeredMilestones.has(m)) {
-            this.triggeredMilestones.add(m);
+        const reachedMilestones = milestones.filter(
+          (milestone) =>
+            departureSecondsRemaining <= milestone * 60 &&
+            !this.triggeredMilestones.has(milestone)
+        );
+        const shouldFinish = departureSecondsRemaining <= 0 && reachedMilestones.includes(0);
+        for (const milestone of reachedMilestones) {
+          this.triggeredMilestones.add(milestone);
+        }
 
-            if (secondsRemaining <= 0 || m === 0) {
-              const text = formatDepartureAnnouncement(
-                0,
-                this.settings.departure.label,
-                targetDate,
-                true
-              );
-              const payload: AnnouncementPayload = {
-                text,
-                timestamp: now,
-                elapsedMinutes,
-                isFocusEnd: false,
-                reason: 'session_end',
-              };
-              this.callbacks.onAnnounce?.(payload);
-              this.executeAudioSequence(text).then(() => {
-                this.stop();
-              });
-            } else {
-              const text = formatDepartureAnnouncement(
-                secondsRemaining,
-                this.settings.departure.label,
-                targetDate,
-                false
-              );
-              const payload: AnnouncementPayload = {
-                text,
-                timestamp: now,
-                elapsedMinutes,
-                isFocusEnd: false,
-                reason: 'interval',
-              };
-              this.callbacks.onAnnounce?.(payload);
-              this.executeAudioSequence(text);
+        if (shouldFinish) {
+          const plan = planDepartureAnnouncement(
+            0,
+            this.settings.departure.label,
+            targetDate,
+            true
+          );
+          const payload: AnnouncementPayload = {
+            text: plan.text,
+            timestamp: now,
+            elapsedMinutes,
+            isFocusEnd: false,
+            reason: 'session_end',
+          };
+          this.callbacks.onAnnounce?.(payload);
+          const lifecycleGeneration = this.lifecycleGeneration;
+          this.executeAudioSequence(plan).then(() => {
+            if (this.isLifecycleCurrent(lifecycleGeneration, 'running')) {
+              this.stop();
             }
-            break;
-          }
+          });
+        } else if (reachedMilestones.some((milestone) => milestone > 0)) {
+          // A throttled background tick can cross several thresholds. Mark
+          // every missed one above, but speak the current remaining time once.
+          const plan = planDepartureAnnouncement(
+            departureSecondsRemaining,
+            this.settings.departure.label,
+            targetDate,
+            false
+          );
+          const payload: AnnouncementPayload = {
+            text: plan.text,
+            timestamp: now,
+            elapsedMinutes,
+            isFocusEnd: false,
+            reason: 'interval',
+          };
+          this.callbacks.onAnnounce?.(payload);
+          this.executeAudioSequence(plan);
         }
       }
 
       this.nextAnnouncementTime = this.calculateNextDepartureMilestoneTime(
         timestamp,
-        secondsRemaining
+        departureSecondsRemaining
       );
     } else if (this.settings.mode === 'focus') {
       const focusTotalSec = this.settings.focusDurationMinutes * 60;
@@ -786,7 +913,7 @@ export class BackgroundTimerEngine {
     if (this.settings.mode !== 'departure') {
       // Check announcement conditions if running
       if (this.state === 'running' && !this.isAnnouncing) {
-        if (isFocusEnd) {
+        if (isFocusEnd && !this.focusEndAnnouncementPending) {
           this.triggerFocusEndAnnouncement(now, elapsedMinutes);
         } else if (
           this.nextAnnouncementTime &&
@@ -847,13 +974,13 @@ export class BackgroundTimerEngine {
    * Triggers scheduled interval announcement.
    */
   private triggerIntervalAnnouncement(now: Date, elapsedMinutes: number): void {
-    const text = formatPolishTime(now, this.settings.formatStyle, {
+    const plan = planTimeAnnouncement(now, this.settings.formatStyle, {
       elapsedMinutes,
       isSessionEnd: false,
     });
 
     const payload: AnnouncementPayload = {
-      text,
+      text: plan.text,
       timestamp: now,
       elapsedMinutes,
       isFocusEnd: false,
@@ -861,20 +988,23 @@ export class BackgroundTimerEngine {
     };
 
     this.callbacks.onAnnounce?.(payload);
-    this.executeAudioSequence(text);
+    this.executeAudioSequence(plan);
   }
 
   /**
    * Triggers focus session completion announcement and stops engine.
    */
   private triggerFocusEndAnnouncement(now: Date, elapsedMinutes: number): void {
-    const text = formatPolishTime(now, 'elapsed', {
+    if (this.focusEndAnnouncementPending) return;
+    this.focusEndAnnouncementPending = true;
+
+    const plan = planTimeAnnouncement(now, 'elapsed', {
       elapsedMinutes,
       isSessionEnd: true,
     });
 
     const payload: AnnouncementPayload = {
-      text,
+      text: plan.text,
       timestamp: now,
       elapsedMinutes,
       isFocusEnd: true,
@@ -882,75 +1012,104 @@ export class BackgroundTimerEngine {
     };
 
     this.callbacks.onAnnounce?.(payload);
-    this.executeAudioSequence(text).then(() => {
-      this.stop();
+    const lifecycleGeneration = this.lifecycleGeneration;
+    this.executeAudioSequence(plan).then(() => {
+      if (this.isLifecycleCurrent(lifecycleGeneration, 'running')) {
+        this.stop();
+      }
     });
   }
 
   /**
-   * Executes the audio sequence: gentle chime (if enabled) followed by voice synthesis.
+   * Schedules the chime and every prerecorded fragment in one synchronous Web
+   * Audio operation. There is no fetch, decode, timer or await between them.
    */
-  private async executeAudioSequence(text: string): Promise<void> {
-    const replacesActiveSequence = this.isAnnouncing;
+  private async executeAudioSequence(plan: AnnouncementPlan): Promise<boolean> {
+    this.cancelAudioSequence();
     const sequenceGeneration = ++this.audioSequenceGeneration;
-    if (replacesActiveSequence) {
-      stopSpeaking();
-    }
     this.isAnnouncing = true;
 
     try {
-      if (this.settings.chimeEnabled) {
-        await playChime({
-          volume: this.settings.chimeVolume,
-          tone: this.settings.chimeTone,
-        });
+      const context = this.spriteSpeechPlayer.getAudioContext();
+      if (!context || this.spriteSpeechPlayer.getState() !== 'ready') {
+        throw new Error('Offline voice pack is not ready.');
       }
+      const startAt = context.currentTime + 0.05;
+      this.scheduledChime = this.settings.chimeEnabled
+        ? scheduleChime(context, startAt, {
+            volume: this.settings.chimeVolume,
+            tone: this.settings.chimeTone,
+          })
+        : null;
+      const voiceStartAt = (this.scheduledChime?.endAt ?? startAt) + 0.08;
+      const voiceSequence = this.spriteSpeechPlayer.schedule(
+        plan,
+        voiceStartAt,
+        this.settings.volume
+      );
+      this.scheduledVoice = voiceSequence;
 
-      if (sequenceGeneration !== this.audioSequenceGeneration) {
-        return;
-      }
-
-      const outcome = await speakText(text, {
-        voiceURI: this.settings.voiceURI,
-        rate: this.settings.rate,
-        pitch: this.settings.pitch,
-        volume: this.settings.volume,
-      });
-
-      if (sequenceGeneration !== this.audioSequenceGeneration) {
-        return;
-      }
-
+      const status = await voiceSequence.done;
+      if (sequenceGeneration !== this.audioSequenceGeneration) return false;
+      const outcome: SpeechOutcome = {
+        status: status === 'completed' ? 'completed' : 'cancelled',
+        attempts: 1,
+        visibilityState:
+          typeof document === 'undefined' ? 'unknown' : document.visibilityState,
+      };
       this.callbacks.onSpeechOutcome?.(outcome);
-
-      if (this.isSpeechFailure(outcome)) {
-        this.callbacks.onError?.(
-          new Error(`Nie udało się uruchomić syntezy mowy (${outcome.status}).`)
-        );
-      }
-    } catch (err) {
+      return status === 'completed';
+    } catch (error) {
       if (sequenceGeneration === this.audioSequenceGeneration) {
-        this.callbacks.onError?.(err as Error);
+        this.scheduledVoice?.stop();
+        this.scheduledChime?.stop();
+        this.spriteSpeechPlayer.cancel(this.scheduledVoice ?? undefined);
+        // Avoid a second stop from the shared finally block. Real scheduled
+        // chimes are idempotent, but single ownership keeps mocks and custom
+        // implementations honest too.
+        this.scheduledChime = null;
+        const outcome: SpeechOutcome = {
+          status: 'failed',
+          attempts: 1,
+          errorCode: error instanceof Error ? error.message : 'voice-playback-failed',
+          visibilityState:
+            typeof document === 'undefined' ? 'unknown' : document.visibilityState,
+        };
+        this.callbacks.onSpeechOutcome?.(outcome);
+        this.callbacks.onError?.(error as Error);
       }
+      return false;
     } finally {
       if (sequenceGeneration === this.audioSequenceGeneration) {
+        // Android may omit an oscillator `onended` event while backgrounded.
+        // Voice completion is an independent audio-clock proof that the earlier
+        // gong has elapsed, so disconnect its graph explicitly and idempotently.
+        this.scheduledChime?.stop();
+        this.scheduledVoice = null;
+        this.scheduledChime = null;
         this.isAnnouncing = false;
       }
+    }
+  }
+
+  private reapAudioSequenceIfElapsed(): void {
+    if (!this.isAnnouncing || !this.scheduledVoice) return;
+    if (this.scheduledVoice.reap()) {
+      this.scheduledChime?.stop();
+      this.scheduledVoice = null;
+      this.scheduledChime = null;
+      this.isAnnouncing = false;
     }
   }
 
   private cancelAudioSequence(): void {
     this.audioSequenceGeneration += 1;
     this.isAnnouncing = false;
-    stopSpeaking();
-  }
-
-  private isSpeechFailure(outcome: SpeechOutcome): boolean {
-    return (
-      outcome.status === 'unavailable' ||
-      outcome.status === 'not-started' ||
-      outcome.status === 'failed'
-    );
+    this.scheduledVoice?.stop();
+    this.scheduledChime?.stop();
+    this.spriteSpeechPlayer.cancel();
+    this.scheduledVoice = null;
+    this.scheduledChime = null;
   }
 
   /**

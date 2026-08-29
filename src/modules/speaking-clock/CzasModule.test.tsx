@@ -4,31 +4,39 @@ import userEvent from '@testing-library/user-event';
 import { SpeakingClockModule } from './SpeakingClockModule';
 import { getToolById } from '../../core/registry';
 import { czasIds } from './testIds';
-import * as speechService from './services/speechService';
 
-// Mock Web Speech & Chime services
-vi.mock('./services/speechService', () => ({
-  isSpeechSynthesisSupported: vi.fn(() => true),
-  prepareSpeech: vi.fn(() => true),
-  getAllVoices: vi.fn(async () => [
-    { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
-    { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
-  ]),
-  getPolishVoices: vi.fn(async () => [
-    { voiceURI: 'pl-voice-1', name: 'Zosia PL', lang: 'pl-PL', default: true } as SpeechSynthesisVoice,
-    { voiceURI: 'pl-voice-2', name: 'Krzysztof PL', lang: 'pl-PL', default: false } as SpeechSynthesisVoice,
-  ]),
-  speakText: vi.fn(async () => ({
-    status: 'completed',
-    attempts: 1,
-    visibilityState: 'visible',
+const voicePlayerMocks = vi.hoisted(() => ({
+  state: 'ready' as 'idle' | 'loading' | 'ready' | 'failed',
+  prepare: vi.fn(async () => ({ status: 'ready' as const, decodedBytes: 1024, fragmentCount: 337 })),
+  resume: vi.fn(async () => true),
+  schedule: vi.fn(() => ({
+    startAt: 1,
+    endAt: 2,
+    sources: [],
+    done: Promise.resolve('completed' as const),
+    reap: vi.fn(() => false),
+    stop: vi.fn(),
   })),
-  stopSpeaking: vi.fn(),
-  isSpeaking: vi.fn(() => false),
+  cancel: vi.fn(),
+  release: vi.fn(),
+  context: { currentTime: 0, state: 'running', destination: {} } as AudioContext,
+}));
+
+vi.mock('./services/spriteSpeechPlayer', () => ({
+  SpriteSpeechPlayer: vi.fn().mockImplementation(() => ({
+    prepare: voicePlayerMocks.prepare,
+    getState: () => voicePlayerMocks.state,
+    getAudioContext: () => voicePlayerMocks.context,
+    resumeFromUserGesture: voicePlayerMocks.resume,
+    schedule: voicePlayerMocks.schedule,
+    cancel: voicePlayerMocks.cancel,
+    release: voicePlayerMocks.release,
+  })),
 }));
 
 vi.mock('../../lib/audio/chime', () => ({
   playChime: vi.fn(async () => {}),
+  scheduleChime: vi.fn((_context, startAt) => ({ startAt, endAt: startAt + 0.8, stop: vi.fn() })),
   stopChime: vi.fn(),
   isWebAudioSupported: vi.fn(() => true),
 }));
@@ -60,6 +68,17 @@ describe('Moduł Czas', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+    voicePlayerMocks.state = 'ready';
+    voicePlayerMocks.prepare.mockResolvedValue({ status: 'ready', decodedBytes: 1024, fragmentCount: 337 });
+    voicePlayerMocks.resume.mockResolvedValue(true);
+    voicePlayerMocks.schedule.mockImplementation(() => ({
+      startAt: 1,
+      endAt: 2,
+      sources: [],
+      done: Promise.resolve('completed' as const),
+      reap: vi.fn(() => false),
+      stop: vi.fn(),
+    }));
   });
 
   it('jest zarejestrowany jako narzędzie o niezmienionym identyfikatorze', () => {
@@ -130,6 +149,26 @@ describe('Moduł Czas', () => {
     expect(screen.getByTestId(czasIds.statusBadge).textContent).toBe(runningStatus);
   });
 
+  it('pozwala zmienić kadencję wyjścia bez odblokowania celu działającego odliczania', async () => {
+    const user = userEvent.setup();
+    render(<SpeakingClockModule />);
+
+    await user.click(screen.getByTestId(czasIds.modeTab('departure')));
+    await user.click(screen.getByTestId(czasIds.primaryAction));
+    await waitFor(() => expect(screen.getByTestId(czasIds.modeTab('focus'))).toBeDisabled());
+    const runningStatus = screen.getByTestId(czasIds.statusBadge).textContent;
+
+    await user.click(screen.getByTestId(czasIds.settingsRow));
+    await screen.findByRole('dialog');
+    expect(screen.getByTestId(czasIds.departureTime)).toBeDisabled();
+    const fiveMinutes = screen.getByTestId(czasIds.cadenceFixed(5));
+    expect(fiveMinutes).toBeEnabled();
+
+    await user.click(fiveMinutes);
+    expect(fiveMinutes).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId(czasIds.statusBadge).textContent).toBe(runningStatus);
+  });
+
   it('wiersz podsumowania otwiera arkusz ustawień', async () => {
     const user = userEvent.setup();
     render(<SpeakingClockModule />);
@@ -152,26 +191,28 @@ describe('Moduł Czas', () => {
     }
   });
 
-  it('nie pokazuje ostrzeżenia o głosie, gdy polski głos jest dostępny', async () => {
+  it('nie pokazuje ostrzeżenia, gdy pakiet offline jest gotowy', async () => {
     render(<SpeakingClockModule />);
-    await waitFor(() => expect(screen.getByTestId(czasIds.disc)).toBeInTheDocument());
-    expect(screen.queryByTestId(czasIds.noVoiceNotice)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId(czasIds.voicePackLoading)).not.toBeInTheDocument());
+    expect(screen.queryByTestId(czasIds.voicePackFailure)).not.toBeInTheDocument();
   });
 
-  it('ostrzega, gdy telefon nie ma polskiego głosu', async () => {
-    // Silnik nie eskaluje tego przypadku, więc bez tego komunikatu użytkowniczka
-    // wciska Start i po prostu panuje cisza.
-    vi.mocked(speechService.getPolishVoices).mockResolvedValue([]);
+  it('blokuje Start i ostrzega, gdy pakiet offline nie może się przygotować', async () => {
+    voicePlayerMocks.state = 'failed';
+    voicePlayerMocks.prepare.mockResolvedValueOnce({
+      status: 'failed',
+      code: 'sprite-unavailable',
+      message: 'offline',
+    } as never);
     render(<SpeakingClockModule />);
 
-    expect(await screen.findByTestId(czasIds.noVoiceNotice)).toBeInTheDocument();
+    expect(await screen.findByTestId(czasIds.voicePackFailure)).toBeInTheDocument();
+    expect(screen.getByTestId(czasIds.primaryAction)).toBeDisabled();
   });
 
-  it('pokazuje błąd startu mowy i pozwala ponowić test bez zatrzymywania zegara', async () => {
-    vi.mocked(speechService.speakText).mockResolvedValueOnce({
-      status: 'not-started',
-      attempts: 2,
-      visibilityState: 'hidden',
+  it('pokazuje błąd odtwarzania i pozwala ponowić test bez zatrzymywania zegara', async () => {
+    voicePlayerMocks.schedule.mockImplementationOnce(() => {
+      throw new Error('missing-fragment');
     });
     const user = userEvent.setup();
     render(<SpeakingClockModule />);

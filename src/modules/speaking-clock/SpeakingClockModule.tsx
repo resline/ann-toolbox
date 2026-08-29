@@ -9,7 +9,7 @@
  * 500 px poniżej zgięcia ekranu, choć jest jedynym powodem, dla którego się tu
  * wchodzi.
  *
- * Silniki (odliczanie w tle, mowa, gong, fleksja) pozostają nietknięte.
+ * Logika odliczania pozostaje w silniku; ten komponent składa tylko widok.
  */
 
 import React, { useState } from 'react';
@@ -23,6 +23,21 @@ import { TimeTimerDisc } from './components/TimeTimerDisc';
 import { QuickTimeAdjusters } from './components/QuickTimeAdjusters';
 import { CzasSheet } from './components/CzasSheet';
 import { czasIds } from './testIds';
+import type { VoicePackFailureCode } from './services/spriteSpeechPlayer';
+
+function voicePackFailureMessage(code: VoicePackFailureCode | null): string {
+  if (code === 'unsupported') return czas.notice.voiceUnsupported;
+  if (code === 'memory-limit') return czas.notice.voiceMemoryLimit;
+  if (
+    code === 'manifest-invalid' ||
+    code === 'integrity-failed' ||
+    code === 'decode-failed' ||
+    code === 'pack-incomplete'
+  ) {
+    return czas.notice.voiceInvalid;
+  }
+  return czas.notice.voiceUnavailable;
+}
 
 export interface SpeakingClockModuleProps {
   className?: string;
@@ -52,8 +67,8 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
     currentTime,
     secondsUntilNext,
     settings,
-    availableVoices,
-    isLoadingVoices,
+    voicePackStatus,
+    voicePackFailureCode,
     isTestingVoice,
     speechFailure,
     totalSpanSeconds,
@@ -67,6 +82,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
     updateSettings,
     setDepartureSettings,
     testVoiceNow,
+    retryVoicePack,
     setMode,
     addMinutes,
   } = useSpeakingClock();
@@ -74,10 +90,6 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
   const isRunning = clockState === 'running';
   const isPaused = clockState === 'paused';
   const isIdle = clockState === 'idle';
-
-  // Silnik nie eskaluje braku głosu, a użytkowniczka wciska Start i słyszy ciszę.
-  // Tego da się uniknąć bez wchodzenia w silnik: hook już wie, ile głosów znalazł.
-  const hasNoPolishVoice = !isLoadingVoices && availableVoices.length === 0;
 
   let discLabel: string = czas.disc.clock;
   let discValue = formatClock(currentTime);
@@ -121,10 +133,24 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
         />
       </div>
 
-      {hasNoPolishVoice && (
-        <Text data-testid={czasIds.noVoiceNotice} size="sm" tone="muted" className="text-center">
-          {czas.notice.noPolishVoice}
+      {voicePackStatus === 'loading' && (
+        <Text data-testid={czasIds.voicePackLoading} size="sm" tone="muted" className="text-center">
+          {czas.notice.voiceLoading}
         </Text>
+      )}
+
+      {voicePackStatus === 'failed' && (
+        <div
+          role="alert"
+          data-testid={czasIds.voicePackFailure}
+          data-error-code={voicePackFailureCode || undefined}
+          className="flex flex-col gap-2 rounded-control border border-caution/40 bg-caution-soft p-3"
+        >
+          <Text size="sm">{voicePackFailureMessage(voicePackFailureCode)}</Text>
+          <Button variant="secondary" tone="module" onClick={retryVoicePack}>
+            {czas.action.retryVoice}
+          </Button>
+        </div>
       )}
 
       {speechFailure && (
@@ -190,6 +216,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
             tone="module"
             size="lg"
             onClick={start}
+            disabled={voicePackStatus !== 'ready'}
           >
             <Play className="w-5 h-5" aria-hidden />
             {common.action.start}
@@ -250,8 +277,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
         settings={settings}
-        availableVoices={availableVoices}
-        isLoadingVoices={isLoadingVoices}
+        voicePackStatus={voicePackStatus}
         isTestingVoice={isTestingVoice}
         onUpdateSettings={updateSettings}
         onDepartureChange={setDepartureSettings}

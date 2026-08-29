@@ -1,0 +1,2717 @@
+{
+  "schemaVersion": 1,
+  "grammarVersion": "pl-clock-fragments-v1",
+  "registrySha256": "b88d01bcd3cdb82b559d1aec60e99cb59a4c38c37d73136544f697ddbe575504",
+  "packId": "pl-PL-kore-gemini-3.1-v1",
+  "model": "gemini-3.1-flash-tts-preview",
+  "voice": "Kore",
+  "locale": "pl-PL",
+  "sourceSampleRateHz": 24000,
+  "runtimeSampleRateHz": 24000,
+  "channels": 1,
+  "generatedAt": "2026-08-29T12:36:00.381Z",
+  "sprite": {
+    "url": "/audio/voice/pl-PL-kore-gemini-3.1-v1/sprite.4425e127ae868ac6ca4d46859dff5a732c85408abca258b83ff3ec4f57fe2c16.ogg",
+    "sha256": "4425e127ae868ac6ca4d46859dff5a732c85408abca258b83ff3ec4f57fe2c16",
+    "encodedBytes": 2339504,
+    "sourceFrameCount": 9354852
+  },
+  "fragments": {
+    "fixed.jestGodzina.cont": {
+      "startFrame": 720,
+      "frameCount": 28820,
+      "text": "Jest godzina",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "1d0b5943773dd57cd3f5632c0cb22dcb7e5d420beda833487492624dae4e6acf"
+    },
+    "hour.precise.cont.0": {
+      "startFrame": 30980,
+      "frameCount": 18833,
+      "text": "zero",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "2e56b9cdc978a00f7db62b51992d49bcb5077dd5819092478770d2db96c28233"
+    },
+    "hour.precise.cont.1": {
+      "startFrame": 51253,
+      "frameCount": 18229,
+      "text": "pierwsza",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "c6db1852dc36376d158c7a5da4127ed18da2ca1551d91d22bdcf72e92ecc36e0"
+    },
+    "hour.precise.cont.2": {
+      "startFrame": 70922,
+      "frameCount": 18246,
+      "text": "druga",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "77b65551e762cee615b063407d507e0b97b24fd9c29c3060a8701f5198482054"
+    },
+    "hour.precise.cont.3": {
+      "startFrame": 90608,
+      "frameCount": 16351,
+      "text": "trzecia",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "44b0e11dadef320b2559ebdc712fb04dfbd07e7a35dcd4e303349e00e6b7f584"
+    },
+    "hour.precise.cont.4": {
+      "startFrame": 108399,
+      "frameCount": 25465,
+      "text": "czwarta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "9fd3b1712ceadf2862845da14a23117508b3d148fcfa468fd55e3916b3e248f9"
+    },
+    "hour.precise.cont.5": {
+      "startFrame": 135304,
+      "frameCount": 16609,
+      "text": "piąta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "2a52f282f752f5405a9153df8b9306c5fa07fed9dba7b0989630629df8e7fc13"
+    },
+    "hour.precise.cont.6": {
+      "startFrame": 153353,
+      "frameCount": 17877,
+      "text": "szósta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "085f7d19c4b879c71b77dbe5bb7479dba715e764617090d3939b2cb3b2df8bc8"
+    },
+    "hour.precise.cont.7": {
+      "startFrame": 172670,
+      "frameCount": 15610,
+      "text": "siódma",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "83fa114f0e12ae8119a8f5c95128df682eaaa5370460f5bef91784198a1e5290"
+    },
+    "hour.precise.cont.8": {
+      "startFrame": 189720,
+      "frameCount": 16729,
+      "text": "ósma",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b49dde3bfc14509496361337b4352b039fdee11072765c6f0f2db0f492e00d3e"
+    },
+    "hour.precise.cont.9": {
+      "startFrame": 207889,
+      "frameCount": 24412,
+      "text": "dziewiąta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b9293f4ce1d2b7ccabe755a66a3bf8341778dfd8eb5ca682220b01cfe3edb945"
+    },
+    "hour.precise.cont.10": {
+      "startFrame": 233741,
+      "frameCount": 23090,
+      "text": "dziesiąta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "4aec4fb14126d570876dd011215277770ad8e71ece2c2e57321f604b7d0156ee"
+    },
+    "hour.precise.cont.11": {
+      "startFrame": 258271,
+      "frameCount": 23771,
+      "text": "jedenasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "19ff76fd7fce0bcf56b0635f9ba154e2620c2135f94b77a3ab45d81330b49561"
+    },
+    "hour.precise.cont.12": {
+      "startFrame": 283482,
+      "frameCount": 22017,
+      "text": "dwunasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "257715a9a7ba6e4276a24e1985c337f54d28b09f98dfdb4e8309e1a4eb19f3ee"
+    },
+    "hour.precise.cont.13": {
+      "startFrame": 306939,
+      "frameCount": 20684,
+      "text": "trzynasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "299de36a198b30ca9b3b834aca5afeb92e1f7234f98e52821465fc2e33961ede"
+    },
+    "hour.precise.cont.14": {
+      "startFrame": 329063,
+      "frameCount": 23435,
+      "text": "czternasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "c1830a516c810059690311359199f3ad10a854dde3fd7bc2b8b0276153146ddb"
+    },
+    "hour.precise.cont.15": {
+      "startFrame": 353938,
+      "frameCount": 23793,
+      "text": "piętnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "44533d23348fa69f48c576481dcf2eee0e5f5dad3493f1f62f72799681e2ef33"
+    },
+    "hour.precise.cont.16": {
+      "startFrame": 379171,
+      "frameCount": 23528,
+      "text": "szesnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "a3ecd9fb500850d39a42d947caed7b39e391034a71ce66c03136ab678b40039e"
+    },
+    "hour.precise.cont.17": {
+      "startFrame": 404139,
+      "frameCount": 23553,
+      "text": "siedemnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "08679c836003892cf1810ed79a33dd0d44954f5a46f43fd33c3dd147af62d09d"
+    },
+    "hour.precise.cont.18": {
+      "startFrame": 429132,
+      "frameCount": 23605,
+      "text": "osiemnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "635a4be3e07771e489ff08b196e62e43d59b5e8de6ab2ce47599ee2c44bfd83b"
+    },
+    "hour.precise.cont.19": {
+      "startFrame": 454177,
+      "frameCount": 26218,
+      "text": "dziewiętnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "3b7da711bdbfaf3b447be0ce324913f17e1d233c8fc8bfd313b2094a44c04410"
+    },
+    "hour.precise.cont.20": {
+      "startFrame": 481835,
+      "frameCount": 21183,
+      "text": "dwudziesta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "f71b448e89d052fd32731ffa2ccf3e212d220749070e7ee3a8598786fa136106"
+    },
+    "hour.precise.cont.21": {
+      "startFrame": 504458,
+      "frameCount": 33851,
+      "text": "dwudziesta pierwsza",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "10176899ddd9966e904bf08a3afc5b7f1a4bf5b6d6f1e4e6ac1fbc4e6656a4d6"
+    },
+    "hour.precise.cont.22": {
+      "startFrame": 539749,
+      "frameCount": 36089,
+      "text": "dwudziesta druga",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "0ffd40d6c1273ecb2b4dee195e4f9bd79bd31a97f5a2b4ba96ca43c897e7a98a"
+    },
+    "hour.precise.cont.23": {
+      "startFrame": 577278,
+      "frameCount": 37689,
+      "text": "dwudziesta trzecia",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "0e5cf418ce745cd3d556d2ca358ce7c5519e72a4e8e3ceaf828edd609f6ef7b3"
+    },
+    "hour.short.cont.0": {
+      "startFrame": 616407,
+      "frameCount": 15476,
+      "text": "Zero",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "a39800ce2e4b965154fe1006cb64286ad4e98ce5efad31ab8ecdf0c12e0b02f3"
+    },
+    "hour.short.cont.1": {
+      "startFrame": 633323,
+      "frameCount": 18596,
+      "text": "Pierwsza",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "328da8125e1c15aeb46c4f5e90aeea2b61f3b490b859f7688035a0ddfcdeb20b"
+    },
+    "hour.short.cont.2": {
+      "startFrame": 653359,
+      "frameCount": 17702,
+      "text": "Druga",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "7eef90e9c61a8b276bdc845f71597d5bdef22764c9deb62fa1e04321c7d47f33"
+    },
+    "hour.short.cont.3": {
+      "startFrame": 672501,
+      "frameCount": 18831,
+      "text": "Trzecia",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "a59968217dc75140e4784deac4e877fbca0b7111369d54c8b6f7eae4b4aef577"
+    },
+    "hour.short.cont.4": {
+      "startFrame": 692772,
+      "frameCount": 19456,
+      "text": "Czwarta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "5ccfab45304887e6112acfe1da3c1c87c3e4588fe1aca57225937b3f5b86be62"
+    },
+    "hour.short.cont.5": {
+      "startFrame": 713668,
+      "frameCount": 15657,
+      "text": "Piąta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "25b2af426f3f6b194858af80673df877394cc8fc76a0fdfae3013579a6411ecc"
+    },
+    "hour.short.cont.6": {
+      "startFrame": 730765,
+      "frameCount": 19073,
+      "text": "Szósta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "4f074a986dc30a054850a676a2b0a1db6b95af3fbc46346b64393d9d616b4c81"
+    },
+    "hour.short.cont.7": {
+      "startFrame": 751278,
+      "frameCount": 19121,
+      "text": "Siódma",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "fe9de0c57dbaa7dd5b1c2a66185cf67b0a6e7dacb1a915c4a79644ba8fd97380"
+    },
+    "hour.short.cont.8": {
+      "startFrame": 771839,
+      "frameCount": 16658,
+      "text": "Ósma",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "59a81dc5b4174bca1450f7862e4f10009041e310eb5a82d27eba10fec99f6164"
+    },
+    "hour.short.cont.9": {
+      "startFrame": 789937,
+      "frameCount": 22272,
+      "text": "Dziewiąta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "82dda384d26804c14af8d8821e3918ef8ff715172e93fc500d8780342dc02f4c"
+    },
+    "hour.short.cont.10": {
+      "startFrame": 813649,
+      "frameCount": 22855,
+      "text": "Dziesiąta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ebc41c094c93b03c19c302faed3b148f4507287b976c47e7e2bd440fdcaa5995"
+    },
+    "hour.short.cont.11": {
+      "startFrame": 837944,
+      "frameCount": 23390,
+      "text": "Jedenasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "c75e0aeeca2640b5595e4cf934eec771436cc89c238127061899d3ad92fc2dd8"
+    },
+    "hour.short.cont.12": {
+      "startFrame": 862774,
+      "frameCount": 25122,
+      "text": "Dwunasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "1d2e539b421437905a236f3dfa01b18cc6bad401938234502f732a15305ab90a"
+    },
+    "hour.short.cont.13": {
+      "startFrame": 889336,
+      "frameCount": 27617,
+      "text": "Trzynasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "a202491d67f04c71e6089a25bf79b187e9336d8c4f5e6663769d8839201ae152"
+    },
+    "hour.short.cont.14": {
+      "startFrame": 918393,
+      "frameCount": 22845,
+      "text": "Czternasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ae052b958f245d11352d54542e62e649c3f07bdf01fcb7826a79c3daa8c8734f"
+    },
+    "hour.short.cont.15": {
+      "startFrame": 942678,
+      "frameCount": 22467,
+      "text": "Piętnasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "1837eeaf858b167b9bfeec2fafe1b0e1acf436868e38bdfa2ec986acea4428ae"
+    },
+    "hour.short.cont.16": {
+      "startFrame": 966585,
+      "frameCount": 21175,
+      "text": "Szesnasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "271452de2629c03782a97c110a6fa5316ce0dc500de505730bed17a38a0c03a6"
+    },
+    "hour.short.cont.17": {
+      "startFrame": 989200,
+      "frameCount": 25538,
+      "text": "Siedemnasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "e4966a8b6d9a8abba1b3cec39a7084ba502327442734350ef7a27605b6d9784c"
+    },
+    "hour.short.cont.18": {
+      "startFrame": 1016178,
+      "frameCount": 24166,
+      "text": "Osiemnasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "e4068b1073f94028f9050831204ed80c2c9dfa91bc4c19c6c6b7339a7303e953"
+    },
+    "hour.short.cont.19": {
+      "startFrame": 1041784,
+      "frameCount": 26573,
+      "text": "Dziewiętnasta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "05020571be7baab298f1d8e05efe93a734e1561ccf6f4ff033288d96abd8baf2"
+    },
+    "hour.short.cont.20": {
+      "startFrame": 1069797,
+      "frameCount": 22299,
+      "text": "Dwudziesta",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "5888f919fc5c5a003c29c8c9455b99547ebacf5d1a7af028f893174a15310ecb"
+    },
+    "hour.short.cont.21": {
+      "startFrame": 1093536,
+      "frameCount": 37571,
+      "text": "Dwudziesta pierwsza",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "f69789d4cb2a7ca4388133657951caaa5799c13ac0ac1219b97e5f8b5e8ded9f"
+    },
+    "hour.short.cont.22": {
+      "startFrame": 1132547,
+      "frameCount": 32697,
+      "text": "Dwudziesta druga",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "2b362205be444261410b2c82c1046bb50ba992fd4f595ac99eb8de33b715cd6c"
+    },
+    "hour.short.cont.23": {
+      "startFrame": 1166684,
+      "frameCount": 32181,
+      "text": "Dwudziesta trzecia",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "115c6a8107c23a0ff7adf921b3c557ae1dfd7f3f499e65e8c5abdc694b60206a"
+    },
+    "hour.short.final.0": {
+      "startFrame": 1200305,
+      "frameCount": 16230,
+      "text": "Zero",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "ec8c1bb9fd78b4259e8c2eb553c8c1aa94a61ef070115cffcabcc8f035e9c27f"
+    },
+    "hour.short.final.1": {
+      "startFrame": 1217975,
+      "frameCount": 18785,
+      "text": "Pierwsza",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "b29b4bbbcfcbfe819e27a6bf8089bd522f069f983946e9ad9bcd5bf173542111"
+    },
+    "hour.short.final.2": {
+      "startFrame": 1238200,
+      "frameCount": 14564,
+      "text": "Druga",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "7d0529af7c28948a328025ab6e27bb0ea384126a83af17910a04cddd617288c7"
+    },
+    "hour.short.final.3": {
+      "startFrame": 1254204,
+      "frameCount": 16762,
+      "text": "Trzecia",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "ba8cf1831cad4eb65c1313ad6e3e115885511e0b4edf7da5ba5dba6213211fb8"
+    },
+    "hour.short.final.4": {
+      "startFrame": 1272406,
+      "frameCount": 17580,
+      "text": "Czwarta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "749c4e121bed2a6127b56a63bd9020610197a2e085f32a9ee85d4f3aac8f3185"
+    },
+    "hour.short.final.5": {
+      "startFrame": 1291426,
+      "frameCount": 15814,
+      "text": "Piąta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "085c17e515a3b46ef5f98cce64df504d4ea376ae3ef6514c0857c17bd0237eaf"
+    },
+    "hour.short.final.6": {
+      "startFrame": 1308680,
+      "frameCount": 17405,
+      "text": "Szósta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a0e613cefa5aeb8bf67ce5671d5b6362c6b3c76dd492189ab251ae9488c34e9b"
+    },
+    "hour.short.final.7": {
+      "startFrame": 1327525,
+      "frameCount": 17550,
+      "text": "Siódma",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "f96c02b8986aaa0f1df05f86acec53bd21febf03de71376ec0738cf455331e01"
+    },
+    "hour.short.final.8": {
+      "startFrame": 1346515,
+      "frameCount": 14213,
+      "text": "Ósma",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "7a5c082d5931fa446a2dc85086f84f8457f8ba1cb8614e98518f881d8545bded"
+    },
+    "hour.short.final.9": {
+      "startFrame": 1362168,
+      "frameCount": 29385,
+      "text": "Dziewiąta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "5a0133c114d3c954fa3737499d5abb9631ac74a3663b186c1520dbc7febedd71"
+    },
+    "hour.short.final.10": {
+      "startFrame": 1392993,
+      "frameCount": 22282,
+      "text": "Dziesiąta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "e1b788e6e035e825026af2e47f6ab140be7fa66b3b535134122d23759c719cc2"
+    },
+    "hour.short.final.11": {
+      "startFrame": 1416715,
+      "frameCount": 24858,
+      "text": "Jedenasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "0a501309617554f703f48c287a53dcac655100e5cb5e3e9231309e490f30fa86"
+    },
+    "hour.short.final.12": {
+      "startFrame": 1443013,
+      "frameCount": 23819,
+      "text": "Dwunasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "b6fd8fc7fc96a2ed6cd443f60f0069082e2e4a1932ea0dd60a3c30599ef885e5"
+    },
+    "hour.short.final.13": {
+      "startFrame": 1468272,
+      "frameCount": 21647,
+      "text": "Trzynasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "1e6727d2b94772b84afb054e48cc4f51a1f9592a1babfa5e4ef9cff354c5c6ae"
+    },
+    "hour.short.final.14": {
+      "startFrame": 1491359,
+      "frameCount": 24399,
+      "text": "Czternasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "83233d1a103dbbb33be04c9ed5fec141e342be7dbf4bd3818ccb123c6f392530"
+    },
+    "hour.short.final.15": {
+      "startFrame": 1517198,
+      "frameCount": 21501,
+      "text": "Piętnasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "fc3785dcd2ba027532611a417c2c8d7d44f1416be02e04d2ec6cd4a8ba0e483f"
+    },
+    "hour.short.final.16": {
+      "startFrame": 1540139,
+      "frameCount": 23142,
+      "text": "Szesnasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "f07b4d3238860529aaad040f7a2f4eefc0b5349b1a6e77013b77412a6ec1bb71"
+    },
+    "hour.short.final.17": {
+      "startFrame": 1564721,
+      "frameCount": 25405,
+      "text": "Siedemnasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "20ca623b8cf608e9771626e9516c7b0781615b73462c1db105506c77b1ec85db"
+    },
+    "hour.short.final.18": {
+      "startFrame": 1591566,
+      "frameCount": 23468,
+      "text": "Osiemnasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "f393079a78e51631406940493c0e220870fb5cc26c6ce6a0d2e45565bfb4196b"
+    },
+    "hour.short.final.19": {
+      "startFrame": 1616474,
+      "frameCount": 24562,
+      "text": "Dziewiętnasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "e142034c96f3b8d3856f0d37b864f9380d3dd6dc4268380b4871bcd776824f11"
+    },
+    "hour.short.final.20": {
+      "startFrame": 1642476,
+      "frameCount": 24315,
+      "text": "Dwudziesta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "fcab7d01aa59cecf347c2ecdd2fc856303a85f1bc238f15d6181bb080683dad1"
+    },
+    "hour.short.final.21": {
+      "startFrame": 1668231,
+      "frameCount": 42221,
+      "text": "Dwudziesta pierwsza",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "52b7e14f32f4a6fb07a2bee4eab932721e2e6078981267ef053fffb7ba95f02b"
+    },
+    "hour.short.final.22": {
+      "startFrame": 1711892,
+      "frameCount": 32436,
+      "text": "Dwudziesta druga",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "0745a5dbd98ea090efc8b0fe7f0c459c9ef8f6ad885771c0e901a97a6752b051"
+    },
+    "hour.short.final.23": {
+      "startFrame": 1745768,
+      "frameCount": 32334,
+      "text": "Dwudziesta trzecia",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "f793cd3d6b03ec662c73361d8c9b5fd9db086cd8c1b0918502f709944b5f2d6f"
+    },
+    "fixed.jest.cont": {
+      "startFrame": 1779542,
+      "frameCount": 21256,
+      "text": "Jest",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "e97193f7eb456d6317a96050367d51e651b28643616c98189739332b363aa58d"
+    },
+    "hour.current.cont.0": {
+      "startFrame": 1802238,
+      "frameCount": 14753,
+      "text": "zero",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "c2b7126f4d4d28b24597224349052d2be7546d74c33d1fa77d3f72549533ab8c"
+    },
+    "hour.current.cont.1": {
+      "startFrame": 1818431,
+      "frameCount": 16761,
+      "text": "pierwsza",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "8aea8a8d5049b1aaac981b490774150fca83e77d0f3dacf3151bf2535e588c95"
+    },
+    "hour.current.cont.2": {
+      "startFrame": 1836632,
+      "frameCount": 17417,
+      "text": "druga",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b41a357aa1fe69ed29db2fc2cb087eb0cf6c91519c2758e5057b7fd36014100f"
+    },
+    "hour.current.cont.3": {
+      "startFrame": 1855489,
+      "frameCount": 16479,
+      "text": "trzecia",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "993d7fa820375b70fe058b2061c59fb7d1e3a95fc0b321b738c8fc154354711e"
+    },
+    "hour.current.cont.4": {
+      "startFrame": 1873408,
+      "frameCount": 20470,
+      "text": "czwarta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "c2e15812d6fa2b2c96e387bd213b387840e3e3535f8b03ba206bbae48b70e8ec"
+    },
+    "hour.current.cont.5": {
+      "startFrame": 1895318,
+      "frameCount": 17331,
+      "text": "piąta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "d9e562042284c538059723459dc09450d78d93684c5c74d259bbc1a95b343f49"
+    },
+    "hour.current.cont.6": {
+      "startFrame": 1914089,
+      "frameCount": 21048,
+      "text": "szósta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "e9750b4e1c6b1020be9a12bb301d82718ad6f679397d86350b04b1a73ddd4fb9"
+    },
+    "hour.current.cont.7": {
+      "startFrame": 1936577,
+      "frameCount": 18176,
+      "text": "siódma",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b4ce2587b8ccf95ae839f805b410ec19898246feaff55acd1ad5f16a8c7bb05c"
+    },
+    "hour.current.cont.8": {
+      "startFrame": 1956193,
+      "frameCount": 15089,
+      "text": "ósma",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "0e3867e669de8f8ea4aa28e5e737c8c2d4b68a0309855af32f246fe2a4e305f3"
+    },
+    "hour.current.cont.9": {
+      "startFrame": 1972722,
+      "frameCount": 26545,
+      "text": "dziewiąta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b884ee0ca63bd4f1272ca708f8f70f2d2715a135cea4fbc0a8eaad75852df7b1"
+    },
+    "hour.current.cont.10": {
+      "startFrame": 2000707,
+      "frameCount": 22543,
+      "text": "dziesiąta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b7dca54d7bafaf5ba726b44334975f13191fb84c4fbfd829844d8906c9cf760d"
+    },
+    "hour.current.cont.11": {
+      "startFrame": 2024690,
+      "frameCount": 24095,
+      "text": "jedenasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "88bacf3c9b3c23c9401d3443becfe3e17f0224151c83dd495cecd23e45b7cbba"
+    },
+    "hour.current.cont.12": {
+      "startFrame": 2050225,
+      "frameCount": 23080,
+      "text": "dwunasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "33aab6677eb2c15ec1231ce545eac50bfc9f00b43087ae8e47a87bfd3329586e"
+    },
+    "hour.current.cont.13": {
+      "startFrame": 2074745,
+      "frameCount": 20504,
+      "text": "trzynasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "900f2be6b43c8ac1fa2aa934bc5d47618ceea829b88717a5bcf5c26bd0a6ca10"
+    },
+    "hour.current.cont.14": {
+      "startFrame": 2096689,
+      "frameCount": 23116,
+      "text": "czternasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "6aa87ca5f7c2749fab509f4d29994ca68746a3c9a8387c6c5523ad64da559cff"
+    },
+    "hour.current.cont.15": {
+      "startFrame": 2121245,
+      "frameCount": 23230,
+      "text": "piętnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "6ace3f5fc352f0c415e44d2878570b4247283606791fa0546ce883fd91357b45"
+    },
+    "hour.current.cont.16": {
+      "startFrame": 2145915,
+      "frameCount": 22957,
+      "text": "szesnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "cbce19afea8c4d41f49bbaf7c0939ff71727fc69bdc765b857e91754b0debc72"
+    },
+    "hour.current.cont.17": {
+      "startFrame": 2170312,
+      "frameCount": 26615,
+      "text": "siedemnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "7bb8b4e4b3654d17aa31cb3186fafd35c11f6fc45956cb0a017ccf32416c7890"
+    },
+    "hour.current.cont.18": {
+      "startFrame": 2198367,
+      "frameCount": 24453,
+      "text": "osiemnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "46a18a703e0a5c51b07b465939777763a043107e92af755568e9ce1e30ab57ec"
+    },
+    "hour.current.cont.19": {
+      "startFrame": 2224260,
+      "frameCount": 29600,
+      "text": "dziewiętnasta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "65de49007cd685336d049f411a24a40d626a674feaab35ac9e3877393623858f"
+    },
+    "hour.current.cont.20": {
+      "startFrame": 2255300,
+      "frameCount": 23770,
+      "text": "dwudziesta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "661ff4930ea0167aa3e480250ec3901915ecf108a79988b797d7988beada882e"
+    },
+    "hour.current.cont.21": {
+      "startFrame": 2280510,
+      "frameCount": 33626,
+      "text": "dwudziesta pierwsza",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "1d93bcb4103fc15adcc2ddc0c626868c00ceae5482929e7024f9beb950723aa2"
+    },
+    "hour.current.cont.22": {
+      "startFrame": 2315576,
+      "frameCount": 31754,
+      "text": "dwudziesta druga",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "5a8ce1168576ef8aed444d72efa2c2e300f6bf24aa6fa4f03cb54be0ff1dfe2d"
+    },
+    "hour.current.cont.23": {
+      "startFrame": 2348770,
+      "frameCount": 34459,
+      "text": "dwudziesta trzecia",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "7865e281f53e2ef583e064ed3b0dddbc3c995d32f154f1b76e9811ecf8f5d319"
+    },
+    "minute.digital.final.0": {
+      "startFrame": 2384669,
+      "frameCount": 39804,
+      "text": "zero zero",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "5bf10ccd6dbd6f3b0a6e43e4e2c2626fb808dce7c30cd72858a85cfafba4ae5e"
+    },
+    "minute.digital.final.1": {
+      "startFrame": 2425913,
+      "frameCount": 49655,
+      "text": "zero jeden",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "392ca77042397c17a15c4842fa7d20eb1e45cb7c72d53037d038065528866edf"
+    },
+    "minute.digital.final.2": {
+      "startFrame": 2477008,
+      "frameCount": 21904,
+      "text": "zero dwa",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "1456a5cf6f87324bee669c39412eb96132e05f17d08969b53005f8b53b84ed9b"
+    },
+    "minute.digital.final.3": {
+      "startFrame": 2500352,
+      "frameCount": 27959,
+      "text": "zero trzy",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "0ad544520b4771edffcdfbff03124f18e4a81a8d0efe7a70cd15e9d7a3b862d8"
+    },
+    "minute.digital.final.4": {
+      "startFrame": 2529751,
+      "frameCount": 25714,
+      "text": "zero cztery",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "5b0612fcc8b347da7e2d97a587f38bfc057c588f27f93b666b46d86d2bdba7f8"
+    },
+    "minute.digital.final.5": {
+      "startFrame": 2556905,
+      "frameCount": 30295,
+      "text": "zero pięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "94a4a3047e3e1bcb848fafd234d5bc86d7b3044b74716a63689f4732cb68d8e2"
+    },
+    "minute.digital.final.6": {
+      "startFrame": 2588640,
+      "frameCount": 34105,
+      "text": "zero sześć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a36b8e395ad37a4259510606a17dcaebc643b19546eba372467ed2edcfc89404"
+    },
+    "minute.digital.final.7": {
+      "startFrame": 2624185,
+      "frameCount": 26876,
+      "text": "zero siedem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "988c258c10a31f59431e865d80516e65dd86470c9fc1ed92ffd11cdec42ec875"
+    },
+    "minute.digital.final.8": {
+      "startFrame": 2652501,
+      "frameCount": 29068,
+      "text": "zero osiem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "b3b41dd23a8323b8690f26c3a5886301a1722c45d0778140226643442a4e1fda"
+    },
+    "minute.digital.final.9": {
+      "startFrame": 2683009,
+      "frameCount": 28790,
+      "text": "zero dziewięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "9ec2689bb506898c9298dbf7ac98425c7c866e14ac547311ffd94c981f588e62"
+    },
+    "minute.digital.final.10": {
+      "startFrame": 2713239,
+      "frameCount": 21847,
+      "text": "dziesięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "91623016df491be28ff02b7a26ef9d9017ecbb688797f5e27b0dbd0e17b9bb4a"
+    },
+    "minute.digital.final.11": {
+      "startFrame": 2736526,
+      "frameCount": 23259,
+      "text": "jedenaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "098d9f6a8eb4d2f7d0a1eccba1ca608e6f76211890507906c904ad4451cdb477"
+    },
+    "minute.digital.final.12": {
+      "startFrame": 2761225,
+      "frameCount": 22322,
+      "text": "dwanaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "f2525814d29efcc0823c78f3d97323ebf376f7caf654055160d438022bc182c1"
+    },
+    "minute.digital.final.13": {
+      "startFrame": 2784987,
+      "frameCount": 22568,
+      "text": "trzynaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "e53e228bb6cdbbe7a87ec6077e68cd6c99282078a81b0684936c70f201e6cec8"
+    },
+    "minute.digital.final.14": {
+      "startFrame": 2808995,
+      "frameCount": 23219,
+      "text": "czternaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "43fe0c2863eaacb2ceacbdc426385043d015632a76a1835d746df4dff809193f"
+    },
+    "minute.digital.final.15": {
+      "startFrame": 2833654,
+      "frameCount": 22974,
+      "text": "piętnaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "c9081e7f63d2632f96503904771ecd61c7b21a04db41777341bd98b4879a33ed"
+    },
+    "minute.digital.final.16": {
+      "startFrame": 2858068,
+      "frameCount": 23114,
+      "text": "szesnaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "bc9d5f8a4ac8e3b667c328f5bf323c1c638d471f71bf72e3e819991dcda39599"
+    },
+    "minute.digital.final.17": {
+      "startFrame": 2882622,
+      "frameCount": 27381,
+      "text": "siedemnaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "72f3aa208c70b0fb00a8b051377ea726a652681515dc0a2e57b4b9eb18d8585f"
+    },
+    "minute.digital.final.18": {
+      "startFrame": 2911443,
+      "frameCount": 23186,
+      "text": "osiemnaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "76109c36eae250123731c42b2f80f9e83a97f6235420db5ee9bf2ae95f452e52"
+    },
+    "minute.digital.final.19": {
+      "startFrame": 2936069,
+      "frameCount": 24398,
+      "text": "dziewiętnaście",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "043a69643cc1a1b6fc3bc8b2ba4397186804c8ac967439826f2cfcc47d3766be"
+    },
+    "minute.digital.final.20": {
+      "startFrame": 2961907,
+      "frameCount": 21985,
+      "text": "dwadzieścia",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "ab6bbf388b3ee494ad38862e20925388d27f280c0360f46f6302be7e3aac8f19"
+    },
+    "minute.digital.final.21": {
+      "startFrame": 2985332,
+      "frameCount": 33626,
+      "text": "dwadzieścia jeden",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "7c95bdb21416fc627692898cdf771380e86d3a74a6adaa891f686a1a164c14d5"
+    },
+    "minute.digital.final.22": {
+      "startFrame": 3020398,
+      "frameCount": 29440,
+      "text": "dwadzieścia dwa",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "98d7729a452316454fde5ebe0919e8c1f9b9607a6dfeda33549acbe03b801e81"
+    },
+    "minute.digital.final.23": {
+      "startFrame": 3051278,
+      "frameCount": 30274,
+      "text": "dwadzieścia trzy",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "3903a748f4d4a64ffd95c70d1a2cef5c53dcb8e824e60cb5cf07cbc05732aad2"
+    },
+    "minute.digital.final.24": {
+      "startFrame": 3082992,
+      "frameCount": 36204,
+      "text": "dwadzieścia cztery",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "48cc0face03d27b3096426d2dc6d1f08c3aa8a8a7426a1e26948bec69a592cbe"
+    },
+    "minute.digital.final.25": {
+      "startFrame": 3120636,
+      "frameCount": 33627,
+      "text": "dwadzieścia pięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "5388d7cd6faee5d05c0b6df51cb4cf8aa9e258a504e429975b663b6efc18c46a"
+    },
+    "minute.digital.final.26": {
+      "startFrame": 3155703,
+      "frameCount": 31254,
+      "text": "dwadzieścia sześć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "48a5bee543d1f12fb26edb310a081fc02fc4e75b505c34b9fd46abcc71fde356"
+    },
+    "minute.digital.final.27": {
+      "startFrame": 3188397,
+      "frameCount": 37963,
+      "text": "dwadzieścia siedem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "d4b873a926b8ff8cb98a864ef7c2a191f9fd1433275bfaf8caefeffc8061fb5b"
+    },
+    "minute.digital.final.28": {
+      "startFrame": 3227800,
+      "frameCount": 33915,
+      "text": "dwadzieścia osiem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "d6b53d02d60e68b199167ef745811337fd3ed65b5c21c441236bfc13a63e2ff3"
+    },
+    "minute.digital.final.29": {
+      "startFrame": 3263155,
+      "frameCount": 35671,
+      "text": "dwadzieścia dziewięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "c8b2b5499f801e98f67a6920fd6baae43304d3bf5c8193b3136e9aaded5a90ff"
+    },
+    "minute.digital.final.30": {
+      "startFrame": 3300266,
+      "frameCount": 20877,
+      "text": "trzydzieści",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "bcfd687948df7d84ef5af884c23831563568087f6b95a459f9c0812ade1b1c05"
+    },
+    "minute.digital.final.31": {
+      "startFrame": 3322583,
+      "frameCount": 35481,
+      "text": "trzydzieści jeden",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a5a69a0702159b2fce48552a92002727e8755ce3aa4427f428e49974aa3669f9"
+    },
+    "minute.digital.final.32": {
+      "startFrame": 3359504,
+      "frameCount": 28605,
+      "text": "trzydzieści dwa",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a9eb50ae52765b2f8493373e9b6781b36b0c099d29653062741124053ba20f82"
+    },
+    "minute.digital.final.33": {
+      "startFrame": 3389549,
+      "frameCount": 32879,
+      "text": "trzydzieści trzy",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "13565d224768292438dc7586f354f9bfc89065944f03b2c9b69813bbdc8bc113"
+    },
+    "minute.digital.final.34": {
+      "startFrame": 3423868,
+      "frameCount": 32535,
+      "text": "trzydzieści cztery",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "d38c5d06a22d0949cfd76ecfd04108e4d823113ca69910ae3a4395df01be1259"
+    },
+    "minute.digital.final.35": {
+      "startFrame": 3457843,
+      "frameCount": 34789,
+      "text": "trzydzieści pięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a40067a17ca720a60312639c98c3689f0333d17f6bb20b3b365d102edd23ab1f"
+    },
+    "minute.digital.final.36": {
+      "startFrame": 3494072,
+      "frameCount": 35322,
+      "text": "trzydzieści sześć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "be2bdcdc430f53c06335a2a42e0aad69e97c01ccf4be24d705b7eaa2a5ee1700"
+    },
+    "minute.digital.final.37": {
+      "startFrame": 3530834,
+      "frameCount": 32501,
+      "text": "trzydzieści siedem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a96f232a87cf53e3db86f8063bdf54e7dec454d86b2067aa427328d4ac5dda4c"
+    },
+    "minute.digital.final.38": {
+      "startFrame": 3564775,
+      "frameCount": 34108,
+      "text": "trzydzieści osiem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "d44cf3fe6d4adab00ab579eb7f9ab95372f672e90a20793fdaec036d5d654994"
+    },
+    "minute.digital.final.39": {
+      "startFrame": 3600323,
+      "frameCount": 34944,
+      "text": "trzydzieści dziewięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "97a80ed23391c52568709e5dc06a4fcdf63e3cc9318074b9443418d1e2320820"
+    },
+    "minute.digital.final.40": {
+      "startFrame": 3636707,
+      "frameCount": 25818,
+      "text": "czterdzieści",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "89eab92f5d356d8fae62167f7df3caf6a29c660c7c2af5706176539df50af4b8"
+    },
+    "minute.digital.final.41": {
+      "startFrame": 3663965,
+      "frameCount": 34817,
+      "text": "czterdzieści jeden",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "5ac004a62a789000dcb5803413d25722d8b8ca7d18b9ee79c94094f64d8c904b"
+    },
+    "minute.digital.final.42": {
+      "startFrame": 3700222,
+      "frameCount": 30338,
+      "text": "czterdzieści dwa",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "82f994bb34afbe0e3263c0511867d6ce0b44b237615b0c5c356efde30627c5e3"
+    },
+    "minute.digital.final.43": {
+      "startFrame": 3732000,
+      "frameCount": 33087,
+      "text": "czterdzieści trzy",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "1b1d9ebca4024cfc73dd827791252d7071a9af12b7b06d246635d8f29a9c31af"
+    },
+    "minute.digital.final.44": {
+      "startFrame": 3766527,
+      "frameCount": 41246,
+      "text": "czterdzieści cztery",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "56f79a52e0d0fc4d84799421f3cd49a1b7c228233e7675621aec12ec119c7393"
+    },
+    "minute.digital.final.45": {
+      "startFrame": 3809213,
+      "frameCount": 33139,
+      "text": "czterdzieści pięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "faf09cb528b05084d02f18287aa76a13e5ec0ba82eeaec4b4ccb5d2b48b7e0d0"
+    },
+    "minute.digital.final.46": {
+      "startFrame": 3843792,
+      "frameCount": 39937,
+      "text": "czterdzieści sześć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "3a44fb32c491a099f178d05af77478492f3880355392bdd88a67b6b142178335"
+    },
+    "minute.digital.final.47": {
+      "startFrame": 3885169,
+      "frameCount": 35946,
+      "text": "czterdzieści siedem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "13d5e27c25db6dc65f38997cac71d33b761858e2659a5e1db4bbccf9b743b689"
+    },
+    "minute.digital.final.48": {
+      "startFrame": 3922555,
+      "frameCount": 38350,
+      "text": "czterdzieści osiem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "5274ffd845893c1d91b34efa86d07ed9780456b4d45f7e469c7cd70186908885"
+    },
+    "minute.digital.final.49": {
+      "startFrame": 3962345,
+      "frameCount": 39098,
+      "text": "czterdzieści dziewięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "608851dc72aaac7e75b74986d3496f35d2859248eea79ed2ef893d5c25267335"
+    },
+    "minute.digital.final.50": {
+      "startFrame": 4002883,
+      "frameCount": 23149,
+      "text": "pięćdziesiąt",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "c6eeb755c94a19c2926861920c99f7d1afbbab7e08e294de209b58f8569b5707"
+    },
+    "minute.digital.final.51": {
+      "startFrame": 4027472,
+      "frameCount": 36156,
+      "text": "pięćdziesiąt jeden",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "5f35eb96309c523e6f99ba55339a2bf99f9fc91d3819b815053f979474bf07f1"
+    },
+    "minute.digital.final.52": {
+      "startFrame": 4065068,
+      "frameCount": 30071,
+      "text": "pięćdziesiąt dwa",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "ff1270e9282bd4cabc27ac2edb3c7268e203ea9a531ed6a392391b1e6f745c71"
+    },
+    "minute.digital.final.53": {
+      "startFrame": 4096579,
+      "frameCount": 31646,
+      "text": "pięćdziesiąt trzy",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "51b47685e573b2e8812f280a925529a9250044ce00446fd2a3c4bcf6fd2070da"
+    },
+    "minute.digital.final.54": {
+      "startFrame": 4129665,
+      "frameCount": 36560,
+      "text": "pięćdziesiąt cztery",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "9ddf61ab12ccb0c3fbe5757a0471ea4d0ee5ce7bc453d533338c9f8a570de378"
+    },
+    "minute.digital.final.55": {
+      "startFrame": 4167665,
+      "frameCount": 34488,
+      "text": "pięćdziesiąt pięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "68a5979a3ea760e6b6797637d9bdf10abb64868f396d3db61e68802099737b08"
+    },
+    "minute.digital.final.56": {
+      "startFrame": 4203593,
+      "frameCount": 38134,
+      "text": "pięćdziesiąt sześć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "1839a8ab9132fbc5e8393152776e2c1f52ac6ba9ca672199ad7eab312b830dde"
+    },
+    "minute.digital.final.57": {
+      "startFrame": 4243167,
+      "frameCount": 35122,
+      "text": "pięćdziesiąt siedem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a4dffca62d345406d2a4643b2ba3ca999e4f99724aaa57c5d8e0d5c6f947b01c"
+    },
+    "minute.digital.final.58": {
+      "startFrame": 4279729,
+      "frameCount": 33663,
+      "text": "pięćdziesiąt osiem",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "6bfc89e4e6728326250c61ca8cc8c03931e6eb88d66f5ebe346300af3acd913f"
+    },
+    "minute.digital.final.59": {
+      "startFrame": 4314832,
+      "frameCount": 38509,
+      "text": "pięćdziesiąt dziewięć",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "924abf58f4f33dec67a0205b755c5ff7ed71429cf4b304f8e34ab387e923c9f5"
+    },
+    "natural.after.cont.1": {
+      "startFrame": 4354781,
+      "frameCount": 39606,
+      "text": "Jedna minuta po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "d2fddc6042508eebfeda65c967b90e2f3ff123d24e6e3e838db69e534b346051"
+    },
+    "natural.after.cont.2": {
+      "startFrame": 4395827,
+      "frameCount": 22292,
+      "text": "Dwie po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "4fc531ca0e5979db25fd7981de75556990b5291bed5683d6b8613ff8b96e16df"
+    },
+    "natural.after.cont.3": {
+      "startFrame": 4419559,
+      "frameCount": 20722,
+      "text": "Trzy po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "a50a4ec171fb75dc982894ca4e7f6dd25f9761d05aa7fc90571ff636131ece7d"
+    },
+    "natural.after.cont.4": {
+      "startFrame": 4441721,
+      "frameCount": 22273,
+      "text": "Cztery po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "6c3c724f6fe9fbbfc5df831b0f9a4c81cc6122713f47036bc212359b5f47038d"
+    },
+    "natural.after.cont.5": {
+      "startFrame": 4465434,
+      "frameCount": 20692,
+      "text": "Pięć po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ce2e9426b72500b3bf3f9c9061f729648ca707bf1af500aefd35c3238a9f8528"
+    },
+    "natural.after.cont.6": {
+      "startFrame": 4487566,
+      "frameCount": 25366,
+      "text": "Sześć po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "07b3e8e47812887ba87521c77fb7a4da29143132263d66204b1f2da98d61fb9c"
+    },
+    "natural.after.cont.7": {
+      "startFrame": 4514372,
+      "frameCount": 24076,
+      "text": "Siedem po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "a564dceefdf87aaa0002e0ac8bd2a713d443dcd871225480656ecabfa82b6464"
+    },
+    "natural.after.cont.8": {
+      "startFrame": 4539888,
+      "frameCount": 22999,
+      "text": "Osiem po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "63bbade99d3cbdb36a0226122bda274383ba17767fbcdc0a300224e5b322018d"
+    },
+    "natural.after.cont.9": {
+      "startFrame": 4564327,
+      "frameCount": 28514,
+      "text": "Dziewięć po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "be0d3db9f3c8f6af1df2a7cab28ce26a08b3db44789d1a8128877e53e790b4c6"
+    },
+    "natural.after.cont.10": {
+      "startFrame": 4594281,
+      "frameCount": 25330,
+      "text": "Dziesięć po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "239b951395dec9ae171c38a66c876e3af9d3112b2ab0f1de4df28d7f5c13d143"
+    },
+    "natural.after.cont.11": {
+      "startFrame": 4621051,
+      "frameCount": 29279,
+      "text": "Jedenaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "453e89882e9706a7678cfb2fef1b9d6665354a7021d09d8d48b1d97527b34fc4"
+    },
+    "natural.after.cont.12": {
+      "startFrame": 4651770,
+      "frameCount": 27450,
+      "text": "Dwanaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "f5a72779f6845436488b80bf79210a73440a6398ca3ff210d773113190fecc02"
+    },
+    "natural.after.cont.13": {
+      "startFrame": 4680660,
+      "frameCount": 26977,
+      "text": "Trzynaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "c95a1e98467926ca41a325d5444451f003ae07f517de23f61a3feec42ae9d151"
+    },
+    "natural.after.cont.14": {
+      "startFrame": 4709077,
+      "frameCount": 31458,
+      "text": "Czternaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "35d5d23e02b44f3071b3e415a30eb297dd8597e8c4717273794dc929ed9a1893"
+    },
+    "natural.after.cont.15": {
+      "startFrame": 4741975,
+      "frameCount": 31234,
+      "text": "Piętnaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "0c6d044b6758d5d84c10495a461436f398c0c3194ff753a3f16afc3257a2a918"
+    },
+    "natural.after.cont.16": {
+      "startFrame": 4774649,
+      "frameCount": 32401,
+      "text": "Szesnaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "1465661f1cd9afb3bf1c998f2908bcb8f5c663638d149d7798b985b5d064b246"
+    },
+    "natural.after.cont.17": {
+      "startFrame": 4808490,
+      "frameCount": 32499,
+      "text": "Siedemnaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "3c08bca2e6cbd75ddc442a0edb243562dc4b6ee4b70b3060ff56842821b374ae"
+    },
+    "natural.after.cont.18": {
+      "startFrame": 4842429,
+      "frameCount": 35185,
+      "text": "Osiemnaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "3aba95f219a06a090614d034aded643fd4ef80315dd666b26450226ed1310c9c"
+    },
+    "natural.after.cont.19": {
+      "startFrame": 4879054,
+      "frameCount": 32158,
+      "text": "Dziewiętnaście po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "5dfc64c35a8c9522c58cfc2359ec7708cb749dd52a84daeeaca346180537715f"
+    },
+    "natural.after.cont.20": {
+      "startFrame": 4912652,
+      "frameCount": 32526,
+      "text": "Dwadzieścia po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "8a9ee29344f3002208c5850023cbb87e210a83ed3b378f603c50458c9ff6e557"
+    },
+    "natural.after.cont.21": {
+      "startFrame": 4946618,
+      "frameCount": 40269,
+      "text": "Dwadzieścia jeden po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "86f7b31322d128f4337efdb2ec6ed4f6b40cc7a5f0771b092d311a67572eec4f"
+    },
+    "natural.after.cont.22": {
+      "startFrame": 4988327,
+      "frameCount": 44584,
+      "text": "Dwadzieścia dwie po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "8edd55bd1a329fd4bdebed6c598e9921f9b6471db58945d41dcee78f76c6bd31"
+    },
+    "natural.after.cont.23": {
+      "startFrame": 5034351,
+      "frameCount": 38638,
+      "text": "Dwadzieścia trzy po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "07830f49c451c233923d9bba354319cd8e624c72f67dc784b922135d52f4f495"
+    },
+    "natural.after.cont.24": {
+      "startFrame": 5074429,
+      "frameCount": 41667,
+      "text": "Dwadzieścia cztery po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "e26c0d10b2c3b598c0c2ba6d2317abfaf49196fa2eae9b0d05df348d3fa452cb"
+    },
+    "natural.after.cont.25": {
+      "startFrame": 5117536,
+      "frameCount": 46185,
+      "text": "Dwadzieścia pięć po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "72f536a1884f246f2d581231967cd717c255baff02c91b2ece5e6683112ebbda"
+    },
+    "natural.after.cont.26": {
+      "startFrame": 5165161,
+      "frameCount": 39717,
+      "text": "Dwadzieścia sześć po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "393c477947900fac596ff802262b7edeef22a9e8df88b3f065510629b75a7035"
+    },
+    "natural.after.cont.27": {
+      "startFrame": 5206318,
+      "frameCount": 42323,
+      "text": "Dwadzieścia siedem po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "e325a8ea03fbc9a1bba01ceada0f75df40cddc067b45f593dd8c958d8c298a01"
+    },
+    "natural.after.cont.28": {
+      "startFrame": 5250081,
+      "frameCount": 40240,
+      "text": "Dwadzieścia osiem po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "fbf526a24ff9439fc4ae2ddc3b4e74dfbddf5924e81380cdc274e68fa304a8db"
+    },
+    "natural.after.cont.29": {
+      "startFrame": 5291761,
+      "frameCount": 47145,
+      "text": "Dwadzieścia dziewięć po",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "9cfd83d0e0a2f12a68c38177ff78edb8a66d6af5d192a03942f726ad74eb9e7c"
+    },
+    "natural.before.cont.1": {
+      "startFrame": 5340346,
+      "frameCount": 36481,
+      "text": "Za jedną minutę",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "82ea014c6d1651d5d7d3d05aef382715473d49f9b925835b063018d35adab734"
+    },
+    "natural.before.cont.2": {
+      "startFrame": 5378267,
+      "frameCount": 21228,
+      "text": "Za dwie",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "47175a16da0022667aedf513dde7211310f2acd4050f186a316ec70e1c647545"
+    },
+    "natural.before.cont.3": {
+      "startFrame": 5400935,
+      "frameCount": 26024,
+      "text": "Za trzy",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "86da4b4d85959964672bdc0b713c1ffc8d9276aa88effa012b11d0cdb100eea5"
+    },
+    "natural.before.cont.4": {
+      "startFrame": 5428399,
+      "frameCount": 31329,
+      "text": "Za cztery",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "863e4980b2c938e277f815b3db852e886762a59872801d4c8a247c45671fcd27"
+    },
+    "natural.before.cont.5": {
+      "startFrame": 5461168,
+      "frameCount": 34344,
+      "text": "Za pięć",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "d4626e7ae1a96dc7c31192a01dbc8671ff64fb49663a6f293d66bdf5932a90dd"
+    },
+    "natural.before.cont.6": {
+      "startFrame": 5496952,
+      "frameCount": 29630,
+      "text": "Za sześć",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "b40881af631bb4a8413c9f59c43f60877207ff8dd6cbe8225adf5c894eef70f9"
+    },
+    "natural.before.cont.7": {
+      "startFrame": 5528022,
+      "frameCount": 26962,
+      "text": "Za siedem",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ea3db23860fef05ef4090c19f658c11b971a7b8551131f7ef20c0353330c5d6f"
+    },
+    "natural.before.cont.8": {
+      "startFrame": 5556424,
+      "frameCount": 29931,
+      "text": "Za osiem",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "2aab6a8611761983b6624dbdcd3fd0ffaa396fe5549586977dbdb30d4723038c"
+    },
+    "natural.before.cont.9": {
+      "startFrame": 5587795,
+      "frameCount": 27945,
+      "text": "Za dziewięć",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "51338f9ea594d9437acbb20f3d58bc76723ffd69a5ea84f8e1d19312a5a52208"
+    },
+    "natural.before.cont.10": {
+      "startFrame": 5617180,
+      "frameCount": 25624,
+      "text": "Za dziesięć",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "f605bc03ec2577037373711f944cb39f497c21c973fdb39bced981afbd7ad804"
+    },
+    "natural.before.cont.11": {
+      "startFrame": 5644244,
+      "frameCount": 31063,
+      "text": "Za jedenaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "de8f00bdc81ccc0df81eca93b35ed40ef034ed295c938b97b61a27a3f307d140"
+    },
+    "natural.before.cont.12": {
+      "startFrame": 5676747,
+      "frameCount": 28261,
+      "text": "Za dwanaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "51091ba2ac941aff7cd882089ab285fb0ed747137c1a5f1b1fe2e07af02e215a"
+    },
+    "natural.before.cont.13": {
+      "startFrame": 5706448,
+      "frameCount": 38371,
+      "text": "Za trzynaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "72a72aa40d33f8c811a278408ca733143d67991c6741dc70d9c4c761f4c09733"
+    },
+    "natural.before.cont.14": {
+      "startFrame": 5746259,
+      "frameCount": 37348,
+      "text": "Za czternaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "6fd83ffcff381a3248e93ca1b63c9a4952f7974d28b0d46cc876327aac3dca97"
+    },
+    "natural.before.cont.15": {
+      "startFrame": 5785047,
+      "frameCount": 36891,
+      "text": "Za piętnaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "eadaebec8fde3ee6026497d160ed19ad9806d357154ea0c8c2e74d7b647c68e0"
+    },
+    "natural.before.cont.16": {
+      "startFrame": 5823378,
+      "frameCount": 37717,
+      "text": "Za szesnaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "b477f4642885aaaf4f63310bc851df671069ffc068d1ca7216b3f299654413b1"
+    },
+    "natural.before.cont.17": {
+      "startFrame": 5862535,
+      "frameCount": 37796,
+      "text": "Za siedemnaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "6f0eb80c19b8c7c914798459ebc51b24e1c1a7777ed69a2a17610e41abd7c0d9"
+    },
+    "natural.before.cont.18": {
+      "startFrame": 5901771,
+      "frameCount": 38413,
+      "text": "Za osiemnaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "0872f134347b20f08c1f0fd313c760eb40a49d6e6452413912d2e3ef9aff74ce"
+    },
+    "natural.before.cont.19": {
+      "startFrame": 5941624,
+      "frameCount": 35085,
+      "text": "Za dziewiętnaście",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ca8f8b945d4237e83a14f30208df43aebef7bbecb5eae8688a1a76d448d9d20c"
+    },
+    "natural.before.cont.20": {
+      "startFrame": 5978149,
+      "frameCount": 34639,
+      "text": "Za dwadzieścia",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "1cd585a80b719d33fea8e7be790422397739214dadf25968cf5c8f8b78c3c13e"
+    },
+    "natural.before.cont.21": {
+      "startFrame": 6014228,
+      "frameCount": 42795,
+      "text": "Za dwadzieścia jeden",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "d8319e194998a3baf21602f73e58ac70acad967bfc7ca023dc89a0a4eb01d3b5"
+    },
+    "natural.before.cont.22": {
+      "startFrame": 6058463,
+      "frameCount": 33641,
+      "text": "Za dwadzieścia dwie",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ed26e83de7f38dc2a70c6cdca0867a1843471d4ce92bea166d7cf769515cdfb3"
+    },
+    "natural.before.cont.23": {
+      "startFrame": 6093544,
+      "frameCount": 35828,
+      "text": "Za dwadzieścia trzy",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "c24a92d01e748abb4667980553d8a53843b6282de21fee53519332fbae16561a"
+    },
+    "natural.before.cont.24": {
+      "startFrame": 6130812,
+      "frameCount": 41322,
+      "text": "Za dwadzieścia cztery",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "3becdbcef5c1fbf6bfaf84ec606fc170e800fb7245ed3afc2594b50bbbc819dd"
+    },
+    "natural.before.cont.25": {
+      "startFrame": 6173574,
+      "frameCount": 38812,
+      "text": "Za dwadzieścia pięć",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "5681de948f0463e7aea45f3e41e4f801dc3fd386b4a706a44db62bea83c0d6e5"
+    },
+    "natural.before.cont.26": {
+      "startFrame": 6213826,
+      "frameCount": 41486,
+      "text": "Za dwadzieścia sześć",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "9469d0b987aa6b547d7e1af295520be05e3e616c1dd1bb3c4d1fa4e7ba04bade"
+    },
+    "natural.before.cont.27": {
+      "startFrame": 6256752,
+      "frameCount": 43300,
+      "text": "Za dwadzieścia siedem",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "b4069b17bf001806f5e68f949332cac2507b994c0f3ea20dda1eb0426394736f"
+    },
+    "natural.before.cont.28": {
+      "startFrame": 6301492,
+      "frameCount": 43865,
+      "text": "Za dwadzieścia osiem",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ba6202f6e72bfa318b0708b69359ae0b581075ea2f2602bc1c67695177ac586e"
+    },
+    "natural.before.cont.29": {
+      "startFrame": 6346797,
+      "frameCount": 44397,
+      "text": "Za dwadzieścia dziewięć",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "ef7b8a3f0b5e34498f605a66c563a6b1607af5ba64dbd2a1256e085d10dfe6dc"
+    },
+    "natural.wpolDo.cont": {
+      "startFrame": 6392634,
+      "frameCount": 22541,
+      "text": "Wpół do",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "975bd74e58ffb30b3f0c126b6fd5779f0e6dd8db29817dcbccea724990e3ccf0"
+    },
+    "hour.genitive.afterPo.final.1": {
+      "startFrame": 6416615,
+      "frameCount": 26767,
+      "text": "pierwszej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "643e4c541d28545134dc30966776f09834c57449e7c3c8f8d776cae574b0e536"
+    },
+    "hour.genitive.afterPo.final.2": {
+      "startFrame": 6444822,
+      "frameCount": 18457,
+      "text": "drugiej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "10188ab4068ccf6779747ce31fed94b081ecab2d5498ea3c94d11aa5410bb7a7"
+    },
+    "hour.genitive.afterPo.final.3": {
+      "startFrame": 6464719,
+      "frameCount": 19224,
+      "text": "trzeciej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "e373ffe61947f5cc1bf0b448202f41cb92119003994c64ce4ad4da604db341c9"
+    },
+    "hour.genitive.afterPo.final.4": {
+      "startFrame": 6485383,
+      "frameCount": 19077,
+      "text": "czwartej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "4da124d2dc7a6c3768d9e004184e4c82dad69695897b48279e19f86581f226c8"
+    },
+    "hour.genitive.afterPo.final.5": {
+      "startFrame": 6505900,
+      "frameCount": 18064,
+      "text": "piątej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "39516eeb289f0489070dfb1176d8d28ca186139a76053d9e23afca46eef4c833"
+    },
+    "hour.genitive.afterPo.final.6": {
+      "startFrame": 6525404,
+      "frameCount": 19552,
+      "text": "szóstej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "b9c7b8ec76b25305c7e1e5993beebc28ab0ffff2aa6017a529412cc7ce6efb57"
+    },
+    "hour.genitive.afterPo.final.7": {
+      "startFrame": 6546396,
+      "frameCount": 18774,
+      "text": "siódmej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "171bd402ce2292907e461a3e06456ddde95ec57501134cc8f8abc3b9001cbd43"
+    },
+    "hour.genitive.afterPo.final.8": {
+      "startFrame": 6566610,
+      "frameCount": 17058,
+      "text": "ósmej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "bb3b8acab669663b5683bebfdfc37a0cd166dc7292dc32a44c3a38edcfd36a86"
+    },
+    "hour.genitive.afterPo.final.9": {
+      "startFrame": 6585108,
+      "frameCount": 24869,
+      "text": "dziewiątej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "6c60014dde8bae27f14d442e9e360f4ae36c38c5efd8acec1598809d453dec34"
+    },
+    "hour.genitive.afterPo.final.10": {
+      "startFrame": 6611417,
+      "frameCount": 25801,
+      "text": "dziesiątej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a2ca1af8a8c300eb1237277cad7b3bd7fb6dfc802ae6eb2c4285176c98dd3760"
+    },
+    "hour.genitive.afterPo.final.11": {
+      "startFrame": 6638658,
+      "frameCount": 25964,
+      "text": "jedenastej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "23fc70cef41d3b47cfebfd5545c203670d102da71bff3f6b783e639134f75cf8"
+    },
+    "hour.genitive.afterPo.final.12": {
+      "startFrame": 6666062,
+      "frameCount": 25865,
+      "text": "dwunastej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "30f2f2b40679775f5910bca8618c9f812cdd50c55deb3bbb28b067a671befbfb"
+    },
+    "hour.genitive.afterDo.final.1": {
+      "startFrame": 6693367,
+      "frameCount": 21704,
+      "text": "pierwszej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "bc8364ddd274b7c6c04a08fc9bfb2f114c8d94a3f2b7aad2dad446b275d16f4b"
+    },
+    "hour.genitive.afterDo.final.2": {
+      "startFrame": 6716511,
+      "frameCount": 19080,
+      "text": "drugiej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "f62416c4c498a86667e17067852e69e2192e878c2b1384239dce2229f48bbdbc"
+    },
+    "hour.genitive.afterDo.final.3": {
+      "startFrame": 6737031,
+      "frameCount": 18454,
+      "text": "trzeciej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "9d212db67c22336d2af69e2f65a2d043be695c068b8b60b1593b3bf2c8fd0f3a"
+    },
+    "hour.genitive.afterDo.final.4": {
+      "startFrame": 6756925,
+      "frameCount": 18655,
+      "text": "czwartej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "c0513694440d59a9c78660c3a14f22e6505c9d4d16626339302866ea5a45dce6"
+    },
+    "hour.genitive.afterDo.final.5": {
+      "startFrame": 6777020,
+      "frameCount": 26183,
+      "text": "piątej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "109964f159faf5fed32d1b6d6ebbd925f3cc89e9f624acba1e45f057895a0168"
+    },
+    "hour.genitive.afterDo.final.6": {
+      "startFrame": 6804643,
+      "frameCount": 18802,
+      "text": "szóstej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "4334a5e5deb38eca1a94e32f86a185c2821b9ecd5075a90e95d2bb17c59978c8"
+    },
+    "hour.genitive.afterDo.final.7": {
+      "startFrame": 6824885,
+      "frameCount": 20252,
+      "text": "siódmej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "0e7ab320c6eb4df819336d1d4c0134d114d92e55d5de6b25a58bb4126f498ca1"
+    },
+    "hour.genitive.afterDo.final.8": {
+      "startFrame": 6846577,
+      "frameCount": 17351,
+      "text": "ósmej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "7bb9d593bc72f52019a87bf145b8c8c696c42a7ce8a4d138e1ed2346d2865580"
+    },
+    "hour.genitive.afterDo.final.9": {
+      "startFrame": 6865368,
+      "frameCount": 23532,
+      "text": "dziewiątej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a49fef111e8269815794c64323f416f1945f90686c1856b34fbd5b9362a003cb"
+    },
+    "hour.genitive.afterDo.final.10": {
+      "startFrame": 6890340,
+      "frameCount": 23864,
+      "text": "dziesiątej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "6433e2811713e45c2daa0def93d2ff22fa2129dc2d0535ea82ee90dadf93b5d8"
+    },
+    "hour.genitive.afterDo.final.11": {
+      "startFrame": 6915644,
+      "frameCount": 25599,
+      "text": "jedenastej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "4e17428f531f75d7db5eff2615e73268dcf1ba767bfd135ddba2be215792a937"
+    },
+    "hour.genitive.afterDo.final.12": {
+      "startFrame": 6942683,
+      "frameCount": 24159,
+      "text": "dwunastej",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "e3ce2cf50aeecbc637bd8ee1a0cb0a4181d012f1e3db90a4b6f1922f28ff60d7"
+    },
+    "hour.nominative.afterBefore.final.1": {
+      "startFrame": 6968282,
+      "frameCount": 19438,
+      "text": "pierwsza",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "0c5a8d05f33a12836439289899810c1d952c4692dc9b3420ab47f56d148278ff"
+    },
+    "hour.nominative.afterBefore.final.2": {
+      "startFrame": 6989160,
+      "frameCount": 15051,
+      "text": "druga",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "31e83d243cf8a75e03557646cd3f7c9147814b66043131d250634e841c5887f4"
+    },
+    "hour.nominative.afterBefore.final.3": {
+      "startFrame": 7005651,
+      "frameCount": 17292,
+      "text": "trzecia",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "951ced25940d1c6e4a5f952b2f2866dc9684b4efe5784ec6c878b87562f1a906"
+    },
+    "hour.nominative.afterBefore.final.4": {
+      "startFrame": 7024383,
+      "frameCount": 18200,
+      "text": "czwarta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "29589596ca461ad38928d05fdd03600b67c839700d680dbf4f74642b9cb7660e"
+    },
+    "hour.nominative.afterBefore.final.5": {
+      "startFrame": 7044023,
+      "frameCount": 15999,
+      "text": "piąta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "1591eb1702a247e907b3e6d3e22ca3bc2618a7d16486dca887776b9aab9f1705"
+    },
+    "hour.nominative.afterBefore.final.6": {
+      "startFrame": 7061462,
+      "frameCount": 17651,
+      "text": "szósta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "c01d26a1f88567d4653b4108747643a866b47a1b4da197946fc64ead92a85c7a"
+    },
+    "hour.nominative.afterBefore.final.7": {
+      "startFrame": 7080553,
+      "frameCount": 16460,
+      "text": "siódma",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "50f5c26440d5f9bf4f08bef1761daeeb9e148bef3f89586c2578c1c94010bb77"
+    },
+    "hour.nominative.afterBefore.final.8": {
+      "startFrame": 7098453,
+      "frameCount": 15455,
+      "text": "ósma",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "50061ca38f80338294a4b4d3a9e69b84af9dcd1ccda84163c45da4f3601d027d"
+    },
+    "hour.nominative.afterBefore.final.9": {
+      "startFrame": 7115348,
+      "frameCount": 23932,
+      "text": "dziewiąta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a6173cfea26a06d338d3079e4da54c2bab43f62926d58ade307f91b95ae967bf"
+    },
+    "hour.nominative.afterBefore.final.10": {
+      "startFrame": 7140720,
+      "frameCount": 21312,
+      "text": "dziesiąta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "559c5df802dba80be3e4829b6f9cfeb4787cdaaacf69e2137143799db443cc24"
+    },
+    "hour.nominative.afterBefore.final.11": {
+      "startFrame": 7163472,
+      "frameCount": 25862,
+      "text": "jedenasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "e8d74c4aca5e5e0099e1043ec236ce01f439b5534604f27da550fa04893fe0be"
+    },
+    "hour.nominative.afterBefore.final.12": {
+      "startFrame": 7190774,
+      "frameCount": 22726,
+      "text": "dwunasta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "67902e2c1238262728cbc3eb071d65d5ad099a9aa244580e0056472f3582e2f5"
+    },
+    "natural.midnight.final": {
+      "startFrame": 7214940,
+      "frameCount": 18921,
+      "text": "Północ",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "31a0f1107daebdf989064196c8c26f81bd726f7cd0d8160f359e959531febc0d"
+    },
+    "natural.noon.final": {
+      "startFrame": 7235301,
+      "frameCount": 39479,
+      "text": "Dwunasta w południe",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "019e54f9ae9abc0bb07abb9a0cbd2ac580794c319605c471dfec6aac2b4883c7"
+    },
+    "number.unit.0": {
+      "startFrame": 7276220,
+      "frameCount": 16340,
+      "text": "zero",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "f8d6a0a900113e4cdb3bec53b2fe853d511b45d12704220aaf0b6975be9b3135"
+    },
+    "number.unit.1": {
+      "startFrame": 7294000,
+      "frameCount": 17486,
+      "text": "jeden",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b5bbd7ba15f75983ad62d38a7895790ea0bc214c805221e346f109f30a31fe96"
+    },
+    "number.unit.2": {
+      "startFrame": 7312926,
+      "frameCount": 13207,
+      "text": "dwa",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "e7626151cc7489f77f34af4ed75ed44f1477d5c9befdd54f332d865f43f80960"
+    },
+    "number.unit.3": {
+      "startFrame": 7327573,
+      "frameCount": 11461,
+      "text": "trzy",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "f5ab43be6f16cb146f713712adccdc1915a8c88a4c1d85b34f4d7bd2a1df9ecd"
+    },
+    "number.unit.4": {
+      "startFrame": 7340474,
+      "frameCount": 15942,
+      "text": "cztery",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "2e0d24701f83957535f205a834c54e80787a988796dc530106ca744e2192360a"
+    },
+    "number.unit.5": {
+      "startFrame": 7357856,
+      "frameCount": 17092,
+      "text": "pięć",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "e6939a2af89db11f3304fb2157f9f0fdc59908caa90067d1fa92fa6d4618ddae"
+    },
+    "number.unit.6": {
+      "startFrame": 7376388,
+      "frameCount": 22697,
+      "text": "sześć",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b349f234411fd63fab1d59d0a1a48a67194c0d94e977bafb8a779dfe6bf393a7"
+    },
+    "number.unit.7": {
+      "startFrame": 7400525,
+      "frameCount": 17467,
+      "text": "siedem",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "910e3e44bceb4e5d585ae04eaf69df86e6c0922c15d3fa422aa70711ed3b8c4e"
+    },
+    "number.unit.8": {
+      "startFrame": 7419432,
+      "frameCount": 15413,
+      "text": "osiem",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "90cf55655bf6043e9a0f99cea422c545f8eb9db576cef5431f1b84871e62a93e"
+    },
+    "number.unit.9": {
+      "startFrame": 7436285,
+      "frameCount": 20612,
+      "text": "dziewięć",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "bbc82ca7efb40f86e648dfc4ae1ff0c23cb0e8cd93b1577a9ad014bfd81b2912"
+    },
+    "number.unit.10": {
+      "startFrame": 7458337,
+      "frameCount": 22305,
+      "text": "dziesięć",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "0e349c60fa738867a8f8b31f12b7fdd8cb91d87142b6a20d673e4d1caedc4680"
+    },
+    "number.unit.11": {
+      "startFrame": 7482082,
+      "frameCount": 25400,
+      "text": "jedenaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "dad099bc9bf837201e3ceffe5452b83a6b38143563a8d8b9c85400996c1d1833"
+    },
+    "number.unit.12": {
+      "startFrame": 7508922,
+      "frameCount": 26194,
+      "text": "dwanaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "29ef8124c394c349dd2c8fdb96a627092aa48b815715e85114b4515e4caa1709"
+    },
+    "number.unit.13": {
+      "startFrame": 7536556,
+      "frameCount": 21894,
+      "text": "trzynaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "7cf0824ae5b6a48b09f18645cbff2a47e0631fcb23e51bacbe3360736ac7989b"
+    },
+    "number.unit.14": {
+      "startFrame": 7559890,
+      "frameCount": 23924,
+      "text": "czternaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "08979bd73ba1baaf1ba8610af0004384db2eedeccec42026d6486f493fd6ca56"
+    },
+    "number.unit.15": {
+      "startFrame": 7585254,
+      "frameCount": 23537,
+      "text": "piętnaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "8a71d5069a2be16390cd5aa126f5a66db5218382b6c6d114d602a4522fad7062"
+    },
+    "number.unit.16": {
+      "startFrame": 7610231,
+      "frameCount": 22449,
+      "text": "szesnaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "dc321932ffb07f692b8ee017df69e6fdb8fff8d971f57e1ccc24f2f72168fffe"
+    },
+    "number.unit.17": {
+      "startFrame": 7634120,
+      "frameCount": 26379,
+      "text": "siedemnaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "67c08e361c7f6894b404fca61786b1819cb1a35c85ac3d29f230ed5ae2f1ce9c"
+    },
+    "number.unit.18": {
+      "startFrame": 7661939,
+      "frameCount": 23300,
+      "text": "osiemnaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "1bf44cf1f210f9c43a38f3ee1704c8b120b0eafb6e96428f5563822c5fa5c192"
+    },
+    "number.unit.19": {
+      "startFrame": 7686679,
+      "frameCount": 28507,
+      "text": "dziewiętnaście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "a2b32779af3ae7015055a761a2777cbf92e7f2adbf89aad29f7217e11a77588f"
+    },
+    "number.minute.feminine.1": {
+      "startFrame": 7716626,
+      "frameCount": 19029,
+      "text": "jedna",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "a0bd81d1f9ea0897f52d63dd7c4095d8f546f81ce502f78a6bd91438125ee3de"
+    },
+    "number.minute.feminine.2": {
+      "startFrame": 7737095,
+      "frameCount": 14362,
+      "text": "dwie",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "4e3fa4c712a4cccd36019ec2324002c165572ee2dbc5523456d46a071e0221f1"
+    },
+    "number.tens.20": {
+      "startFrame": 7752897,
+      "frameCount": 30088,
+      "text": "dwadzieścia",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b358bc6d8e7043fe2143a329780d2e8e77f90c407fb97c68320f5b3bce4f949f"
+    },
+    "number.tens.30": {
+      "startFrame": 7784425,
+      "frameCount": 22217,
+      "text": "trzydzieści",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "83ab552319a260788ea2beebfecff2700d32df89dabb47ea6efebb6ba4e4c05a"
+    },
+    "number.tens.40": {
+      "startFrame": 7808082,
+      "frameCount": 24240,
+      "text": "czterdzieści",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "bc0134ddcad71b30fc8a590e60bbbbbd84c8b87b4d99a1d814432a3bf82215d3"
+    },
+    "number.tens.50": {
+      "startFrame": 7833762,
+      "frameCount": 22250,
+      "text": "pięćdziesiąt",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "ebad317a6419bce2dd8e1a6ff834d7058918fb9ab2e871750fdccdad60781059"
+    },
+    "number.tens.60": {
+      "startFrame": 7857452,
+      "frameCount": 25850,
+      "text": "sześćdziesiąt",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "b3149871d6de5f0bf0bf2da126fc6dd2c485d5d043acdc52cb4e2bf161defc44"
+    },
+    "number.tens.70": {
+      "startFrame": 7884742,
+      "frameCount": 27253,
+      "text": "siedemdziesiąt",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "6b20e7e463d1cfa3484848ea18d6b34ae8dd04f81101686e63400d5ffd8149aa"
+    },
+    "number.tens.80": {
+      "startFrame": 7913435,
+      "frameCount": 28527,
+      "text": "osiemdziesiąt",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "97b075430c74e898f4e5f060c46ebc486f898e04f9508df9d74498b58c22f57e"
+    },
+    "number.tens.90": {
+      "startFrame": 7943402,
+      "frameCount": 30479,
+      "text": "dziewięćdziesiąt",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "5cf83aa237537ef7440c44701f29685e5106d0ba3c695264faddd2aa91547f41"
+    },
+    "number.hundreds.100": {
+      "startFrame": 7975321,
+      "frameCount": 16464,
+      "text": "sto",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "266f5044d41137ed506db7021d3ff5100be3f8d42d3aa0025a44b9ff5bd340e0"
+    },
+    "number.hundreds.200": {
+      "startFrame": 7993225,
+      "frameCount": 22058,
+      "text": "dwieście",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "f712b0530a92e0e34d00dd9177013bfac02543ecc10339c5fa2f213c8780e508"
+    },
+    "number.hundreds.300": {
+      "startFrame": 8016723,
+      "frameCount": 20347,
+      "text": "trzysta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "eb13955a8b5ab56f25a3c5df77489dfcffdcf14dd38ab5ca94ce47a115e765b6"
+    },
+    "number.hundreds.400": {
+      "startFrame": 8038510,
+      "frameCount": 19769,
+      "text": "czterysta",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "121280e3e5d8303bc6ae0b9fc4c8883bc7f1e9481ec5f53865485edfc106ae7c"
+    },
+    "number.hundreds.500": {
+      "startFrame": 8059719,
+      "frameCount": 21084,
+      "text": "pięćset",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "5761ba748f2475fa4d9d1226dcc371ab2f10cd7429d3e759a7a02fc2bb537dd6"
+    },
+    "number.hundreds.600": {
+      "startFrame": 8082243,
+      "frameCount": 22057,
+      "text": "sześćset",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "ac7373b33a8936b0fe1818f441d4cb7c511b0484dd1572898e1a9c4489142031"
+    },
+    "number.hundreds.700": {
+      "startFrame": 8105740,
+      "frameCount": 22323,
+      "text": "siedemset",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "41e14b4881b803b64f072f91bc49f23b77a839b48dc84571d5fa2d919561214b"
+    },
+    "number.hundreds.800": {
+      "startFrame": 8129503,
+      "frameCount": 21347,
+      "text": "osiemset",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "60f187c3bc89d980305a5d79b4ed24d85c2e1fd2b7d24ed47fbe098b3a2839f8"
+    },
+    "number.hundreds.900": {
+      "startFrame": 8152290,
+      "frameCount": 24946,
+      "text": "dziewięćset",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "102cd4c8296365e2276e72e4d407e5096a6647ad8daab69ee7b721c90c24ca42"
+    },
+    "number.scale.thousand.one": {
+      "startFrame": 8178676,
+      "frameCount": 20229,
+      "text": "tysiąc",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "7794f3a760fc13ae64ef2120ed45aaa18d5b96877c09e0cda923d691ef8d770e"
+    },
+    "number.scale.thousand.few": {
+      "startFrame": 8200345,
+      "frameCount": 20128,
+      "text": "tysiące",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "677a4bf219fe8a5166a084d61c87a1e11dc2e51506046e5dbb1c89eb5e74380a"
+    },
+    "number.scale.thousand.many": {
+      "startFrame": 8221913,
+      "frameCount": 22650,
+      "text": "tysięcy",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "f5786c60c86abe57d423c1501fd4d2ec0d292c0b848cacd4656ea877b9c6d385"
+    },
+    "number.scale.million.one": {
+      "startFrame": 8246003,
+      "frameCount": 24516,
+      "text": "milion",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "56fd6d6289e38f0587fc5c964fce86ee9830ef2e0a5635abf1d8eb434fdb1bc3"
+    },
+    "number.scale.million.few": {
+      "startFrame": 8271959,
+      "frameCount": 31289,
+      "text": "miliony",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "4b82cc4416a50609b7dbd72d55c3219773437864293b01dbfc28f982dc654da4"
+    },
+    "number.scale.million.many": {
+      "startFrame": 8304688,
+      "frameCount": 28965,
+      "text": "milionów",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "bd67262269c10427e2e1c69f62cb67622a034b6eed1e94ae2ecf0ff556fb7ba1"
+    },
+    "number.scale.billion.one": {
+      "startFrame": 8335093,
+      "frameCount": 20989,
+      "text": "miliard",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "fee4a3bf4e1c93b3b32bc017e0e901737bd88ef43c25daab6055f0f952b75a17"
+    },
+    "number.scale.billion.few": {
+      "startFrame": 8357522,
+      "frameCount": 23180,
+      "text": "miliardy",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "ff4682a22e04f486c22b476fc56bc8008678e001b09a2599e5b8a1a02161f28e"
+    },
+    "number.scale.billion.many": {
+      "startFrame": 8382142,
+      "frameCount": 30194,
+      "text": "miliardów",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "263c042d3bc1e155633fde96735427c5a8d30f193b5b3be3ef1383e30c3623e1"
+    },
+    "number.scale.trillion.one": {
+      "startFrame": 8413776,
+      "frameCount": 23069,
+      "text": "bilion",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "e50e13be9b1d1a2aa4ec9deef291fb50cd496f4b7101c24e4e2d42b14b8caeb6"
+    },
+    "number.scale.trillion.few": {
+      "startFrame": 8438285,
+      "frameCount": 28019,
+      "text": "biliony",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "6069be0c6a7d585db8ae994703368be47ee42d0b8f79a8f6e0cb7e7ecf245c47"
+    },
+    "number.scale.trillion.many": {
+      "startFrame": 8467744,
+      "frameCount": 26677,
+      "text": "bilionów",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "fcec903d615cffde4fc5034c6337cafcc216ccb9857aa5da7634684182d9c3f0"
+    },
+    "number.scale.quadrillion.one": {
+      "startFrame": 8495861,
+      "frameCount": 23404,
+      "text": "biliard",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "4c73ee9c57eedc3b0b27004cd20dd4d2ca51f166858bbbe2856d85bcde088ee2"
+    },
+    "number.scale.quadrillion.few": {
+      "startFrame": 8520705,
+      "frameCount": 27058,
+      "text": "biliardy",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "cd43fb050f929e401fbf7c5ca49957a64b9ac8d52327854fe5b9816897991074"
+    },
+    "number.scale.quadrillion.many": {
+      "startFrame": 8549203,
+      "frameCount": 32783,
+      "text": "biliardów",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "940663c2f23aee8dfd28b3dc8c794afd6847d20428dc6368561462931626164b"
+    },
+    "elapsed.minela.cont": {
+      "startFrame": 8583426,
+      "frameCount": 25839,
+      "text": "Minęła",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "9155a5bceac7054a81073dd106f5f4b799eb0a869ce3d7d79eb68ac315998b1c"
+    },
+    "elapsed.minely.cont": {
+      "startFrame": 8610705,
+      "frameCount": 19912,
+      "text": "Minęły",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "cd275b68427710588712a0f3c3248812ee64b5e4c0d5458f2e8ed63d0b1449f1"
+    },
+    "elapsed.minelo.cont": {
+      "startFrame": 8632057,
+      "frameCount": 17960,
+      "text": "Minęło",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "e1ba4a2d0f899c6e1eaee6173fb4e55eb964cb26167e2ee616b8fdf4a07569eb"
+    },
+    "elapsed.minuta.final": {
+      "startFrame": 8651457,
+      "frameCount": 20606,
+      "text": "minuta",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "9865f978a1bdf4a8554c4956dee1253ebabb28422e682fd117176b386852a58a"
+    },
+    "elapsed.minuty.final": {
+      "startFrame": 8673503,
+      "frameCount": 21070,
+      "text": "minuty",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "007ee972c78e2b601cf6a9a697fa7edd274b20f702c0af68e1c7a5b72d4988f7"
+    },
+    "elapsed.minut.final": {
+      "startFrame": 8696013,
+      "frameCount": 20332,
+      "text": "minut",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "e2ab44566f5c1e229b41519431514ef6de20d98700a57f0362112524a1f947bb"
+    },
+    "elapsed.sessionEnd.final": {
+      "startFrame": 8717785,
+      "frameCount": 35655,
+      "text": "Czas sesji minął",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "547ffa18ce46db9bdff555c98f6a162aa20a6af26632cb3a8e8c168f1dfcd64b"
+    },
+    "departure.czasNa.cont": {
+      "startFrame": 8754880,
+      "frameCount": 29235,
+      "text": "Czas na",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "3481e512dd3fee5d0b1c42edfe664fa9d455ed263bdf7f4d9827d97f4fdd2ab9"
+    },
+    "departure.za.cont": {
+      "startFrame": 8785555,
+      "frameCount": 13967,
+      "text": "Za",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "f3b752916733e937393f95cf0dfef92fab50118b3d45f379f41934fc6a6d0366"
+    },
+    "departure.zaMinute.cont": {
+      "startFrame": 8800962,
+      "frameCount": 24886,
+      "text": "Za minutę",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "b0789118cf98857d96c62e5735a284d80adab0dfeb9b655e0266e3d07d4279c6"
+    },
+    "departure.zaHalfMinute.cont": {
+      "startFrame": 8827288,
+      "frameCount": 32264,
+      "text": "Za pół minuty",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "6afd5825ceabb7765c52e470521bbe2680bef8d74b7ab7fe89d3f5222244e651"
+    },
+    "departure.lessThanMinute.cont": {
+      "startFrame": 8860992,
+      "frameCount": 45581,
+      "text": "Mniej niż minuta do",
+      "prosodyRole": "initial-continuing",
+      "promptId": "clock-initial-cont-v1",
+      "sourceSha256": "436aa22a0719af52b10891f6a0ab50d7880e2e79311021ed6cd19cc59a7b870f"
+    },
+    "departure.minuty.cont": {
+      "startFrame": 8908013,
+      "frameCount": 21136,
+      "text": "minuty",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "588ac59fbfdbf10fa385d8d1e23148aaa4fb3debca5be5520e5719032d577a94"
+    },
+    "departure.minut.cont": {
+      "startFrame": 8930589,
+      "frameCount": 22811,
+      "text": "minut",
+      "prosodyRole": "medial-continuing",
+      "promptId": "clock-medial-cont-v1",
+      "sourceSha256": "166dfa3d0ceddb78465cfe57c3e4439d5b95dfe5a796d819c371fa4b7c953c37"
+    },
+    "departure.label.leave_home.countdown": {
+      "startFrame": 8954840,
+      "frameCount": 29933,
+      "text": "Wyjście z domu",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "f38e4ed7ff40d32c988f0b757c1229e362ceaa39e154f2544bd41642bfb47c77"
+    },
+    "departure.label.leave_home.done": {
+      "startFrame": 8986213,
+      "frameCount": 29677,
+      "text": "Wyjście z domu",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "21a7d9b7c91c4622183d0352091bf0791fd57c485430797c9eda4f36da62287c"
+    },
+    "departure.label.meeting.countdown": {
+      "startFrame": 9017330,
+      "frameCount": 22238,
+      "text": "Spotkanie",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "661890c733dcb47b9abfb0914ee1d1f0feeb1e3cbf5d70e56fba122d20f1b0de"
+    },
+    "departure.label.meeting.done": {
+      "startFrame": 9041008,
+      "frameCount": 22983,
+      "text": "Spotkanie",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "593a5abbb7bd2b8f74a428e3ce77ec204ae9ad324e8f022bccb196f28edd3879"
+    },
+    "departure.label.transit.countdown": {
+      "startFrame": 9065431,
+      "frameCount": 52752,
+      "text": "Pociąg lub autobus",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "d2abe7becb9f6920d137c37e9f9391aa017be88e9dc5d4711b7692520a40d9d1"
+    },
+    "departure.label.transit.done": {
+      "startFrame": 9119623,
+      "frameCount": 58998,
+      "text": "Pociąg lub autobus",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "60ad370fc82b853caa274743ee273e8466c71201c0e04846aa87423b9fcfff54"
+    },
+    "departure.label.medication.countdown": {
+      "startFrame": 9180061,
+      "frameCount": 15844,
+      "text": "Leki",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "4581f249e3177c90e43e9d545acbca50034347f6bb653493429696ea5bcde7fc"
+    },
+    "departure.label.medication.done": {
+      "startFrame": 9197345,
+      "frameCount": 18098,
+      "text": "Leki",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "5d302588ced7ea4834bfc2099dbdcf2245471f3f8ee6178a6b996bf2d50b9d86"
+    },
+    "departure.label.cooking.countdown": {
+      "startFrame": 9216883,
+      "frameCount": 23719,
+      "text": "Gotowanie",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "466e7c17f3a11905f3bb9329cdfc69659935b3d77cbcc55b384cac0c60745af2"
+    },
+    "departure.label.cooking.done": {
+      "startFrame": 9242042,
+      "frameCount": 22245,
+      "text": "Gotowanie",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "df2f3d42eb4d3eeefc580555337605ffa26d07469711b9f345eaaa25821f5283"
+    },
+    "departure.label.break.countdown": {
+      "startFrame": 9265727,
+      "frameCount": 16695,
+      "text": "Przerwa",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "846320c2d60e572fcb07ef4d9e5298d63475224190341b1526233e1a1dc1b8e4"
+    },
+    "departure.label.break.done": {
+      "startFrame": 9283862,
+      "frameCount": 16762,
+      "text": "Przerwa",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "d5c8233edc5ac134e28417e41bac4fb819420a1717ac12683731714b044b16d7"
+    },
+    "departure.label.generic.countdown": {
+      "startFrame": 9302064,
+      "frameCount": 24084,
+      "text": "Wydarzenie",
+      "prosodyRole": "neutral-terminal",
+      "promptId": "clock-neutral-final-v1",
+      "sourceSha256": "a516f67b0e9943923ae584e78b241d6524327ec235a0b5b73eac58307e0663e7"
+    },
+    "departure.label.generic.done": {
+      "startFrame": 9327588,
+      "frameCount": 26544,
+      "text": "Wydarzenie",
+      "prosodyRole": "emphatic-terminal",
+      "promptId": "clock-emphatic-final-v1",
+      "sourceSha256": "f3cd5d776b03bc896e619b7096507bfc55e90f63510565df48997f0e464a47ba"
+    }
+  }
+}

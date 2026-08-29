@@ -18,7 +18,7 @@ export const czas = {
 
   action: {
     testVoice: 'Posłuchaj głosu',
-    retryVoice: 'Przetestuj głos',
+    retryVoice: 'Pobierz głos ponownie',
     openSettings: 'Ustawienia czasu',
     adjustPlus: (minutes: number) => `Dodaj ${minutes} min`,
     adjustMinus: (minutes: number) => `Odejmij ${minutes} min`,
@@ -34,9 +34,15 @@ export const czas = {
   },
 
   notice: {
-    noPolishVoice:
-      'Ten telefon nie ma polskiego głosu. Zegar zadzwoni gongiem, ale nie powie godziny.',
-    speechFailed: 'Nie udało się uruchomić głosu. Zegar nadal działa.',
+    voiceLoading: 'Przygotowuję głos offline…',
+    voiceUnavailable:
+      'Głos offline nie został pobrany. Połącz się z internetem i spróbuj ponownie.',
+    voiceUnsupported: 'To urządzenie nie obsługuje wymaganego odtwarzania głosu offline.',
+    voiceMemoryLimit:
+      'Na tym urządzeniu głos offline wymagałby zbyt dużo pamięci, więc nie został uruchomiony.',
+    voiceInvalid:
+      'Pakiet głosu jest niekompletny lub uszkodzony. Pobierz go ponownie przy połączeniu z internetem.',
+    speechFailed: 'Nie udało się odtworzyć głosu offline.',
   },
 
   interval: {
@@ -56,6 +62,7 @@ export const czas = {
     quickAdd: 'Szybko ustaw',
     label: 'Po co wychodzisz',
     labelPlaceholder: 'Wpisz własne',
+    customSpokenHint: 'W ogłoszeniu usłyszysz: „wydarzenie”.',
     custom: 'Własne',
     cadence: 'Jak często przypominać',
     smart: 'Gęściej przy końcu',
@@ -81,9 +88,9 @@ export const czas = {
     tabDial: 'Tarcza',
 
     voice: 'Głos lektora',
-    voiceMissing: 'Brak polskiego głosu w tym telefonie',
-    speed: 'Tempo mowy',
-    pitch: 'Wysokość głosu',
+    offlineVoice: 'Ciepły głos offline — Kore',
+    offlineVoiceReady: 'Pobrany i gotowy. Działa bez internetu.',
+    voiceMissing: 'Głos offline nie jest gotowy',
     volume: 'Głośność',
     style: 'Sposób mówienia',
     styleOptions: {

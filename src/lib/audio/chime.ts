@@ -15,10 +15,17 @@
  */
 
 export type ChimeTone = 'gentle' | 'warm' | 'bright';
+export const SHARED_AUDIO_SAMPLE_RATE_HZ = 24_000;
 
 export interface ChimeOptions {
   volume?: number;
   tone?: ChimeTone;
+}
+
+export interface ScheduledChime {
+  startAt: number;
+  endAt: number;
+  stop: () => void;
 }
 
 export interface ToneComponent {
@@ -91,7 +98,7 @@ export async function closeAudioContext(): Promise<void> {
 /**
  * Retrieves or lazily instantiates the shared AudioContext.
  */
-function getOrCreateAudioContext(): AudioContext | null {
+export function ensureAudioContext(): AudioContext | null {
   if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
     return sharedAudioContext;
   }
@@ -106,11 +113,98 @@ function getOrCreateAudioContext(): AudioContext | null {
   }
 
   try {
-    sharedAudioContext = new AudioCtxClass();
+    sharedAudioContext = new AudioCtxClass({
+      latencyHint: 'playback',
+      sampleRate: SHARED_AUDIO_SAMPLE_RATE_HZ,
+    });
     return sharedAudioContext;
   } catch {
-    return null;
+    // Keep non-clock audio usable on a browser that rejects the preferred
+    // rate. The voice player independently fails closed if its decoded buffer
+    // then exceeds the memory contract.
+    try {
+      sharedAudioContext = new AudioCtxClass();
+      return sharedAudioContext;
+    } catch {
+      return null;
+    }
   }
+}
+
+/**
+ * Schedules a chime on an existing audio timeline without awaiting JavaScript.
+ * The speaking clock uses this together with prerecorded speech so Android can
+ * render both parts after the page's main thread is suspended.
+ */
+export function scheduleChime(
+  ctx: AudioContext,
+  startAt: number,
+  options?: ChimeOptions
+): ScheduledChime {
+  const rawVolume = typeof options?.volume === 'number' ? options.volume : 0.7;
+  const volume = Math.max(0, Math.min(1, rawVolume));
+  const t0 = Math.max(startAt, ctx.currentTime);
+  if (volume <= 0) return { startAt: t0, endAt: t0, stop: () => {} };
+
+  const toneKey = options?.tone && CHIME_TONES[options.tone] ? options.tone : 'gentle';
+  const toneDef = CHIME_TONES[toneKey];
+  const attack = 0.04;
+  const decay = 0.12;
+  const release = 0.6;
+  const totalDuration = attack + decay + release;
+  const masterGain = ctx.createGain();
+  const peakVolume = Math.max(0.0001, volume);
+  const sustainVolume = Math.max(0.0001, peakVolume * 0.3);
+
+  const oscillators: OscillatorNode[] = [];
+  const componentGains: GainNode[] = [];
+  let stopped = false;
+  const stopAndCleanup = () => {
+    if (stopped) return;
+    stopped = true;
+    for (const oscillator of oscillators) {
+      oscillator.onended = null;
+      try { oscillator.stop(); } catch { /* already stopped or not started */ }
+      try { oscillator.disconnect(); } catch { /* already disconnected */ }
+    }
+    for (const gain of componentGains) {
+      try { gain.disconnect(); } catch { /* already disconnected */ }
+    }
+    try { masterGain.disconnect(); } catch { /* already disconnected */ }
+  };
+
+  try {
+    masterGain.gain.setValueAtTime(0.0001, t0);
+    masterGain.gain.linearRampToValueAtTime(peakVolume, t0 + attack);
+    masterGain.gain.exponentialRampToValueAtTime(sustainVolume, t0 + attack + decay);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, t0 + totalDuration);
+    masterGain.gain.setValueAtTime(0, t0 + totalDuration + 0.01);
+    masterGain.connect(ctx.destination);
+
+    for (const component of toneDef.components) {
+      const oscillator = ctx.createOscillator();
+      const componentGain = ctx.createGain();
+      oscillators.push(oscillator);
+      componentGains.push(componentGain);
+      oscillator.type = component.type || 'sine';
+      oscillator.frequency.setValueAtTime(component.frequency, t0);
+      componentGain.gain.setValueAtTime(component.gain, t0);
+      oscillator.connect(componentGain);
+      componentGain.connect(masterGain);
+      oscillator.start(t0);
+      oscillator.stop(t0 + totalDuration + 0.05);
+    }
+  } catch (error) {
+    stopAndCleanup();
+    throw error;
+  }
+  if (oscillators[0]) oscillators[0].onended = stopAndCleanup;
+
+  return {
+    startAt: t0,
+    endAt: t0 + totalDuration + 0.05,
+    stop: stopAndCleanup,
+  };
 }
 
 /**
@@ -120,7 +214,7 @@ function getOrCreateAudioContext(): AudioContext | null {
  * @returns Promise that resolves when the chime sound completes
  */
 export async function playChime(options?: ChimeOptions): Promise<void> {
-  const ctx = getOrCreateAudioContext();
+  const ctx = ensureAudioContext();
   if (!ctx) {
     // Graceful fallback in environments without Web Audio API (SSR / unsupported)
     return;

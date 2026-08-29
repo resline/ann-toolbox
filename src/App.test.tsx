@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import App from './App';
 import { shellIds, terazIds } from './app/testIds';
 import { ROUTES } from './app/routes';
-import * as speechService from './modules/speaking-clock/services/speechService';
 
 /**
  * Testy powłoki. Selektory to role ARIA i identyfikatory ze stałych —
@@ -17,7 +16,6 @@ describe('Powłoka aplikacji', () => {
     document.documentElement.className = '';
     delete document.documentElement.dataset.theme;
     window.history.replaceState({}, '', '/');
-    vi.spyOn(speechService, 'getPolishVoices').mockResolvedValue([]);
   });
 
   it('startuje na ekranie „Teraz", a nie w module', () => {
@@ -124,7 +122,6 @@ describe('Instalacja PWA', () => {
   beforeEach(() => {
     localStorage.clear();
     window.history.replaceState({}, '', '/');
-    vi.spyOn(speechService, 'getPolishVoices').mockResolvedValue([]);
   });
 
   function fireInstallPrompt(outcome: 'accepted' | 'dismissed' = 'accepted') {

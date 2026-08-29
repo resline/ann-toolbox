@@ -3,21 +3,20 @@ import { migrateStoredSettings } from './useSpeakingClock';
 import { DEFAULT_SPEAKING_CLOCK_SETTINGS } from '../types';
 
 /**
- * Do tej pory ten sam parametr istniał pod dwiema nazwami naraz, a silnik
- * czytał wariant „legacy". Ujednolicenie nazw bez migracji zresetowałoby
- * zapisane ustawienia głosu — te testy pilnują, żeby tak się nie stało.
+ * Nagranie offline ma stały głos, tempo i wysokość. Migracja zachowuje tylko
+ * nadal obsługiwane ustawienia, a usuwa pola dawnego systemowego TTS.
  */
 describe('migracja zapisanych ustawień zegara', () => {
-  it('przenosi tempo, ton i głośność mowy na nazwy kanoniczne', () => {
+  it('zachowuje głośność, ale usuwa tempo i wysokość dawnego TTS', () => {
     const migrated = migrateStoredSettings({
       speechRate: 1.3,
       speechPitch: 0.8,
       speechVolume: 0.6,
     });
 
-    expect(migrated.rate).toBe(1.3);
-    expect(migrated.pitch).toBe(0.8);
     expect(migrated.volume).toBe(0.6);
+    expect(migrated).not.toHaveProperty('rate');
+    expect(migrated).not.toHaveProperty('pitch');
   });
 
   it('przenosi ustawienie gongu i blokady wygaszania', () => {
@@ -42,9 +41,11 @@ describe('migracja zapisanych ustawień zegara', () => {
     }
   });
 
-  it('wartość kanoniczna wygrywa, gdy zapis ma obie', () => {
-    const migrated = migrateStoredSettings({ speechRate: 0.5, rate: 1.4 });
-    expect(migrated.rate).toBe(1.4);
+  it('usuwa także kanoniczne pola systemowego głosu ze starszego zapisu', () => {
+    const migrated = migrateStoredSettings({ voiceURI: 'pl-system', rate: 1.4, pitch: 0.8 });
+    expect(migrated).not.toHaveProperty('voiceURI');
+    expect(migrated).not.toHaveProperty('rate');
+    expect(migrated).not.toHaveProperty('pitch');
   });
 
   it('zachowuje pozostałe pola bez zmian', () => {
@@ -69,7 +70,16 @@ describe('migracja zapisanych ustawień zegara', () => {
 
   it('domyślne ustawienia nie zawierają już zdublowanych nazw', () => {
     const defaults = DEFAULT_SPEAKING_CLOCK_SETTINGS as unknown as Record<string, unknown>;
-    for (const legacy of ['speechRate', 'speechPitch', 'speechVolume', 'playChimeBefore', 'wakeLockEnabled']) {
+    for (const legacy of [
+      'voiceURI',
+      'rate',
+      'pitch',
+      'speechRate',
+      'speechPitch',
+      'speechVolume',
+      'playChimeBefore',
+      'wakeLockEnabled',
+    ]) {
       expect(defaults, legacy).not.toHaveProperty(legacy);
     }
   });

@@ -10,31 +10,73 @@ import {
   type ClockState,
 } from '../types';
 import * as chimeSynthesizer from '../../../lib/audio/chime';
-import * as speechService from './speechService';
 import { WakeLockService } from './wakeLockService';
 import { SilentAudioLoop } from './silentAudioLoop';
+import { SpriteSpeechPlayer } from './spriteSpeechPlayer';
+
+const voicePlayerMocks = vi.hoisted(() => {
+  const context = { currentTime: 10, state: 'running', destination: {} } as AudioContext;
+  const defaultSequence = () => ({
+    startAt: 10,
+    endAt: 11,
+    sources: [],
+    done: Promise.resolve<'completed' | 'cancelled'>('completed'),
+    reap: vi.fn(() => false),
+    stop: vi.fn(),
+  });
+  return {
+    context,
+    state: 'ready' as 'idle' | 'loading' | 'ready' | 'failed',
+    prepare: vi.fn().mockResolvedValue({ status: 'ready', decodedBytes: 1024, fragmentCount: 337 }),
+    resumeFromUserGesture: vi.fn().mockResolvedValue(true),
+    schedule: vi.fn(defaultSequence),
+    defaultSequence,
+    cancel: vi.fn(),
+    release: vi.fn(),
+  };
+});
 
 // Mock dependencies
 vi.mock('../../../lib/audio/chime', () => ({
   playChime: vi.fn().mockResolvedValue(undefined),
+  scheduleChime: vi.fn((_context, startAt) => ({
+    startAt,
+    endAt: startAt + 0.81,
+    stop: vi.fn(),
+  })),
   closeAudioContext: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('./speechService', () => ({
-  prepareSpeech: vi.fn().mockReturnValue(true),
-  speakText: vi.fn().mockResolvedValue({
-    status: 'completed',
-    attempts: 1,
-    visibilityState: 'visible',
-  }),
-  stopSpeaking: vi.fn(),
-  isSpeechSynthesisSupported: vi.fn().mockReturnValue(true),
+vi.mock('./spriteSpeechPlayer', () => ({
+  SpriteSpeechPlayer: vi.fn().mockImplementation(() => ({
+    prepare: voicePlayerMocks.prepare,
+    getState: () => voicePlayerMocks.state,
+    getAudioContext: () => voicePlayerMocks.context,
+    resumeFromUserGesture: voicePlayerMocks.resumeFromUserGesture,
+    schedule: voicePlayerMocks.schedule,
+    cancel: voicePlayerMocks.cancel,
+    release: voicePlayerMocks.release,
+  })),
 }));
 
 describe('BackgroundTimerEngine', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    (voicePlayerMocks.context as AudioContext & { currentTime: number }).currentTime = 10;
+    voicePlayerMocks.state = 'ready';
+    voicePlayerMocks.prepare.mockResolvedValue({ status: 'ready', decodedBytes: 1024, fragmentCount: 337 });
+    voicePlayerMocks.resumeFromUserGesture.mockResolvedValue(true);
+    voicePlayerMocks.schedule.mockImplementation(voicePlayerMocks.defaultSequence);
+    vi.mocked(SpriteSpeechPlayer).mockImplementation(() => ({
+      prepare: voicePlayerMocks.prepare,
+      getState: () => voicePlayerMocks.state,
+      getAudioContext: () => voicePlayerMocks.context,
+      resumeFromUserGesture: voicePlayerMocks.resumeFromUserGesture,
+      schedule: voicePlayerMocks.schedule,
+      cancel: voicePlayerMocks.cancel,
+      release: voicePlayerMocks.release,
+    } as unknown as SpriteSpeechPlayer));
   });
 
   afterEach(() => {
@@ -156,6 +198,42 @@ describe('BackgroundTimerEngine', () => {
       engine.destroy();
       expect(engine.getState()).toBe('idle');
     });
+
+    it('does not resurrect a stopped engine after a delayed AudioContext resume', async () => {
+      let finishResume!: (ready: boolean) => void;
+      voicePlayerMocks.resumeFromUserGesture.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => { finishResume = resolve; })
+      );
+      const silentStart = vi.spyOn(SilentAudioLoop.prototype, 'start');
+      const engine = new BackgroundTimerEngine();
+
+      const startPromise = engine.start();
+      await Promise.resolve();
+      engine.stop();
+      finishResume(true);
+      await startPromise;
+
+      expect(engine.getState()).toBe('idle');
+      expect(silentStart).not.toHaveBeenCalled();
+    });
+
+    it('does not announce after destroy wins a delayed manual resume', async () => {
+      let finishResume!: (ready: boolean) => void;
+      voicePlayerMocks.resumeFromUserGesture.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => { finishResume = resolve; })
+      );
+      const onAnnounce = vi.fn();
+      const engine = new BackgroundTimerEngine({}, { onAnnounce });
+
+      const announcement = engine.triggerImmediateAnnouncement();
+      await Promise.resolve();
+      engine.destroy();
+      finishResume(true);
+      await announcement;
+
+      expect(onAnnounce).not.toHaveBeenCalled();
+      expect(voicePlayerMocks.schedule).not.toHaveBeenCalled();
+    });
   });
 
   describe('Ticks & Interval Announcement Coordination', () => {
@@ -207,10 +285,11 @@ describe('BackgroundTimerEngine', () => {
       expect(announcements.length).toBe(1);
       expect(announcements[0].reason).toBe('interval');
       expect(announcements[0].text).toContain('Piętnaście po dziesiątej');
-      expect(chimeSynthesizer.playChime).toHaveBeenCalledTimes(1);
-      expect(speechService.speakText).toHaveBeenCalledWith(
-        expect.stringContaining('Piętnaście po dziesiątej'),
-        expect.any(Object)
+      expect(chimeSynthesizer.scheduleChime).toHaveBeenCalledTimes(1);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('Piętnaście po dziesiątej') }),
+        expect.any(Number),
+        expect.any(Number)
       );
 
       engine.stop();
@@ -229,8 +308,8 @@ describe('BackgroundTimerEngine', () => {
       await engine.start();
       await vi.advanceTimersByTimeAsync(3000);
 
-      expect(chimeSynthesizer.playChime).not.toHaveBeenCalled();
-      expect(speechService.speakText).toHaveBeenCalledTimes(1);
+      expect(chimeSynthesizer.scheduleChime).not.toHaveBeenCalled();
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
 
       engine.stop();
     });
@@ -253,6 +332,23 @@ describe('BackgroundTimerEngine', () => {
       await vi.advanceTimersByTimeAsync(500);
 
       expect(announcements.length).toBe(1);
+
+      engine.stop();
+    });
+
+    it('applies keep-awake changes while paused', async () => {
+      const request = vi.spyOn(WakeLockService.prototype, 'request').mockResolvedValue(true);
+      const release = vi.spyOn(WakeLockService.prototype, 'release').mockResolvedValue(undefined);
+      const engine = new BackgroundTimerEngine({ keepAwake: true });
+      await engine.start();
+      engine.pause();
+      request.mockClear();
+      release.mockClear();
+
+      engine.updateSettings({ keepAwake: false });
+      expect(release).toHaveBeenCalledTimes(1);
+      engine.updateSettings({ keepAwake: true });
+      expect(request).toHaveBeenCalledTimes(1);
 
       engine.stop();
     });
@@ -333,45 +429,50 @@ describe('BackgroundTimerEngine', () => {
       expect(announcements.length).toBe(1);
       expect(announcements[0].reason).toBe('manual');
       expect(announcements[0].text).toContain('Dwunasta w południe');
-      expect(chimeSynthesizer.playChime).toHaveBeenCalledTimes(1);
-      expect(speechService.speakText).toHaveBeenCalledTimes(1);
-      expect(speechService.prepareSpeech).toHaveBeenCalledTimes(1);
+      expect(chimeSynthesizer.scheduleChime).toHaveBeenCalledTimes(1);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
+      expect(voicePlayerMocks.resumeFromUserGesture).toHaveBeenCalledTimes(1);
     });
 
-    it('does not start speech after an idle manual test is stopped during its chime', async () => {
-      let finishChime!: () => void;
-      vi.mocked(chimeSynthesizer.playChime).mockReturnValueOnce(
-        new Promise<void>((resolve) => {
-          finishChime = resolve;
-        })
-      );
+    it('schedules speech in the same turn as the chime and cancels both on stop', async () => {
+      let finishVoice!: (status: 'completed' | 'cancelled') => void;
+      const stopVoice = vi.fn();
+      voicePlayerMocks.schedule.mockReturnValueOnce({
+        startAt: 10.94,
+        endAt: 12,
+        sources: [],
+        done: new Promise<'completed' | 'cancelled'>((resolve) => { finishVoice = resolve; }),
+        reap: vi.fn(() => false),
+        stop: stopVoice,
+      });
       const engine = new BackgroundTimerEngine({ chimeEnabled: true });
 
       const announcementPromise = engine.triggerImmediateAnnouncement();
-      expect(chimeSynthesizer.playChime).toHaveBeenCalledTimes(1);
+      await Promise.resolve();
+      expect(chimeSynthesizer.scheduleChime).toHaveBeenCalledTimes(1);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
 
-      // Manual tests are allowed while idle; stop/destroy must still invalidate them.
       engine.stop();
-      finishChime();
+      finishVoice('cancelled');
       await announcementPromise;
 
-      expect(speechService.speakText).not.toHaveBeenCalled();
-      expect(speechService.stopSpeaking).toHaveBeenCalledTimes(1);
+      expect(stopVoice).toHaveBeenCalledTimes(1);
+      expect(voicePlayerMocks.cancel).toHaveBeenCalled();
     });
 
     it('ignores the stale outcome when a newer manual test replaces an active one', async () => {
-      let finishFirstSpeech!: (outcome: Awaited<ReturnType<typeof speechService.speakText>>) => void;
-      vi.mocked(speechService.speakText)
-        .mockImplementationOnce(
-          () => new Promise((resolve) => {
-            finishFirstSpeech = resolve;
-          })
-        )
-        .mockResolvedValueOnce({
-          status: 'completed',
-          attempts: 1,
-          visibilityState: 'visible',
-        });
+      let finishFirstSpeech!: (status: 'completed' | 'cancelled') => void;
+      const stopFirst = vi.fn();
+      voicePlayerMocks.schedule
+        .mockReturnValueOnce({
+          startAt: 10,
+          endAt: 11,
+          sources: [],
+          done: new Promise<'completed' | 'cancelled'>((resolve) => { finishFirstSpeech = resolve; }),
+          reap: vi.fn(() => false),
+          stop: stopFirst,
+        })
+        .mockImplementationOnce(voicePlayerMocks.defaultSequence);
       const onSpeechOutcome = vi.fn();
       const engine = new BackgroundTimerEngine(
         { chimeEnabled: false },
@@ -379,17 +480,73 @@ describe('BackgroundTimerEngine', () => {
       );
 
       const first = engine.triggerImmediateAnnouncement();
+      await Promise.resolve();
       const second = engine.triggerImmediateAnnouncement();
       await second;
-      finishFirstSpeech({
-        status: 'completed',
-        attempts: 1,
-        visibilityState: 'visible',
-      });
+      finishFirstSpeech('completed');
       await first;
 
-      expect(speechService.stopSpeaking).toHaveBeenCalledTimes(1);
+      expect(stopFirst).toHaveBeenCalledTimes(1);
       expect(onSpeechOutcome).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not let an older delayed manual resume replace a newer test', async () => {
+      let finishFirstResume!: (ready: boolean) => void;
+      let finishSecondResume!: (ready: boolean) => void;
+      voicePlayerMocks.resumeFromUserGesture
+        .mockReturnValueOnce(new Promise<boolean>((resolve) => { finishFirstResume = resolve; }))
+        .mockReturnValueOnce(new Promise<boolean>((resolve) => { finishSecondResume = resolve; }));
+      const onAnnounce = vi.fn();
+      const engine = new BackgroundTimerEngine({}, { onAnnounce });
+
+      const first = engine.triggerImmediateAnnouncement();
+      const second = engine.triggerImmediateAnnouncement();
+      finishSecondResume(true);
+      await second;
+      finishFirstResume(true);
+      await first;
+
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+    });
+
+    it('reaps a background sequence from audio time so the next interval can announce', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 0, 0));
+      let finishFirst!: (status: 'completed' | 'cancelled') => void;
+      const firstDone = new Promise<'completed' | 'cancelled'>((resolve) => { finishFirst = resolve; });
+      const stopChime = vi.fn();
+      vi.mocked(chimeSynthesizer.scheduleChime).mockReturnValueOnce({
+        startAt: 10,
+        endAt: 10.81,
+        stop: stopChime,
+      });
+      const reap = vi.fn(() => {
+        if (voicePlayerMocks.context.currentTime < 12) return false;
+        finishFirst('completed');
+        return true;
+      });
+      voicePlayerMocks.schedule
+        .mockReturnValueOnce({
+          startAt: 10,
+          endAt: 11,
+          sources: [],
+          done: firstDone,
+          reap,
+          stop: vi.fn(),
+        })
+        .mockImplementation(voicePlayerMocks.defaultSequence);
+      const engine = new BackgroundTimerEngine({ intervalMinutes: 1, clockSync: false });
+
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(60_500);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
+      (voicePlayerMocks.context as AudioContext & { currentTime: number }).currentTime = 12;
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(reap).toHaveBeenCalled();
+      expect(stopChime).toHaveBeenCalledTimes(1);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(2);
+      engine.stop();
     });
   });
 
@@ -443,6 +600,98 @@ describe('BackgroundTimerEngine', () => {
 
       // Engine automatically stops
       expect(engine.getState()).toBe('idle');
+    });
+
+    it('does not let a stale focus completion stop a newly started session', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 0, 0));
+      let finishOld!: (status: 'completed' | 'cancelled') => void;
+      voicePlayerMocks.schedule.mockReturnValueOnce({
+        startAt: 10,
+        endAt: 11,
+        sources: [],
+        done: new Promise<'completed' | 'cancelled'>((resolve) => { finishOld = resolve; }),
+        reap: vi.fn(() => false),
+        stop: vi.fn(),
+      });
+      const engine = new BackgroundTimerEngine({
+        mode: 'focus',
+        focusDurationMinutes: 1,
+        intervalMinutes: 5,
+        clockSync: false,
+      });
+
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(60_250);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
+      engine.stop();
+      await engine.start();
+      finishOld('completed');
+      await Promise.resolve();
+
+      expect(engine.getState()).toBe('running');
+      engine.stop();
+    });
+
+    it('does not schedule a second focus finale when the audio-clock reaper wins the tick', async () => {
+      const baseTime = new Date(2026, 7, 27, 10, 0, 0).getTime();
+      vi.setSystemTime(baseTime);
+      let finishFinal!: (status: 'completed' | 'cancelled') => void;
+      const done = new Promise<'completed' | 'cancelled'>((resolve) => {
+        finishFinal = resolve;
+      });
+      const reap = vi.fn(() => {
+        finishFinal('completed');
+        return true;
+      });
+      voicePlayerMocks.schedule.mockReturnValueOnce({
+        startAt: 10,
+        endAt: 11,
+        sources: [],
+        done,
+        reap,
+        stop: vi.fn(),
+      });
+      const onAnnounce = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        { mode: 'focus', focusDurationMinutes: 1, intervalMinutes: 5, clockSync: false },
+        { onAnnounce }
+      );
+
+      await engine.start();
+      const tick = (engine as unknown as { handleTick(timestamp: number): void }).handleTick.bind(engine);
+      tick(baseTime + 60_000);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
+
+      (voicePlayerMocks.context as AudioContext & { currentTime: number }).currentTime = 12;
+      tick(baseTime + 60_250);
+
+      expect(reap).toHaveBeenCalledTimes(1);
+      expect(voicePlayerMocks.schedule).toHaveBeenCalledTimes(1);
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(engine.getState()).toBe('idle');
+    });
+
+    it('stops a finished focus session exactly once when audio scheduling fails', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 0, 0));
+      voicePlayerMocks.schedule.mockImplementationOnce(() => {
+        throw new Error('focus-final-audio-failed');
+      });
+      const onAnnounce = vi.fn();
+      const onError = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        { mode: 'focus', focusDurationMinutes: 1, intervalMinutes: 5, clockSync: false },
+        { onAnnounce, onError }
+      );
+
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(60_500);
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(engine.getState()).toBe('idle');
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -628,9 +877,11 @@ describe('BackgroundTimerEngine', () => {
   });
 
   describe('Error handling & Callbacks', () => {
-    it('catches audio/speech errors and reports to onError callback', async () => {
+    it('catches audio scheduling errors and reports to onError callback', async () => {
       const error = new Error('Audio Context failure');
-      vi.mocked(chimeSynthesizer.playChime).mockRejectedValueOnce(error);
+      vi.mocked(chimeSynthesizer.scheduleChime).mockImplementationOnce(() => {
+        throw error;
+      });
 
       const onError = vi.fn();
       const engine = new BackgroundTimerEngine(
@@ -643,11 +894,9 @@ describe('BackgroundTimerEngine', () => {
       expect(onError).toHaveBeenCalledWith(error);
     });
 
-    it('reports a speech start failure without stopping the timer', async () => {
-      vi.mocked(speechService.speakText).mockResolvedValueOnce({
-        status: 'not-started',
-        attempts: 2,
-        visibilityState: 'hidden',
+    it('reports a sprite scheduling failure without stopping the timer', async () => {
+      voicePlayerMocks.schedule.mockImplementationOnce(() => {
+        throw new Error('missing-fragment');
       });
       const onSpeechOutcome = vi.fn();
       const onError = vi.fn();
@@ -660,14 +909,32 @@ describe('BackgroundTimerEngine', () => {
       await engine.triggerImmediateAnnouncement();
 
       expect(onSpeechOutcome).toHaveBeenCalledWith({
-        status: 'not-started',
-        attempts: 2,
-        visibilityState: 'hidden',
+        status: 'failed',
+        attempts: 1,
+        errorCode: 'missing-fragment',
+        visibilityState: 'visible',
       });
       expect(onError).toHaveBeenCalledTimes(1);
       expect(engine.getState()).toBe('running');
 
       engine.stop();
+    });
+
+    it('rolls back a scheduled chime when voice scheduling throws', async () => {
+      const stopChime = vi.fn();
+      vi.mocked(chimeSynthesizer.scheduleChime).mockReturnValueOnce({
+        startAt: 10,
+        endAt: 10.8,
+        stop: stopChime,
+      });
+      voicePlayerMocks.schedule.mockImplementationOnce(() => {
+        throw new Error('voice-start-failed');
+      });
+      const engine = new BackgroundTimerEngine({ chimeEnabled: true });
+
+      await engine.triggerImmediateAnnouncement();
+
+      expect(stopChime).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -773,6 +1040,120 @@ describe('BackgroundTimerEngine', () => {
       engine.stop();
     });
 
+    it('announces the terminal departure once when started within the target-minute tolerance', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 8, 30, 30));
+      const onAnnounce = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:30',
+            label: 'Wyjście z domu',
+            smartDensity: true,
+          },
+        },
+        { onAnnounce }
+      );
+
+      await engine.start();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      expect(onAnnounce.mock.calls[0][0].reason).toBe('session_end');
+      expect(engine.getState()).toBe('idle');
+    });
+
+    it('coalesces several milestones crossed by one throttled background tick', async () => {
+      const baseTime = new Date(2026, 7, 27, 8, 14, 0).getTime();
+      vi.setSystemTime(baseTime);
+      const onAnnounce = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:30',
+            label: 'Wyjście z domu',
+            smartDensity: true,
+          },
+        },
+        { onAnnounce }
+      );
+
+      await engine.start();
+      const tick = (engine as unknown as { handleTick(timestamp: number): void }).handleTick.bind(engine);
+      tick(baseTime + 12 * 60 * 1000);
+      await Promise.resolve();
+      tick(baseTime + 12 * 60 * 1000 + 250);
+
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      expect(onAnnounce.mock.calls[0][0].reason).toBe('interval');
+      engine.stop();
+    });
+
+    it('drops paused milestone history and applies a changed cadence from the next future threshold', async () => {
+      const baseTime = new Date(2026, 7, 27, 8, 10, 0).getTime();
+      vi.setSystemTime(baseTime);
+      const onAnnounce = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:30',
+            label: 'Wyjście z domu',
+            smartDensity: true,
+          },
+        },
+        { onAnnounce }
+      );
+
+      await engine.start();
+      engine.pause();
+      vi.setSystemTime(baseTime + 15 * 60 * 1000);
+      engine.updateSettings({
+        departure: {
+          ...engine.getSettings().departure,
+          smartDensity: false,
+          intervalMinutes: 2,
+        },
+      });
+      await engine.resume();
+      expect(onAnnounce).not.toHaveBeenCalled();
+
+      const tick = (engine as unknown as { handleTick(timestamp: number): void }).handleTick.bind(engine);
+      tick(baseTime + 16 * 60 * 1000);
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      engine.stop();
+    });
+
+    it('applies a live departure cadence from the next future milestone without replaying one already passed', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 8, 16, 0));
+      const onAnnounce = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '08:30',
+            label: 'Wyjście z domu',
+            smartDensity: false,
+            intervalMinutes: 2,
+          },
+        },
+        { onAnnounce }
+      );
+
+      await engine.start();
+      engine.updateSettings({
+        departure: { ...engine.getSettings().departure, smartDensity: true },
+      });
+      await vi.advanceTimersByTimeAsync(250);
+      expect(onAnnounce).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(4 * 60 * 1000);
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      engine.stop();
+    });
+
     it('triggers milestone announcements at 15m, 10m, 5m, 1m, 0m with smartDensity', async () => {
       // Start at 08:14:00, target is 08:30:00 (16 minutes remaining)
       const baseDate = new Date(2026, 7, 27, 8, 14, 0);
@@ -848,6 +1229,36 @@ describe('BackgroundTimerEngine', () => {
 
       // Engine automatically stopped
       expect(engine.getState()).toBe('idle');
+    });
+
+    it('stops a finished departure countdown exactly once when audio scheduling fails', async () => {
+      vi.setSystemTime(new Date(2026, 7, 27, 10, 0, 0));
+      voicePlayerMocks.schedule.mockImplementationOnce(() => {
+        throw new Error('departure-final-audio-failed');
+      });
+      const onAnnounce = vi.fn();
+      const onError = vi.fn();
+      const engine = new BackgroundTimerEngine(
+        {
+          mode: 'departure',
+          departure: {
+            targetTime: '10:01',
+            label: 'Spotkanie',
+            smartDensity: false,
+            intervalMinutes: 5,
+            customMilestonesMinutes: [0],
+          },
+        },
+        { onAnnounce, onError }
+      );
+
+      await engine.start();
+      await vi.advanceTimersByTimeAsync(60_500);
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(engine.getState()).toBe('idle');
+      expect(onAnnounce).toHaveBeenCalledTimes(1);
+      expect(onError).toHaveBeenCalledTimes(1);
     });
 
     it('triggers regular interval announcements (e.g. every 2 minutes) when smartDensity is false', async () => {
@@ -1069,6 +1480,97 @@ describe('WakeLockService', () => {
 
     expect(result).toBe(false);
     expect(service.isActive()).toBe(false);
+    await service.release();
+  });
+
+  it('keeps the newest lock when an older request resolves after release and retry', async () => {
+    let finishFirst!: (sentinel: WakeLockSentinel) => void;
+    let finishSecond!: (sentinel: WakeLockSentinel) => void;
+    let firstReleased = false;
+    let secondReleased = false;
+    const firstSentinel = {
+      get released() { return firstReleased; },
+      release: vi.fn(async () => { firstReleased = true; }),
+      onrelease: null,
+    } as unknown as WakeLockSentinel;
+    const secondSentinel = {
+      get released() { return secondReleased; },
+      release: vi.fn(async () => { secondReleased = true; }),
+      onrelease: null,
+    } as unknown as WakeLockSentinel;
+    const request = vi.fn()
+      .mockReturnValueOnce(new Promise<WakeLockSentinel>((resolve) => { finishFirst = resolve; }))
+      .mockReturnValueOnce(new Promise<WakeLockSentinel>((resolve) => { finishSecond = resolve; }));
+    Object.defineProperty(navigator, 'wakeLock', {
+      value: { request }, configurable: true, writable: true,
+    });
+    const service = new WakeLockService();
+
+    const first = service.request();
+    await service.release();
+    const second = service.request();
+    finishSecond(secondSentinel);
+    await second;
+    finishFirst(firstSentinel);
+    await first;
+
+    expect(firstSentinel.release).toHaveBeenCalledTimes(1);
+    expect(secondSentinel.release).not.toHaveBeenCalled();
+    expect(service.isActive()).toBe(true);
+    await service.release();
+    expect(secondSentinel.release).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares one pending platform request with a simultaneous visibility reacquire', async () => {
+    let finishRequest!: (sentinel: WakeLockSentinel) => void;
+    let released = false;
+    const sentinel = {
+      get released() { return released; },
+      release: vi.fn(async () => { released = true; }),
+      onrelease: null,
+    } as unknown as WakeLockSentinel;
+    const request = vi.fn().mockReturnValue(
+      new Promise<WakeLockSentinel>((resolve) => { finishRequest = resolve; })
+    );
+    Object.defineProperty(navigator, 'wakeLock', {
+      value: { request }, configurable: true, writable: true,
+    });
+    Object.defineProperty(document, 'visibilityState', {
+      value: 'visible', configurable: true, writable: true,
+    });
+    const service = new WakeLockService();
+
+    const explicitRequest = service.request();
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(request).toHaveBeenCalledTimes(1);
+
+    finishRequest(sentinel);
+    await explicitRequest;
+    await Promise.resolve();
+    expect(service.isActive()).toBe(true);
+    await service.release();
+    expect(sentinel.release).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses an active sentinel across repeated requests', async () => {
+    let released = false;
+    const sentinel = {
+      get released() { return released; },
+      release: vi.fn(async () => { released = true; }),
+      onrelease: null,
+    } as unknown as WakeLockSentinel;
+    const request = vi.fn().mockResolvedValue(sentinel);
+    Object.defineProperty(navigator, 'wakeLock', {
+      value: { request }, configurable: true, writable: true,
+    });
+    const service = new WakeLockService();
+
+    await service.request();
+    await service.request();
+
+    expect(request).toHaveBeenCalledTimes(1);
+    await service.release();
+    expect(sentinel.release).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -1152,6 +1654,34 @@ describe('SilentAudioLoop', () => {
     await loop.start();
 
     expect(mockCtx.resume).toHaveBeenCalled();
+    loop.stop();
+  });
+
+  it('does not let an older delayed start create a second oscillator', async () => {
+    let finishResume!: () => void;
+    const resumePromise = new Promise<void>((resolve) => { finishResume = resolve; });
+    const resume = vi.fn(() => resumePromise);
+    const oscillator = {
+      type: 'sine', frequency: { setValueAtTime: vi.fn() }, connect: vi.fn(),
+      start: vi.fn(), stop: vi.fn(), disconnect: vi.fn(),
+    };
+    const gain = {
+      gain: { setValueAtTime: vi.fn() }, connect: vi.fn(), disconnect: vi.fn(),
+    };
+    const context = {
+      state: 'suspended', currentTime: 0, destination: {}, resume,
+      createOscillator: vi.fn().mockReturnValue(oscillator),
+      createGain: vi.fn().mockReturnValue(gain),
+    } as unknown as AudioContext;
+    const loop = new SilentAudioLoop(context);
+
+    const first = loop.start(context);
+    const second = loop.start(context);
+    finishResume();
+    await Promise.all([first, second]);
+
+    expect(context.createOscillator).toHaveBeenCalledTimes(1);
+    expect(loop.isActive()).toBe(true);
     loop.stop();
   });
 });

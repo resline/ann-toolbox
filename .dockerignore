@@ -1,6 +1,6 @@
 node_modules
 dist
+.voice-generation-cache
 .git
 .superpowers
-docs
 *.log
