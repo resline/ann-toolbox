@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Circle, Clock, Settings2 } from '../../../lib/icons';
+import { formatDuration } from '../../../lib/time/formatDuration';
 import { common, skupienie } from '../../../copy';
 import {
   Badge,
@@ -30,14 +31,6 @@ import { PhaseTimeline, type TimelineItem } from './PhaseTimeline';
 import { PresetPicker } from './PresetPicker';
 
 type ModeKey = 'sesja' | 'oddech';
-
-/** MM:SS — jedyne formatowanie czasu w tym module. */
-function formatTime(totalSeconds: number): string {
-  const safe = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(safe / 60);
-  const seconds = safe % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
 
 /**
  * Skupienie.
@@ -132,7 +125,7 @@ export const VisualTimerModule: React.FC = () => {
       <MultiPhaseProgressDisc
         progress={progress}
         phaseLabel={skupienie.phase[currentPhase]}
-        timeLeft={formatTime(timeRemainingSeconds)}
+        timeLeft={formatDuration(timeRemainingSeconds)}
         totalLabel={skupienie.disc.ofTotal(Math.round(totalPhaseSeconds / 60))}
         progressLabel={skupienie.disc.progressLabel(skupienie.phase[currentPhase])}
         paused={!isRunning}

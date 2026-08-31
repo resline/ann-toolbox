@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { STORAGE_KEYS, passthroughMigration, versionedPersist } from '../../lib/storage/persist';
 import { MicroTasksState, StepStatus, TimerState } from './types';
 import { MICRO_TASK_TEMPLATES } from './templates';
 
@@ -248,8 +249,11 @@ export const useMicroTasksStore = create<MicroTasksStore>()(
       
       resetTimer: (seconds) => set({ timeRemainingSeconds: seconds, timerState: 'idle' })
     }),
-    {
-      name: 'ann_micro_tasks'
-    }
+    // Wersja 1 to punkt zerowy — kształt zgodny z tym, co już jest zapisane.
+    versionedPersist<MicroTasksStore>({
+      key: STORAGE_KEYS.start,
+      version: 1,
+      migrate: passthroughMigration,
+    })
   )
 );

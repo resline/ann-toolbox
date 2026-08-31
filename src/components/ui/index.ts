@@ -5,6 +5,7 @@ export { IconButton, type IconButtonProps } from './IconButton';
 export { Card, CardHeader, CardBody, CardFooter, type CardProps } from './Card';
 export { Heading, Text, LabelText, type TextTone, type HeadingSize } from './Text';
 export { NumberDisplay, type NumberDisplayProps } from './NumberDisplay';
+export { ProgressDisc, type ProgressDiscProps } from './ProgressDisc';
 export { Badge, type BadgeProps, type BadgeTone } from './Badge';
 export { Stack, Section, Divider, EmptyState, type SectionProps, type EmptyStateProps } from './Layout';
 export {

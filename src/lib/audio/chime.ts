@@ -65,6 +65,17 @@ export const CHIME_TONES: Record<ChimeTone, { name: string; description: string;
 
 let sharedAudioContext: AudioContext | null = null;
 
+/** Znacznik kontekstu podanego z zewnątrz przez setAudioContext. */
+const INJECTED_CONTEXT = Symbol('injected-audio-context');
+
+/**
+ * Skąd wziął się zapamiętany kontekst: klasa, która go stworzyła, albo znacznik
+ * wstrzyknięcia. Bez tego nie da się odróżnić kontekstu żywego od kontekstu
+ * osieroconego po podmianie implementacji Web Audio pod nami — a taki obiekt
+ * nadal twierdzi, że jego `state` to „running", i po cichu połyka każdy dźwięk.
+ */
+let sharedAudioContextOrigin: unknown = null;
+
 /**
  * Returns active shared AudioContext or null.
  */
@@ -77,6 +88,7 @@ export function getAudioContext(): AudioContext | null {
  */
 export function setAudioContext(ctx: AudioContext | null): void {
   sharedAudioContext = ctx;
+  sharedAudioContextOrigin = ctx ? INJECTED_CONTEXT : null;
 }
 
 /**
@@ -92,21 +104,37 @@ export async function closeAudioContext(): Promise<void> {
       // Ignore errors on close
     }
     sharedAudioContext = null;
+    sharedAudioContextOrigin = null;
   }
+}
+
+/** Klasa AudioContext dostępna w tym środowisku (albo undefined poza przeglądarką). */
+function resolveAudioContextClass(): typeof AudioContext | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  );
 }
 
 /**
  * Retrieves or lazily instantiates the shared AudioContext.
+ *
+ * To jedyne wejście do Web Audio w aplikacji: gong, szum tła w Skupieniu
+ * i fanfara w Starcie dzielą ten sam kontekst. Trzy osobne konteksty na jednym
+ * telefonie potrafią wyczerpać limit sprzętowy przeglądarki i uciszyć wszystko naraz.
  */
 export function ensureAudioContext(): AudioContext | null {
-  if (sharedAudioContext && sharedAudioContext.state !== 'closed') {
+  const AudioCtxClass = resolveAudioContextClass();
+
+  // Kontekst wstrzyknięty zostaje aż do jawnego zastąpienia; własny odzyskujemy
+  // tylko wtedy, gdy zrodziła go implementacja obowiązująca nadal teraz.
+  const originStillValid =
+    sharedAudioContextOrigin === INJECTED_CONTEXT || sharedAudioContextOrigin === AudioCtxClass;
+
+  if (sharedAudioContext && originStillValid && sharedAudioContext.state !== 'closed') {
     return sharedAudioContext;
   }
-
-  const AudioCtxClass =
-    typeof window !== 'undefined'
-      ? window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      : undefined;
 
   if (!AudioCtxClass) {
     return null;
@@ -117,6 +145,7 @@ export function ensureAudioContext(): AudioContext | null {
       latencyHint: 'playback',
       sampleRate: SHARED_AUDIO_SAMPLE_RATE_HZ,
     });
+    sharedAudioContextOrigin = AudioCtxClass;
     return sharedAudioContext;
   } catch {
     // Keep non-clock audio usable on a browser that rejects the preferred
@@ -124,6 +153,7 @@ export function ensureAudioContext(): AudioContext | null {
     // then exceeds the memory contract.
     try {
       sharedAudioContext = new AudioCtxClass();
+      sharedAudioContextOrigin = AudioCtxClass;
       return sharedAudioContext;
     } catch {
       return null;
@@ -323,4 +353,67 @@ export async function playChime(options?: ChimeOptions): Promise<void> {
     // Safety fallback timeout ensuring resolution even if onended doesn't trigger
     setTimeout(cleanup, Math.ceil((totalDuration + 0.08) * 1000));
   });
+}
+
+export interface VictoryNote {
+  frequency: number;
+  /** Przesunięcie względem chwili wywołania, w sekundach. */
+  startOffset: number;
+  duration: number;
+}
+
+/** Arpeggio C-E-G-C. Jedyny dźwięk w aplikacji, któremu wolno się cieszyć. */
+export const VICTORY_ARPEGGIO: readonly VictoryNote[] = [
+  { frequency: 523.25, startOffset: 0, duration: 0.4 },
+  { frequency: 659.25, startOffset: 0.15, duration: 0.4 },
+  { frequency: 783.99, startOffset: 0.3, duration: 0.4 },
+  { frequency: 1046.5, startOffset: 0.5, duration: 0.8 },
+];
+
+/** Szczyt głośności fanfary — wyraźnie ciszej niż gong, bo nie wzywa, tylko gratuluje. */
+const VICTORY_PEAK_GAIN = 0.2;
+
+/**
+ * Odtwarza fanfarę zakończenia zadania.
+ *
+ * Mieszka tutaj, a nie w module Start, bo dzieli wspólny kontekst z resztą
+ * dźwięków. Synchronicznie i bez oczekiwania: wywołanie idzie z efektu przy
+ * pojawieniu się warstwy świętowania, a komponent nie ma na co czekać.
+ */
+export function playVictoryChime(): void {
+  try {
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+
+    // Kontekst mógł zostać uśpiony przez politykę autoodtwarzania. Wznawiamy
+    // bez oczekiwania — nuty i tak są planowane na osi czasu kontekstu.
+    if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+      void ctx.resume().catch(() => {
+        /* przeglądarka odmówiła — świętujemy w ciszy */
+      });
+    }
+
+    const t0 = ctx.currentTime;
+
+    for (const note of VICTORY_ARPEGGIO) {
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const startAt = t0 + note.startOffset;
+
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(note.frequency, startAt);
+
+      gain.gain.setValueAtTime(0, startAt);
+      gain.gain.linearRampToValueAtTime(VICTORY_PEAK_GAIN, startAt + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, startAt + note.duration);
+
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+
+      oscillator.start(startAt);
+      oscillator.stop(startAt + note.duration);
+    }
+  } catch {
+    /* przeglądarka bez Web Audio albo zablokowany dźwięk — świętujemy w ciszy */
+  }
 }
