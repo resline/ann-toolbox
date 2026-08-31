@@ -1,6 +1,13 @@
+import { ensureAudioContext } from '../../lib/audio/chime';
 import { SensoryAmbience } from './types';
 
 export class AmbienceGenerator {
+  /**
+   * Referencja do WSPÓLNEGO kontekstu aplikacji, nie do własnego.
+   *
+   * Pole zostaje, bo useAmbience sięga po nie, żeby wznowić kontekst wewnątrz
+   * gestu użytkowniczki — tylko wtedy iOS odblokowuje dźwięk.
+   */
   private ctx: AudioContext | null = null;
   private noiseNode: AudioBufferSourceNode | null = null;
   private filterNode: BiquadFilterNode | null = null;
@@ -9,7 +16,9 @@ export class AmbienceGenerator {
 
   private initAudio() {
     if (!this.ctx) {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Brak Web Audio zostawia `ctx` puste; pierwsze użycie rzuci wyjątkiem,
+      // który useAmbience zamienia na uczciwe „ten telefon tego nie umie".
+      this.ctx = ensureAudioContext();
     }
   }
 

@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   playChime,
+  playVictoryChime,
   getAudioContext,
   setAudioContext,
   closeAudioContext,
   scheduleChime,
+  ensureAudioContext,
   CHIME_TONES,
+  VICTORY_ARPEGGIO,
   type ChimeOptions,
   type ChimeTone,
 } from './chime';
@@ -345,6 +348,73 @@ describe('syntezator gongu', () => {
       await closeAudioContext();
       expect(getAudioContext()).toBeNull();
       expect(mockCtx.close).toHaveBeenCalled();
+    });
+  });
+
+  describe('wspólny kontekst', () => {
+    it('ODDAJE TEN SAM KONTEKST WSZYSTKIM DŹWIĘKOM APLIKACJI', () => {
+      const first = ensureAudioContext();
+      const second = ensureAudioContext();
+      playVictoryChime();
+
+      expect(second).toBe(first);
+      expect(getAudioContext()).toBe(first);
+      expect(window.AudioContext).toHaveBeenCalledTimes(1);
+    });
+
+    it('nie oddaje kontekstu osieroconego po podmianie implementacji Web Audio', () => {
+      const first = ensureAudioContext();
+
+      const replacement = new MockAudioContext();
+      (window as unknown as { AudioContext: unknown }).AudioContext = vi
+        .fn()
+        .mockImplementation(() => replacement);
+
+      expect(ensureAudioContext()).not.toBe(first);
+      expect(ensureAudioContext()).toBe(replacement);
+    });
+  });
+
+  describe('fanfara zwycięstwa', () => {
+    it('gra arpeggio C-E-G-C na wspólnym kontekście', () => {
+      playVictoryChime();
+
+      expect(mockCtx.createdOscillators).toHaveLength(VICTORY_ARPEGGIO.length);
+      const freqs = mockCtx.createdOscillators.map((o) => o.frequency.value);
+      for (const note of VICTORY_ARPEGGIO) {
+        expect(freqs).toContain(note.frequency);
+      }
+      expect(window.AudioContext).toHaveBeenCalledTimes(1);
+    });
+
+    it('rozkłada nuty w czasie zamiast zagrać akord', () => {
+      playVictoryChime();
+
+      const starts = mockCtx.createdOscillators.flatMap((o) =>
+        o.start.mock.calls.map((call) => call[0] as number)
+      );
+      for (const note of VICTORY_ARPEGGIO) {
+        expect(starts).toContain(mockCtx.currentTime + note.startOffset);
+      }
+    });
+
+    it('wznawia uśpiony kontekst, bo fanfara idzie po geście użytkowniczki', () => {
+      expect(mockCtx.state).toBe('suspended');
+
+      playVictoryChime();
+
+      expect(mockCtx.resume).toHaveBeenCalled();
+    });
+
+    it('milczy bez Web Audio zamiast rzucać wyjątkiem', () => {
+      // @ts-expect-error test environment
+      delete window.AudioContext;
+      // @ts-expect-error test environment
+      delete window.webkitAudioContext;
+      setAudioContext(null);
+
+      expect(() => playVictoryChime()).not.toThrow();
+      expect(mockCtx.createdOscillators).toHaveLength(0);
     });
   });
 });

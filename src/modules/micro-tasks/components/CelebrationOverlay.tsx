@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PartyPopper, Sparkles, Star } from '../../../lib/icons';
+import { playVictoryChime } from '../../../lib/audio/chime';
 import { dur, ease, useMotionPreference } from '../../../lib/motion';
 import { Heading, Text } from '../../../components/ui';
 import { start } from '../../../copy';
@@ -11,44 +12,6 @@ export interface CelebrationOverlayProps {
   onComplete: () => void;
   message?: string;
 }
-
-interface WebkitWindow extends Window {
-  webkitAudioContext?: typeof AudioContext;
-}
-
-/** Arpeggio C-E-G-C. Jedyne miejsce w aplikacji, któremu wolno się cieszyć. */
-const playVictoryChime = () => {
-  try {
-    const scoped = window as WebkitWindow;
-    const AudioContextClass = window.AudioContext || scoped.webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-
-    const playNote = (frequency: number, startTime: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(frequency, ctx.currentTime + startTime);
-
-      gain.gain.setValueAtTime(0, ctx.currentTime + startTime);
-      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + startTime + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + startTime + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(ctx.currentTime + startTime);
-      osc.stop(ctx.currentTime + startTime + duration);
-    };
-
-    playNote(523.25, 0, 0.4);
-    playNote(659.25, 0.15, 0.4);
-    playNote(783.99, 0.3, 0.4);
-    playNote(1046.5, 0.5, 0.8);
-  } catch {
-    /* przeglądarka bez Web Audio albo zablokowany dźwięk — świętujemy w ciszy */
-  }
-};
 
 interface Floater {
   left: number;

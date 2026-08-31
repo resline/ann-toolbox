@@ -15,6 +15,7 @@
 import React, { useState } from 'react';
 import { ChevronRight, Pause, Play, Square } from '../../lib/icons';
 import { cn } from '../../lib/cn';
+import { formatDuration } from '../../lib/time/formatDuration';
 import { common, czas } from '../../copy';
 import { Badge, Button, Stack, Text } from '../../components/ui';
 import { useSpeakingClock } from './hooks/useSpeakingClock';
@@ -41,18 +42,6 @@ function voicePackFailureMessage(code: VoicePackFailureCode | null): string {
 
 export interface SpeakingClockModuleProps {
   className?: string;
-}
-
-/** Sekundy → MM:SS albo H:MM:SS. */
-function formatSecondsToDigital(totalSeconds: number): string {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const hrs = Math.floor(s / 3600);
-  const mins = Math.floor((s % 3600) / 60);
-  const secs = s % 60;
-  if (hrs > 0) {
-    return `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  }
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
 function formatClock(date: Date): string {
@@ -97,15 +86,15 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
 
   if (settings.mode === 'departure') {
     discLabel = czas.disc.departure;
-    discValue = formatSecondsToDigital(secondsRemaining);
+    discValue = formatDuration(secondsRemaining);
     discSublabel = departureLabel || czas.departure.presets[0];
   } else if (settings.mode === 'focus') {
     discLabel = czas.disc.focus;
-    discValue = formatSecondsToDigital(secondsRemaining);
+    discValue = formatDuration(secondsRemaining);
     discSublabel = czas.disc.focusLength(settings.focusDurationMinutes);
   } else if (isRunning || isPaused) {
     discLabel = czas.disc.next;
-    discValue = formatSecondsToDigital(secondsUntilNext);
+    discValue = formatDuration(secondsUntilNext);
   }
 
   const cadence =

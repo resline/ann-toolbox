@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { STORAGE_KEYS, passthroughMigration, versionedPersist } from '../../lib/storage/persist';
 import { VisualTimerState, VisualTimerPreset } from './types';
 
 export const DEFAULT_TIMER_PRESETS: VisualTimerPreset[] = [
@@ -109,8 +110,11 @@ export const useVisualTimerStore = create<VisualTimerStore>()(
         }
       }
     }),
-    {
-      name: 'ann_visual_timer'
-    }
+    // Wersja 1 to punkt zerowy — kształt zgodny z tym, co już jest zapisane.
+    versionedPersist<VisualTimerStore>({
+      key: STORAGE_KEYS.skupienie,
+      version: 1,
+      migrate: passthroughMigration,
+    })
   )
 );

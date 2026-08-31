@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { STORAGE_KEYS, passthroughMigration, versionedPersist } from '../../lib/storage/persist';
 import { DopamineItem, DopamineMenuState, EnergyLevel } from './types';
 import { DEFAULT_DOPAMINE_MENU } from './presets';
 
@@ -119,8 +120,13 @@ export const useDopamineMenuStore = create<DopamineMenuStore>()(
 
       resetCompletedToday: () => set({ completedToday: [] }),
     }),
-    {
-      name: 'ann_dopamine_menu',
-    }
+    // Wersja 1 to punkt zerowy: kształt dokładnie taki, jaki już leży
+    // w localStorage użytkowniczki. Dopiero od niego przyszła zmiana pola
+    // będzie miała się o co oprzeć.
+    versionedPersist<DopamineMenuStore>({
+      key: STORAGE_KEYS.energia,
+      version: 1,
+      migrate: passthroughMigration,
+    })
   )
 );
