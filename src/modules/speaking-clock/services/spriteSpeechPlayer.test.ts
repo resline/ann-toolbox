@@ -110,6 +110,17 @@ function createFetch(manifest: VoiceSpriteManifest) {
 }
 
 describe('SpriteSpeechPlayer', () => {
+  it('refuses playback when a successful resume call leaves the context suspended', async () => {
+    const { context, sources } = createAudioContext();
+    Object.defineProperty(context, 'state', { value: 'suspended', configurable: true });
+    const player = new SpriteSpeechPlayer({ context, fetchImpl: createFetch(createManifest()), cryptoImpl: createCrypto() });
+    await player.prepare();
+
+    await expect(player.resumeFromUserGesture()).resolves.toBe(false);
+    expect(() => player.schedule({ text: 'test', fragments: [{ id: VOICE_FRAGMENT_DEFINITIONS[0].id }] }, 6, 1)).toThrow();
+    expect(sources).toHaveLength(0);
+  });
+
   it('fetches, verifies and decodes a complete pack only once', async () => {
     const { context } = createAudioContext();
     const fetchImpl = createFetch(createManifest());

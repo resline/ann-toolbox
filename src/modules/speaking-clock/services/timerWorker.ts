@@ -2,7 +2,7 @@
  * Web Worker for Speaking Clock Background Timer
  *
  * Runs a precise interval timer inside a dedicated Web Worker thread.
- * Immune to mobile browser throttling and inactive tab timer clamping.
+ * Reduces contention with rendering, but remains subject to browser/OS suspension.
  */
 
 import type { WorkerIncomingMessage, WorkerOutgoingMessage } from '../types';

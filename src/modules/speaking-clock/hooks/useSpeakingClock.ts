@@ -5,7 +5,7 @@
  * preloads the immutable offline voice pack, and exposes clock actions.
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createContext, createElement, useContext, useState, useEffect, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import {
   type SpeakingClockSettings,
   type ClockState,
@@ -17,7 +17,7 @@ import {
   type SpeechOutcome,
   DEFAULT_SPEAKING_CLOCK_SETTINGS,
 } from '../types';
-import { BackgroundTimerEngine } from '../services/backgroundTimerEngine';
+import { createClockBackend, isNativeClock, type ClockBackend, type BackendStatus } from '../services/clockBackend';
 import type { VoicePackFailureCode } from '../services/spriteSpeechPlayer';
 import { playChime } from '../../../lib/audio/chime';
 
@@ -62,7 +62,7 @@ export function migrateStoredSettings(raw: unknown): Partial<SpeakingClockSettin
  */
 function loadStoredSettings(): SpeakingClockSettings {
   if (typeof window === 'undefined') {
-    return DEFAULT_SPEAKING_CLOCK_SETTINGS;
+    return { ...DEFAULT_SPEAKING_CLOCK_SETTINGS, keepAwake: !isNativeClock() };
   }
   try {
     const raw = localStorage.getItem(SPEAKING_CLOCK_STORAGE_KEY);
@@ -84,7 +84,7 @@ function loadStoredSettings(): SpeakingClockSettings {
   } catch {
     // Ignore localStorage parse errors
   }
-  return DEFAULT_SPEAKING_CLOCK_SETTINGS;
+  return { ...DEFAULT_SPEAKING_CLOCK_SETTINGS, keepAwake: !isNativeClock() };
 }
 
 /**
@@ -115,6 +115,9 @@ function calcDepartureRemainingSeconds(targetTimeStr: string, now: Date): number
 
 export interface UseSpeakingClockReturn {
   clockState: ClockState;
+  backendStatus: BackendStatus;
+  openBatterySettings: () => Promise<void>;
+  exportDiagnostics: () => Promise<void>;
   currentTime: Date;
   nextAnnouncementTime: Date | null;
   secondsUntilNext: number;
@@ -146,8 +149,9 @@ export interface UseSpeakingClockReturn {
   addMinutes: (deltaMinutes: number) => void;
 }
 
-export function useSpeakingClock(): UseSpeakingClockReturn {
+function useClockController(): UseSpeakingClockReturn {
   const [settings, setSettings] = useState<SpeakingClockSettings>(loadStoredSettings);
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>({ protection: isNativeClock() ? 'checking' : 'web', interrupted: false, error: null });
   const [clockState, setClockState] = useState<ClockState>('idle');
   const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
   const [nextAnnouncementTime, setNextAnnouncementTime] = useState<Date | null>(null);
@@ -163,13 +167,22 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
   const [runningSecondsRemaining, setRunningSecondsRemaining] = useState<number | null>(null);
   const [runningTotalSpanSeconds, setRunningTotalSpanSeconds] = useState<number | null>(null);
 
-  const engineRef = useRef<BackgroundTimerEngine | null>(null);
+  const engineRef = useRef<ClockBackend | null>(null);
   const settingsRef = useRef<SpeakingClockSettings>(settings);
   settingsRef.current = settings;
 
   // Initialize engine & callbacks
   useEffect(() => {
-    const engine = new BackgroundTimerEngine(settingsRef.current, {
+    const engine = createClockBackend(settingsRef.current, {
+      onBackendStatus: setBackendStatus,
+      onSettingsChange: (next) => {
+        settingsRef.current = next;
+        setSettings(next);
+        persistSettings(next);
+      },
+      onError: (error) => {
+        setBackendStatus(previous => ({ ...previous, error: error.message }));
+      },
       onTick: (payload: TickPayload) => {
         setCurrentTime(payload.currentTime);
         setElapsedSeconds(payload.elapsedSeconds);
@@ -275,6 +288,10 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
   }, []);
 
   const updateSettings = useCallback((partial: Partial<SpeakingClockSettings>) => {
+    if (isNativeClock()) {
+      engineRef.current?.updateSettings(partial);
+      return;
+    }
     const previous = settingsRef.current;
     const next: SpeakingClockSettings = {
       ...previous,
@@ -327,6 +344,10 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
 
   const addMinutes = useCallback(
     (deltaMinutes: number) => {
+      if (isNativeClock()) {
+        engineRef.current?.addMinutes(deltaMinutes);
+        return;
+      }
       if (engineRef.current && (clockState === 'running' || clockState === 'paused')) {
         engineRef.current.addMinutes(deltaMinutes);
         const updated = engineRef.current.getSettings();
@@ -479,6 +500,9 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
   ]);
 
   return {
+    backendStatus,
+    openBatterySettings: async () => { await engineRef.current?.openBatterySettings?.(); },
+    exportDiagnostics: async () => { await engineRef.current?.exportDiagnostics?.(); },
     clockState,
     currentTime,
     nextAnnouncementTime,
@@ -510,5 +534,17 @@ export function useSpeakingClock(): UseSpeakingClockReturn {
     setMode,
     addMinutes,
   };
+}
+const SpeakingClockContext = createContext<UseSpeakingClockReturn | null>(null);
+
+export function SpeakingClockProvider({ children }: { children: ReactNode }) {
+  const clock = useClockController();
+  return createElement(SpeakingClockContext.Provider, { value: clock }, children);
+}
+
+export function useSpeakingClock(): UseSpeakingClockReturn {
+  const clock = useContext(SpeakingClockContext);
+  if (!clock) throw new Error('SpeakingClockProvider is required');
+  return clock;
 }
 export default useSpeakingClock;

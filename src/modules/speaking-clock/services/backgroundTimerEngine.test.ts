@@ -84,6 +84,30 @@ describe('BackgroundTimerEngine', () => {
     vi.useRealTimers();
   });
 
+  it('reports interruption and pauses when the browser suspends audio', async () => {
+    const events = new EventTarget();
+    const add = vi.fn(events.addEventListener.bind(events));
+    const remove = vi.fn(events.removeEventListener.bind(events));
+    Object.assign(voicePlayerMocks.context, { addEventListener: add, removeEventListener: remove });
+    const onError = vi.fn();
+    const onSpeechOutcome = vi.fn();
+    const engine = new BackgroundTimerEngine({ keepAwake: false }, { onError, onSpeechOutcome });
+    try {
+      await engine.start();
+      Object.defineProperty(voicePlayerMocks.context, 'state', { value: 'suspended', configurable: true, writable: true });
+      events.dispatchEvent(new Event('statechange'));
+      expect(engine.getState()).toBe('paused');
+      expect(onError).toHaveBeenCalledWith(new Error('audio-suspended'));
+      expect(onSpeechOutcome).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed', errorCode: 'audio-suspended' }));
+    } finally {
+      engine.destroy();
+      Object.assign(voicePlayerMocks.context, { state: 'running' });
+      expect(remove).toHaveBeenCalledWith('statechange', expect.any(Function));
+      delete (voicePlayerMocks.context as Partial<AudioContext>).addEventListener;
+      delete (voicePlayerMocks.context as Partial<AudioContext>).removeEventListener;
+    }
+  });
+
   describe('calculateNextAnnouncementTime helper', () => {
     it('calculates wall-clock aligned next target (:15 min interval from 10:07:23 -> 10:15:00)', () => {
       const now = new Date(2026, 7, 27, 10, 7, 23);

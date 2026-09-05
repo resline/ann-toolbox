@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { Capacitor } from '@capacitor/core';
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
@@ -13,7 +14,7 @@ if (rootElement) {
 }
 
 // Register PWA Service Worker in production environment
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+if (!Capacitor.isNativePlatform() && 'serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')

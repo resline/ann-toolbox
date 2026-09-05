@@ -142,6 +142,20 @@ export class BackgroundTimerEngine {
   private manualAnnouncementGeneration = 0;
   private focusEndAnnouncementPending = false;
   private destroyed = false;
+  private observedAudioContext: AudioContext | null = null;
+  private reconcileVisibility = (): void => {
+    if (document.visibilityState !== 'visible') return;
+    this.checkAudioState();
+    if (this.state === 'running') this.handleTick(Date.now());
+  };
+  private checkAudioState = (): void => {
+    const context = this.spriteSpeechPlayer.getAudioContext();
+    if (this.state !== 'running' || !context || context.state === 'running') return;
+    this.pause();
+    this.callbacks.onSpeechOutcome?.({ status: 'failed', attempts: 1, errorCode: 'audio-suspended',
+      visibilityState: typeof document === 'undefined' ? 'unknown' : document.visibilityState });
+    this.callbacks.onError?.(new Error('audio-suspended'));
+  };
 
   constructor(
     settings?: Partial<SpeakingClockSettings>,
@@ -156,6 +170,7 @@ export class BackgroundTimerEngine {
     this.wakeLockService = new WakeLockService();
     this.spriteSpeechPlayer = spriteSpeechPlayer ?? new SpriteSpeechPlayer();
     this.silentAudioLoop = new SilentAudioLoop(this.spriteSpeechPlayer.getAudioContext());
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.reconcileVisibility);
   }
 
   prepareVoicePack(forceRefresh = false): Promise<VoicePackPreparation> {
@@ -451,6 +466,7 @@ export class BackgroundTimerEngine {
 
     this.setState('running');
     this.startTimerLoop();
+    this.observeAudioContext();
 
     // Background keep-alive & screen wake lock
     await this.silentAudioLoop.start(this.spriteSpeechPlayer.getAudioContext());
@@ -533,6 +549,7 @@ export class BackgroundTimerEngine {
 
     this.setState('running');
 
+    this.observeAudioContext();
     await this.silentAudioLoop.start(this.spriteSpeechPlayer.getAudioContext());
     if (!this.isLifecycleCurrent(lifecycleGeneration, 'running')) return;
     if (this.settings.keepAwake) {
@@ -583,6 +600,16 @@ export class BackgroundTimerEngine {
     this.stop();
     this.spriteSpeechPlayer.release();
     this.clearMediaSession();
+    this.observedAudioContext?.removeEventListener?.('statechange', this.checkAudioState);
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.reconcileVisibility);
+  }
+
+  private observeAudioContext(): void {
+    const context = this.spriteSpeechPlayer.getAudioContext();
+    if (context === this.observedAudioContext) return;
+    this.observedAudioContext?.removeEventListener?.('statechange', this.checkAudioState);
+    this.observedAudioContext = context;
+    context?.addEventListener?.('statechange', this.checkAudioState);
   }
 
   /**
@@ -763,7 +790,8 @@ export class BackgroundTimerEngine {
       if (this.worker) {
         this.worker.onmessage = (e: MessageEvent) => {
           if (e.data?.type === 'TICK') {
-            this.handleTick(e.data.timestamp || Date.now());
+            // A resumed renderer can receive a backlog of old Worker messages.
+            this.handleTick(Date.now());
           }
         };
         this.worker.postMessage({ type: 'START', intervalMs: 250 });

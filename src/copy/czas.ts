@@ -14,9 +14,13 @@ export const czas = {
     idle: 'W spoczynku',
     running: 'Mówi w tle',
     paused: 'Wstrzymany',
+    webRunning: 'Zegar uruchomiony',
   },
 
   action: {
+    batterySettings: 'Ustaw działanie w tle',
+    diagnostics: 'Zapisz diagnostykę zegarka',
+    retryNativeVoice: 'Sprawdź nagrania ponownie',
     testVoice: 'Posłuchaj głosu',
     retryVoice: 'Pobierz głos ponownie',
     openSettings: 'Ustawienia czasu',
@@ -34,6 +38,15 @@ export const czas = {
   },
 
   notice: {
+    batteryRequired: 'Aby zegarek mówił przy wygaszonym ekranie, wyłącz optymalizację baterii dla Przystani. Aktywna sesja może zużywać więcej baterii.',
+    backgroundReady: 'Gotowy do pracy z wygaszonym ekranem.',
+    backgroundChecking: 'Sprawdzam działanie zegarka w tle…',
+    nativeUnavailable: 'Nie udało się połączyć z zegarkiem. Otwórz aplikację ponownie.',
+    commandFailed: 'Nie udało się wykonać polecenia zegarka. Spróbuj ponownie.',
+    interrupted: 'Działanie zegarka zostało przerwane. Wznów, gdy będziesz gotowa.',
+    webBackground: 'Przeglądarka może uśpić zegarek po wygaszeniu ekranu. Do długiej pracy w tle używaj wersji Android.',
+    playbackBlocked: 'Komunikat nie został odtworzony. Sprawdź dźwięk i aktywne połączenia telefoniczne.',
+    nativeVoiceInvalid: 'Nie udało się odczytać nagrań z aplikacji. Zainstaluj ponownie aktualny APK.',
     voiceLoading: 'Przygotowuję głos offline…',
     voiceUnavailable:
       'Głos offline nie został pobrany. Połącz się z internetem i spróbuj ponownie.',

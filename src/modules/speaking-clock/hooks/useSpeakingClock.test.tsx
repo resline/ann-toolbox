@@ -1,6 +1,10 @@
+import { SpeakingClockProvider } from './useSpeakingClock';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { useSpeakingClock } from './useSpeakingClock';
+import App from '../../../App';
+import { shellIds } from '../../../app/testIds';
+import { czasIds } from '../testIds';
 
 const voicePlayerMocks = vi.hoisted(() => ({
   state: 'ready' as 'idle' | 'loading' | 'ready' | 'failed',
@@ -109,7 +113,7 @@ describe('useSpeakingClock Hook', () => {
 
   it('initializes with default settings and idle state', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
     expect(screen.getByTestId('state').textContent).toBe('idle');
     expect(screen.getByTestId('interval').textContent).toBe('5');
@@ -117,9 +121,24 @@ describe('useSpeakingClock Hook', () => {
     expect(screen.getByTestId('departure-label').textContent).toBe('Wyjście z domu');
   });
 
+  it('keeps the same running clock when navigating away from Czas and back', async () => {
+    window.history.replaceState({}, '', '/czas');
+    await act(async () => { render(<App />); });
+    const idleLabel = screen.getByTestId(czasIds.statusBadge).textContent;
+    await act(async () => { fireEvent.click(screen.getByTestId(czasIds.primaryAction)); });
+    const runningLabel = screen.getByTestId(czasIds.statusBadge).textContent;
+    expect(runningLabel).not.toBe(idleLabel);
+    await act(async () => { fireEvent.click(screen.getByTestId(shellIds.tab('teraz'))); });
+    expect(screen.queryByTestId(czasIds.statusBadge)).not.toBeInTheDocument();
+    expect(voicePlayerMocks.release).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(screen.getByTestId(shellIds.tab('czas'))); });
+    expect(screen.getByTestId(czasIds.statusBadge).textContent).toBe(runningLabel);
+    expect(voicePlayerMocks.prepare).toHaveBeenCalledOnce();
+  });
+
   it('manages state transitions start -> pause -> resume -> stop', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
 
     expect(screen.getByTestId('state').textContent).toBe('idle');
@@ -147,7 +166,7 @@ describe('useSpeakingClock Hook', () => {
 
   it('updates interval and persists in localStorage', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
 
     act(() => {
@@ -161,7 +180,7 @@ describe('useSpeakingClock Hook', () => {
 
   it('updates the interval while the clock stays running', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
 
     await act(async () => {
@@ -179,7 +198,7 @@ describe('useSpeakingClock Hook', () => {
 
   it('updates departure settings and time timer settings via dedicated setters', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
 
     act(() => {
@@ -198,7 +217,7 @@ describe('useSpeakingClock Hook', () => {
 
   it('adjusts minutes via addMinutes', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
 
     act(() => {
@@ -211,7 +230,7 @@ describe('useSpeakingClock Hook', () => {
 
   it('triggers test voice now', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
 
     await act(async () => {
@@ -223,7 +242,7 @@ describe('useSpeakingClock Hook', () => {
 
   it('forces an atomic cache refresh when the user retries the voice pack', async () => {
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
     voicePlayerMocks.prepare.mockClear();
 
@@ -249,7 +268,7 @@ describe('useSpeakingClock Hook', () => {
       }));
 
     await act(async () => {
-      render(<HookConsumer />);
+      render(<SpeakingClockProvider><HookConsumer /></SpeakingClockProvider>);
     });
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'TestVoice' }));

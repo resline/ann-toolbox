@@ -12,6 +12,13 @@ export const app = {
     dismiss: 'Nie teraz',
   },
 
+  androidDownload: {
+    title: 'Przystań na Androida',
+    body: 'Mówiący zegarek także przy wygaszonym ekranie. Pobierz aplikację i w sekcji Czas ustaw działanie w tle.',
+    action: 'Pobierz aplikację na Androida (APK)',
+    hint: 'Android 7.0 lub nowszy. Dane z przeglądarki pozostają osobno.',
+  },
+
   settings: {
     title: 'Ustawienia',
     appearance: 'Wygląd',

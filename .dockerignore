@@ -3,4 +3,6 @@ dist
 .voice-generation-cache
 .git
 .superpowers
+artifacts
+android
 *.log

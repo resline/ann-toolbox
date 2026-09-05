@@ -998,6 +998,10 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
 
+  // Installers must come from the server, including navigation and range requests.
+  // Never replace a download with the offline app shell or a stale runtime copy.
+  if (requestUrl.pathname.startsWith('/downloads/')) return;
+
   if (isVoiceRequest(requestUrl)) {
     event.respondWith(
       matchVoiceRequest(event.request)

@@ -1,3 +1,4 @@
+import { SpeakingClockProvider } from './hooks/useSpeakingClock';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -89,7 +90,7 @@ describe('Moduł Czas', () => {
 
   it('pokazuje tarczę od razu, bez przewijania, we wszystkich trzech trybach', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     for (const mode of ['continuous', 'focus', 'departure']) {
       await user.click(screen.getByTestId(czasIds.modeTab(mode)));
@@ -104,13 +105,13 @@ describe('Moduł Czas', () => {
   });
 
   it('tarcza jest paskiem postępu z nazwą dostępną', () => {
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
     expect(screen.getByRole('progressbar')).toHaveAccessibleName();
   });
 
   it('startuje, pauzuje, wznawia i zatrzymuje', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     expect(screen.getByTestId(czasIds.statusBadge)).toBeInTheDocument();
     const idleLabel = screen.getByTestId(czasIds.statusBadge).textContent;
@@ -123,7 +124,7 @@ describe('Moduł Czas', () => {
 
   it('blokuje zmianę trybu, gdy zegar pracuje', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     await user.click(screen.getByTestId(czasIds.primaryAction));
     await waitFor(() => {
@@ -133,7 +134,7 @@ describe('Moduł Czas', () => {
 
   it('pozwala zmienić interwał bez pauzowania działającego zegara', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     await user.click(screen.getByTestId(czasIds.primaryAction));
     await waitFor(() => expect(screen.getByTestId(czasIds.modeTab('focus'))).toBeDisabled());
@@ -151,7 +152,7 @@ describe('Moduł Czas', () => {
 
   it('pozwala zmienić kadencję wyjścia bez odblokowania celu działającego odliczania', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     await user.click(screen.getByTestId(czasIds.modeTab('departure')));
     await user.click(screen.getByTestId(czasIds.primaryAction));
@@ -171,7 +172,7 @@ describe('Moduł Czas', () => {
 
   it('wiersz podsumowania otwiera arkusz ustawień', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(screen.getByTestId(czasIds.settingsRow));
@@ -182,7 +183,7 @@ describe('Moduł Czas', () => {
 
   it('arkusz ma trzy zakładki ustawień', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
     await user.click(screen.getByTestId(czasIds.settingsRow));
     await screen.findByRole('dialog');
 
@@ -192,7 +193,7 @@ describe('Moduł Czas', () => {
   });
 
   it('nie pokazuje ostrzeżenia, gdy pakiet offline jest gotowy', async () => {
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
     await waitFor(() => expect(screen.queryByTestId(czasIds.voicePackLoading)).not.toBeInTheDocument());
     expect(screen.queryByTestId(czasIds.voicePackFailure)).not.toBeInTheDocument();
   });
@@ -204,7 +205,7 @@ describe('Moduł Czas', () => {
       code: 'sprite-unavailable',
       message: 'offline',
     } as never);
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     expect(await screen.findByTestId(czasIds.voicePackFailure)).toBeInTheDocument();
     expect(screen.getByTestId(czasIds.primaryAction)).toBeDisabled();
@@ -215,7 +216,7 @@ describe('Moduł Czas', () => {
       throw new Error('missing-fragment');
     });
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     await user.click(screen.getByTestId(czasIds.primaryAction));
     const runningStatus = screen.getByTestId(czasIds.statusBadge).textContent;
@@ -235,7 +236,7 @@ describe('Moduł Czas', () => {
 
   it('pokazuje szybkie korekty czasu dopiero po starcie odliczania', async () => {
     const user = userEvent.setup();
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
 
     await user.click(screen.getByTestId(czasIds.modeTab('departure')));
     expect(screen.queryByTestId(czasIds.quickAdjust(5))).not.toBeInTheDocument();
@@ -247,7 +248,7 @@ describe('Moduł Czas', () => {
   });
 
   it('nie renderuje już ścieżki bez tarczy', () => {
-    render(<SpeakingClockModule />);
+    render(<SpeakingClockProvider><SpeakingClockModule /></SpeakingClockProvider>);
     // pole timeTimer.enabled zniknęło razem z ClockDisplay i TimeProgressRing
     expect(screen.getByTestId(czasIds.disc)).toBeInTheDocument();
   });

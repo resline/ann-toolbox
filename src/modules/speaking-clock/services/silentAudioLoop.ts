@@ -2,8 +2,8 @@
  * Silent Audio Loop Service
  *
  * Maintains an active audio session on mobile browsers (Android Chrome, iOS Safari)
- * by running a low-gain silent audio node. Prevents the OS from terminating or suspending
- * background timers and worker threads when the screen is locked or tab is minimized.
+ * by running a low-gain audio node. This is best effort only: silent playback does
+ * not exempt a page from browser throttling or OS suspension.
  */
 
 export class SilentAudioLoop {

@@ -403,6 +403,19 @@ async function seedVerifiedVoiceCache(worker: Awaited<ReturnType<typeof loadServ
 }
 
 describe('service worker voice-pack cache', () => {
+  it.each(['navigate', 'cors'])('leaves APK downloads to the network in %s mode, even offline', async (mode) => {
+    const worker = await loadServiceWorker();
+    await runWaitUntil(worker.listeners.get('install'));
+    await runWaitUntil(worker.listeners.get('activate'));
+    worker.setOffline(true);
+    const respondWith = vi.fn();
+    worker.listeners.get('fetch')?.({
+      request: { method: 'GET', mode, url: ORIGIN + '/downloads/przystan.apk' },
+      respondWith,
+    });
+    expect(respondWith).not.toHaveBeenCalled();
+  });
+
   it('installs only after the complete verified voice pack and cold-start core are cached', async () => {
     const worker = await loadServiceWorker();
     await runWaitUntil(worker.listeners.get('install'));

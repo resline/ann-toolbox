@@ -58,12 +58,15 @@ bez zatrzymywania i resetowania.
 telefon nie korzysta z Android Speech ani z chmury. Przed każdą wypowiedzią ciepły
 gong, żeby głos nie zaskakiwał w ciszy.
 
-**Działanie w tle.** Dedykowany Web Worker odporny na usypianie kart, MediaSession
-(sterowanie z ekranu blokady), cichy nośnik audio utrzymujący proces w systemie,
-opcjonalna blokada wygaszania ekranu. Gong i wszystkie fragmenty wypowiedzi są
-planowane jednocześnie na jednej osi Web Audio, więc zablokowanie ekranu między nimi
-nie urywa głosu. Android może jednak zakończyć proces PWA pod presją pamięci lub po
-wymuszeniu zatrzymania — tego aplikacja webowa nie może obejść.
+**Działanie w tle na Androidzie.** Wersja APK używa natywnej usługi z powiadomieniem,
+własnym odliczaniem i nagraniami Kore. Zmiana zakładki oraz zamknięcie widoku nie
+zatrzymują zegarka. Do punktualnych komunikatów przy długo wygaszonym ekranie
+wymaga wyłączenia optymalizacji baterii dla Przystani; aktywna sesja utrzymuje CPU,
+a pauza i Stop zwalniają blokadę. [Instalacja, build i testy Androida](docs/android-speaking-clock.md).
+
+**Wersja PWA.** Web Worker i ciche audio nie gwarantują pracy po uśpieniu
+przeglądarki. Wykryte zawieszenie audio wstrzymuje zegarek i wymaga wznowienia.
+Do długiej pracy przy wygaszonym ekranie przeznaczona jest wersja APK.
 
 ---
 
@@ -108,7 +111,8 @@ ograniczyć niezależnie od ustawień telefonu. Pinch-zoom działa.
 
 ## 📱 Instalacja na telefonie
 
-Przystań jest pełnoprawną aplikacją PWA — nie wymaga sklepu.
+Przystań jest dostępna jako PWA oraz APK na Androida — obie wersje nie wymagają sklepu.
+Instrukcja APK i ustawienia działania w tle: [wersja Android](docs/android-speaking-clock.md).
 
 **Android (Chrome / Brave / Edge)**
 1. Otwórz adres aplikacji w przeglądarce.

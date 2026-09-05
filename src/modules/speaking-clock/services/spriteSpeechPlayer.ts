@@ -414,12 +414,15 @@ export class SpriteSpeechPlayer {
         return false;
       }
     }
-    return this.context.state !== 'closed';
+    return this.context.state === 'running';
   }
 
   schedule(plan: AnnouncementPlan, startAt: number, volume: number): ScheduledVoiceSequence {
     if (!this.context || !this.manifest || !this.buffer) {
       throw new VoicePackError('pack-incomplete', 'Offline voice is not ready.');
+    }
+    if (this.context.state !== 'running') {
+      throw new VoicePackError('unsupported', 'audio-suspended');
     }
     assertPlanIsResolvable(plan);
 

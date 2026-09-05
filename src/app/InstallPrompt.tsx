@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Download, X } from '../lib/icons';
 import { app } from '../copy';
 import { Button, IconButton, Text } from '../components/ui';
@@ -16,6 +17,7 @@ export const InstallPrompt: React.FC = () => {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    if (Capacitor.isNativePlatform()) return;
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
       setDeferred(event as BeforeInstallPromptEvent);
@@ -42,7 +44,7 @@ export const InstallPrompt: React.FC = () => {
     }
   }, [deferred]);
 
-  if (!deferred || dismissed) return null;
+  if (Capacitor.isNativePlatform() || !deferred || dismissed) return null;
 
   return (
     <div

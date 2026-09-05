@@ -7,6 +7,7 @@ import { Link } from './router';
 import { ROUTES, type ModuleKey } from './routes';
 import { terazIds } from './testIds';
 import { useModuleStates } from './useModuleStates';
+import { AndroidDownload } from './AndroidDownload';
 
 function greetingFor(hour: number): string {
   if (hour < 5) return teraz.greetingNight;
@@ -94,6 +95,7 @@ export const NowScreen: React.FC<NowScreenProps> = ({ now = new Date() }) => {
           );
         })}
       </ul>
+      <AndroidDownload />
     </div>
   );
 };

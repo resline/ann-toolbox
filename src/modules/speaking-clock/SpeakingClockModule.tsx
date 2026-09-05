@@ -13,6 +13,7 @@
  */
 
 import React, { useState } from 'react';
+import { AndroidDownload } from '../../app/AndroidDownload';
 import { ChevronRight, Pause, Play, Square } from '../../lib/icons';
 import { cn } from '../../lib/cn';
 import { common, czas } from '../../copy';
@@ -64,6 +65,9 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
 
   const {
     clockState,
+    backendStatus,
+    openBatterySettings,
+    exportDiagnostics,
     currentTime,
     secondsUntilNext,
     settings,
@@ -90,6 +94,8 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
   const isRunning = clockState === 'running';
   const isPaused = clockState === 'paused';
   const isIdle = clockState === 'idle';
+  const isNative = backendStatus.protection !== 'web';
+  const canStart = voicePackStatus === 'ready' && (!isNative || backendStatus.protection === 'ready');
 
   let discLabel: string = czas.disc.clock;
   let discValue = formatClock(currentTime);
@@ -146,11 +152,35 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
           data-error-code={voicePackFailureCode || undefined}
           className="flex flex-col gap-2 rounded-control border border-caution/40 bg-caution-soft p-3"
         >
-          <Text size="sm">{voicePackFailureMessage(voicePackFailureCode)}</Text>
+          <Text size="sm">{isNative ? czas.notice.nativeVoiceInvalid : voicePackFailureMessage(voicePackFailureCode)}</Text>
           <Button variant="secondary" tone="module" onClick={retryVoicePack}>
-            {czas.action.retryVoice}
+            {isNative ? czas.action.retryNativeVoice : czas.action.retryVoice}
           </Button>
         </div>
+      )}
+
+      {isNative ? (
+        <Stack gap="sm">
+          <Text size="sm" tone="muted" role={backendStatus.protection === 'unavailable' ? 'alert' : 'status'}>
+            {backendStatus.protection === 'battery-required' ? czas.notice.batteryRequired
+              : backendStatus.protection === 'ready' ? czas.notice.backgroundReady
+              : backendStatus.protection === 'checking' ? czas.notice.backgroundChecking
+              : czas.notice.nativeUnavailable}
+          </Text>
+          {backendStatus.protection === 'battery-required' && (
+            <Button variant="secondary" onClick={openBatterySettings}>{czas.action.batterySettings}</Button>
+          )}
+          {backendStatus.interrupted && <Text role="alert" size="sm">{czas.notice.interrupted}</Text>}
+          {backendStatus.error && backendStatus.protection === 'ready' && !backendStatus.interrupted && (
+            <Text role="alert" size="sm">{czas.notice.commandFailed}</Text>
+          )}
+          <Button variant="quiet" size="sm" onClick={exportDiagnostics}>{czas.action.diagnostics}</Button>
+        </Stack>
+      ) : (
+        <Stack gap="sm">
+          <Text size="sm" tone="muted">{czas.notice.webBackground}</Text>
+          <AndroidDownload compact />
+        </Stack>
       )}
 
       {speechFailure && (
@@ -159,7 +189,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
           data-testid={czasIds.speechFailure}
           className="flex flex-col gap-2 rounded-control border border-caution/40 bg-caution-soft p-3"
         >
-          <Text size="sm">{czas.notice.speechFailed}</Text>
+          <Text size="sm">{isNative ? czas.notice.playbackBlocked : czas.notice.speechFailed}</Text>
           <Button
             data-testid={czasIds.retryVoice}
             variant="secondary"
@@ -216,7 +246,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
             tone="module"
             size="lg"
             onClick={start}
-            disabled={voicePackStatus !== 'ready'}
+            disabled={!canStart}
           >
             <Play className="w-5 h-5" aria-hidden />
             {common.action.start}
@@ -251,6 +281,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
               tone="module"
               size="lg"
               onClick={resume}
+              disabled={!canStart}
               className="flex-1"
             >
               <Play className="w-5 h-5" aria-hidden />
@@ -268,7 +299,7 @@ export const SpeakingClockModule: React.FC<SpeakingClockModuleProps> = ({ classN
             data-testid={czasIds.statusBadge}
             tone={isRunning ? 'module' : isPaused ? 'caution' : 'neutral'}
           >
-            {isRunning ? czas.state.running : isPaused ? czas.state.paused : czas.state.idle}
+            {isRunning ? (isNative ? czas.state.running : czas.state.webRunning) : isPaused ? czas.state.paused : czas.state.idle}
           </Badge>
         </div>
       </Stack>

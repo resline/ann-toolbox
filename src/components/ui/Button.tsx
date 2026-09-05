@@ -92,8 +92,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       aria-busy={loading || undefined}
       {...rest}
     >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}
-      {children}
+      {asChild ? children : (
+        <>
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}
+          {children}
+        </>
+      )}
     </Comp>
   );
 });

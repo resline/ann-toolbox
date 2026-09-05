@@ -1,0 +1,95 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+android {
+    namespace = "net.resline.przystan"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "net.resline.przystan"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    kotlinOptions { jvmTarget = '21' }
+    sourceSets {
+        main.assets.srcDir('build/generated/clock/assets')
+    }
+    testOptions {
+        unitTests.all {
+            systemProperty 'clock.assets', file('build/generated/clock/assets/clock').absolutePath
+            systemProperty 'clock.vectors', file('build/generated/clock/planner-vectors.json').absolutePath
+        }
+    }
+    signingConfigs {
+        release {
+            if (System.getenv('ANN_ANDROID_KEYSTORE')) {
+                storeFile file(System.getenv('ANN_ANDROID_KEYSTORE'))
+                storePassword System.getenv('ANN_ANDROID_STORE_PASSWORD')
+                keyAlias 'przystan'
+                keyPassword System.getenv('ANN_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+            resValue 'string', 'app_name', 'Przystań — test'
+        }
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation "org.json:json:20250517"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
+
+// Assets are derived from the validated offline pack; no network synthesis in builds.
+tasks.register('prepareClockAssets', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine 'node', '--import', 'tsx', 'scripts/prepare-android-clock.ts'
+    inputs.dir('../../public/audio/voice')
+    inputs.dir('../../src/modules/speaking-clock/services')
+    inputs.file('../../scripts/prepare-android-clock.ts')
+    inputs.file('../../src/modules/speaking-clock/types.ts')
+    inputs.file('../../src/lib/audio/chime.ts')
+    outputs.dir('build/generated/clock')
+}
+tasks.named('preBuild').configure { dependsOn 'prepareClockAssets' }
